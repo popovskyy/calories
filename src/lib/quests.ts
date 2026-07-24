@@ -14,6 +14,12 @@ export const QUEST_TARGET_TOLERANCE = 0.05;
 /** «Вибух» калорій — день зіпсував дисципліну. */
 export const BLOWOUT_OVER = 0.15;
 
+/** Єдине джерело правди «день у цілі»: і для квестів, і для денної монети. */
+export function isInTarget(net: number, targetCalories: number): boolean {
+  if (targetCalories <= 0) return false;
+  return Math.abs(net - targetCalories) <= targetCalories * QUEST_TARGET_TOLERANCE;
+}
+
 export type QuestKind =
   | "in_target_days"
   | "log_days"
@@ -158,7 +164,20 @@ export interface DaySnap {
   inTarget: boolean;
   blowout: boolean;
   hasMeal: boolean;
+  /** День закритий — цифри вже не зміняться доїданням. */
+  final: boolean;
 }
+
+/**
+ * Квести, де важлива точність: нараховуємо лише за закритими днями.
+ * Інакше можна «пройти крізь» ±5% зранку, зафіксувати прогрес і доїсти —
+ * RewardClaim незворотний, тож нагороду вже не забрати назад.
+ */
+const FINAL_DAY_KINDS: ReadonlySet<QuestKind> = new Set<QuestKind>([
+  "in_target_days",
+  "no_blowout",
+  "weekend_clean",
+]);
 
 async function weekSnapshots(
   userId: string,
@@ -167,15 +186,15 @@ async function weekSnapshots(
 ): Promise<DaySnap[]> {
   const today = todayYMD();
   const days = weekDays(weekStart).filter((d) => d <= today);
-  const tol = targetCalories * QUEST_TARGET_TOLERANCE;
   const blow = targetCalories * (1 + BLOWOUT_OVER);
 
+  const totals = await Promise.all(days.map((d) => dayNetCalories(userId, d)));
+
   const snaps: DaySnap[] = [];
-  for (const date of days) {
-    const t = await dayNetCalories(userId, date);
+  for (const [i, date] of days.entries()) {
+    const t = totals[i]!;
     const hasMeal = t.mealCount > 0;
-    const inTarget =
-      hasMeal && targetCalories > 0 && Math.abs(t.net - targetCalories) <= tol;
+    const inTarget = hasMeal && isInTarget(t.net, targetCalories);
     const blowout = hasMeal && t.net > blow;
     snaps.push({
       date,
@@ -185,6 +204,7 @@ async function weekSnapshots(
       inTarget,
       blowout,
       hasMeal,
+      final: date < today,
     });
   }
   return snaps;
@@ -223,7 +243,7 @@ function progressFor(
       const sat = shiftYMD(weekStart, 5);
       const sun = shiftYMD(weekStart, 6);
       const n = snaps.filter((s) => (s.date === sat || s.date === sun) && s.inTarget).length;
-      return { progress: n, done: n >= 2 };
+      return { progress: n, done: n >= target };
     }
     default:
       return { progress: 0, done: false };
@@ -263,23 +283,34 @@ export async function listQuestStatus(
   });
 
   const snaps = await weekSnapshots(userId, ws, target);
+  const finalSnaps = snaps.filter((s) => s.final);
   const granted: GrantedReward[] = [];
 
-  const out: QuestStatusDTO[] = [];
-  for (const q of quests) {
-    const { progress, done } = progressFor(q.kind as QuestKind, q.target, snaps, ws);
-    const key = `quest:${ws}:${q.code}`;
-    const existing = await prisma.rewardClaim.findUnique({
-      where: { userId_key: { userId, key } },
-    });
-    let claimed = !!existing;
+  const keys = quests.map((q) => `quest:${ws}:${q.code}`);
+  const claims = await prisma.rewardClaim.findMany({
+    where: { userId, key: { in: keys } },
+    select: { key: true },
+  });
+  const claimedKeys = new Set(claims.map((c) => c.key));
 
-    if (done && !claimed && q.rewardCoins > 0) {
+  const out: QuestStatusDTO[] = [];
+  for (const [i, q] of quests.entries()) {
+    const kind = q.kind as QuestKind;
+    const key = keys[i]!;
+    // Прогрес показуємо «живий» (з сьогоднішнім днем), платимо — за закритими.
+    const { progress, done } = progressFor(kind, q.target, snaps, ws);
+    // target <= 0 зробив би квест «виконаним» одразу — не платимо за таке.
+    const payable =
+      q.target > 0 &&
+      (FINAL_DAY_KINDS.has(kind)
+        ? progressFor(kind, q.target, finalSnaps, ws).done
+        : done);
+
+    let claimed = claimedKeys.has(key);
+
+    if (payable && !claimed && q.rewardCoins > 0) {
       await grant(userId, key, q.rewardCoins, `Квест: ${q.titleUk}`, granted);
-      const again = await prisma.rewardClaim.findUnique({
-        where: { userId_key: { userId, key } },
-      });
-      claimed = !!again;
+      claimed = true;
     }
 
     out.push({

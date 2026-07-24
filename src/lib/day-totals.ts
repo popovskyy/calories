@@ -6,11 +6,7 @@ export function isApproved(status: string): boolean {
   return status !== "cancelled";
 }
 
-/** Підсумок дня: спожито − спалено (лише approved). */
-export async function dayNetCalories(
-  userId: string,
-  date: string,
-): Promise<{
+export interface DayTotals {
   consumed: number;
   burned: number;
   net: number;
@@ -19,7 +15,13 @@ export async function dayNetCalories(
   carbs: number;
   mealCount: number;
   activityCount: number;
-}> {
+}
+
+/** Підсумок дня: спожито − спалено (лише approved). */
+export async function dayNetCalories(
+  userId: string,
+  date: string,
+): Promise<DayTotals> {
   const [meals, activities] = await Promise.all([
     prisma.mealLog.findMany({
       where: { userId, date, status: { not: "cancelled" } },

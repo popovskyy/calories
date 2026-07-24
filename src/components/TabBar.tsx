@@ -18,12 +18,8 @@ export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <div
-      className="relative shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)]"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-    >
-      {/* Монети над табами — без окремого ряду, що роздував висоту */}
-      <div className="pointer-events-auto absolute -top-9 right-3 z-10">
+    <div className="relative z-30 shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] pb-0.5">
+      <div className="absolute bottom-[calc(100%+8px)] right-3 z-10">
         <CoinsPill size="sm" />
       </div>
       <nav className="flex px-1 pb-0.5 pt-1">

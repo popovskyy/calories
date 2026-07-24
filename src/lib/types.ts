@@ -67,6 +67,8 @@ export interface ArenaEntry {
   /** |consumed - target| — чим менше, тим краще для рейтингу */
   absError: number;
   hasLog: boolean;
+  /** Чи є хоч один запис їжі — лише такі дні беруть участь у призах арени. */
+  hasMeal: boolean;
   isMe: boolean;
 }
 

@@ -21,7 +21,8 @@ export function WeeklyQuestsCard() {
         ) : null}
       </div>
       <p className="text-[13px] text-[var(--color-muted3)]">
-        Великі монети — за дисципліну ±5%. Без точних днів у цілі магазин майже не відкриється.
+        Великі монети — за дисципліну ±5%. Точність рахується за підсумком дня, тож
+        монети падають наступного ранку.
       </p>
 
       {q.isLoading || !q.data ? (
@@ -72,7 +73,7 @@ export function WeeklyQuestsCard() {
                   </div>
                   <span className="text-[12px] tabular-nums text-[var(--color-muted3)]">
                     {quest.progress}/{quest.target}
-                    {quest.claimed ? " · ✓" : ""}
+                    {quest.claimed ? " · ✓" : quest.done ? " · чекає на закриття дня" : ""}
                   </span>
                 </div>
               </li>

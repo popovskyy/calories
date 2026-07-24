@@ -32,7 +32,8 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
     const consumed = u.meals.reduce((s, m) => s + m.calories, 0);
     const burned = u.activities.reduce((s, a) => s + a.caloriesBurned, 0);
     const dayCalories = consumed - burned;
-    const hasLog = u.meals.length > 0 || u.activities.length > 0;
+    const hasMeal = u.meals.length > 0;
+    const hasLog = hasMeal || u.activities.length > 0;
     const difference = u.targetCalories - dayCalories;
     const goal = isGoal(u.goal) ? u.goal : "maintain";
     return {
@@ -47,6 +48,7 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
       difference,
       absError: Math.abs(difference),
       hasLog,
+      hasMeal,
     };
   });
 

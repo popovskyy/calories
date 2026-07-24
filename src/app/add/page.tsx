@@ -220,7 +220,7 @@ export default function AddFoodPage() {
         </div>
       </header>
 
-      <div className="no-scrollbar min-h-0 flex-1 flex flex-col gap-4 overflow-y-auto overscroll-contain px-[18px] py-4">
+      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] py-4">
         <div className="flex gap-2">
           <span className="flex flex-1 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] px-3 py-2.5 text-[14px] font-semibold text-[#f5f4ff]">
             Їжа

@@ -24,7 +24,8 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    // НЕ "black-translucent": воно кидає контент під статус-бар і вмикає safe-area
+    statusBarStyle: "black",
     title: "Калорії",
   },
   icons: {
@@ -62,7 +63,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover",
+  // viewportFit лишаємо дефолтним ("auto"): iOS сам відсуває вебв'ю
+  // з-під чубчика/home indicator, а env(safe-area-inset-*) = 0
 };
 
 export default function RootLayout({
