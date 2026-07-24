@@ -4,9 +4,13 @@ import {
   type ResponseSchema,
 } from "@google/generative-ai";
 import type { AnalyzeResult } from "./types";
+import { AiError, GeminiError, gptApiKey } from "@/lib/ai-error";
+import { analyzeFoodOpenAI } from "@/lib/openai-food";
+
+export { AiError, GeminiError };
 
 /** Модель можна перевизначити через env; дефолт — актуальний flash */
-const MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
 const SYSTEM_PROMPT = `Ти — нутриціолог-аналітик. За текстовим описом та/або фото страви оціни харчову цінність.
 Відповідай СУВОРО у JSON за схемою. Правила:
@@ -33,18 +37,9 @@ const responseSchema: ResponseSchema = {
 
 export interface AnalyzeInput {
   description?: string;
-  imageBase64?: string; // без префікса data:
-  imageMimeType?: string; // напр. image/jpeg
-  apiKey?: string; // ключ із профілю (UI); фолбек — env
-}
-
-export class GeminiError extends Error {
-  status: number;
-  constructor(message: string, status = 502) {
-    super(message);
-    this.name = "GeminiError";
-    this.status = status;
-  }
+  imageBase64?: string;
+  imageMimeType?: string;
+  apiKey?: string;
 }
 
 const round = (n: unknown): number => {
@@ -52,10 +47,10 @@ const round = (n: unknown): number => {
   return Number.isFinite(v) && v >= 0 ? v : 0;
 };
 
-export async function analyzeFood(input: AnalyzeInput): Promise<AnalyzeResult> {
+async function analyzeFoodGemini(input: AnalyzeInput): Promise<AnalyzeResult> {
   const apiKey = input.apiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    throw new GeminiError(
+    throw new AiError(
       "Не задано GEMINI_API_KEY. Додайте ключ у налаштуваннях або в .env",
       400,
     );
@@ -63,7 +58,7 @@ export async function analyzeFood(input: AnalyzeInput): Promise<AnalyzeResult> {
 
   const description = input.description?.trim();
   if (!description && !input.imageBase64) {
-    throw new GeminiError("Потрібен опис страви або фото", 400);
+    throw new AiError("Потрібен опис страви або фото", 400);
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -100,33 +95,35 @@ export async function analyzeFood(input: AnalyzeInput): Promise<AnalyzeResult> {
     text = result.response.text();
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Помилка запиту до Gemini";
-    // Порядок важливий: спершу квота/аутентифікація, потім модель.
     if (/429|quota|RESOURCE_EXHAUSTED|rate limit/i.test(msg)) {
-      throw new GeminiError(
+      throw new AiError(
         "Вичерпано квоту Gemini для цього ключа. Перевірте план/білінг або спробуйте пізніше.",
         429,
       );
     }
     if (/API[_ ]?KEY|API key|invalid.*key|permission|PERMISSION_DENIED|\b401\b|\b403\b/i.test(msg)) {
-      throw new GeminiError("Невірний або недоступний GEMINI_API_KEY", 401);
+      throw new AiError("Невірний або недоступний GEMINI_API_KEY", 401);
     }
     if (/no longer available|\b404\b|not found/i.test(msg)) {
-      throw new GeminiError(
+      throw new AiError(
         `Модель "${MODEL}" недоступна для цього ключа. Змініть GEMINI_MODEL у .env.`,
         502,
       );
     }
     if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|network/i.test(msg)) {
-      throw new GeminiError("Немає з'єднання з Gemini. Перевірте мережу та спробуйте ще раз.", 503);
+      throw new AiError(
+        "Немає з'єднання з Gemini. Перевірте мережу та спробуйте ще раз.",
+        503,
+      );
     }
-    throw new GeminiError(msg);
+    throw new AiError(msg);
   }
 
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new GeminiError("Gemini повернув некоректний JSON");
+    throw new AiError("Gemini повернув некоректний JSON");
   }
 
   const items = Array.isArray(parsed.parsedItems)
@@ -140,4 +137,32 @@ export async function analyzeFood(input: AnalyzeInput): Promise<AnalyzeResult> {
     carbs: round(parsed.carbs),
     parsedItems: items,
   };
+}
+
+/**
+ * Аналіз їжі: спочатку Gemini, при помилці — GPT (якщо є GPT_API_KEY).
+ */
+export async function analyzeFood(input: AnalyzeInput): Promise<AnalyzeResult> {
+  const description = input.description?.trim();
+  if (!description && !input.imageBase64) {
+    throw new AiError("Потрібен опис страви або фото", 400);
+  }
+
+  try {
+    return await analyzeFoodGemini(input);
+  } catch (geminiErr) {
+    if (!gptApiKey()) throw geminiErr;
+    // UI-ключ Gemini не блокує GPT-фолбек
+    try {
+      console.warn(
+        "[analyzeFood] Gemini failed, falling back to OpenAI:",
+        geminiErr instanceof Error ? geminiErr.message : geminiErr,
+      );
+      return await analyzeFoodOpenAI(input);
+    } catch (gptErr) {
+      const g = geminiErr instanceof Error ? geminiErr.message : "Gemini error";
+      const o = gptErr instanceof Error ? gptErr.message : "GPT error";
+      throw new AiError(`Gemini: ${g} | GPT: ${o}`, 502);
+    }
+  }
 }

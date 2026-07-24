@@ -23,7 +23,7 @@ const currentYear = new Date().getFullYear();
 
 const segmentBtn = (active: boolean) =>
   cn(
-    "flex-1 rounded-[var(--radius-md)] px-3 py-2.5 text-[13px] font-semibold transition-colors",
+    "flex-1 rounded-[var(--radius-md)] px-3 py-2.5 text-[15px] font-semibold transition-colors",
     active
       ? "bg-[var(--color-accent)] text-[#f5f4ff]"
       : "bg-[var(--color-tile)] text-[var(--color-muted2)] hover:text-[var(--color-text)]",
@@ -121,7 +121,7 @@ export function AuthForm() {
     e.preventDefault();
     if (!preview) return toast.error("Заповніть дані профілю");
     try {
-      await registerMut.mutateAsync({
+      const saved = await registerMut.mutateAsync({
         username: username.trim(),
         password,
         name: name.trim(),
@@ -135,7 +135,16 @@ export function AuthForm() {
         imageBase64: photo?.base64,
         imageMimeType: photo?.mime,
       });
-      toast.success("Акаунт створено");
+      if (saved.avatarWarning) {
+        toast.warning(
+          `Акаунт створено, але аватар не намалювався: ${saved.avatarWarning}. Можна спробувати знову в Профілі.`,
+          { duration: 8000 },
+        );
+      } else if (photo) {
+        toast.success("Акаунт і мультяшний аватар готові");
+      } else {
+        toast.success("Акаунт створено");
+      }
       router.replace("/");
       router.refresh();
     } catch (err) {
@@ -146,10 +155,10 @@ export function AuthForm() {
   return (
     <div className="mx-auto flex w-full max-w-[420px] flex-col gap-4 px-[18px] py-8">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[var(--color-text)]">
+        <h1 className="text-[30px] font-semibold tracking-tight text-[var(--color-text)]">
           Калорії
         </h1>
-        <p className="mt-1 text-[14px] text-[var(--color-muted2)]">
+        <p className="mt-1 text-[16px] text-[var(--color-muted2)]">
           Один акаунт — один персонаж у сесії
         </p>
       </div>
@@ -235,7 +244,7 @@ export function AuthForm() {
                 <Camera size={28} />
               </div>
             )}
-            <p className="text-center text-[12px] text-[var(--color-muted3)]">
+            <p className="text-center text-[14px] text-[var(--color-muted3)]">
               Опційно: селфі → Gemini намалює мультяшний аватар
             </p>
             <button
@@ -303,12 +312,12 @@ export function AuthForm() {
 
           {preview ? (
             <div className="rounded-[var(--radius-lg)] border border-[var(--color-accent-800)] bg-[var(--color-tile)] px-4 py-3">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--color-accent-300)]">
+              <div className="text-[14px] font-semibold uppercase tracking-[0.08em] text-[var(--color-accent-300)]">
                 Ваша норма
               </div>
-              <div className="mt-1 text-[24px] font-semibold tabular-nums">
+              <div className="mt-1 text-[26px] font-semibold tabular-nums">
                 {preview.targetCalories.toLocaleString("uk-UA")}{" "}
-                <span className="text-[13px] font-medium text-[var(--color-muted3)]">ккал/день</span>
+                <span className="text-[15px] font-medium text-[var(--color-muted3)]">ккал/день</span>
               </div>
             </div>
           ) : null}

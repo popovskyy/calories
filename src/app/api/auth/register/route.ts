@@ -12,6 +12,7 @@ import { toUserDTO } from "@/lib/user-dto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const currentYear = new Date().getFullYear();
 
@@ -66,14 +67,19 @@ export async function POST(req: NextRequest) {
   }
 
   let finalAvatar = avatarUrl ?? null;
+  let avatarWarning: string | null = null;
   if (!finalAvatar && imageBase64) {
     try {
       finalAvatar = await generateMascotAvatar({
         imageBase64,
         imageMimeType,
       });
-    } catch {
-      // реєстрація не падає через аватар — можна додати пізніше в профілі
+    } catch (err) {
+      avatarWarning =
+        err instanceof Error
+          ? err.message
+          : "Не вдалося згенерувати аватар";
+      console.error("[register] avatar generation failed:", avatarWarning);
       finalAvatar = null;
     }
   }
@@ -112,5 +118,8 @@ export async function POST(req: NextRequest) {
   });
   await setSessionCookie(token);
 
-  return NextResponse.json(toUserDTO(user), { status: 201 });
+  return NextResponse.json(
+    { ...toUserDTO(user), avatarWarning },
+    { status: 201 },
+  );
 }

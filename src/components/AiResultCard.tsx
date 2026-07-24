@@ -25,7 +25,7 @@ export function AiResultCard({ result, source = "опису" }: { result: Analyz
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-[var(--color-accent)]" />
-          <span className="text-[13px] font-semibold text-[var(--color-accent-200)]">
+          <span className="text-[15px] font-semibold text-[var(--color-accent-200)]">
             Розпізнано з {source}
           </span>
         </div>
@@ -43,18 +43,18 @@ export function AiResultCard({ result, source = "опису" }: { result: Analyz
       ) : null}
 
       <div className="mt-4 flex flex-col items-center">
-        <div className="text-[40px] font-semibold leading-none text-[var(--color-text)]">
+        <div className="text-[44px] font-semibold leading-none text-[var(--color-text)]">
           {result.calories}
         </div>
-        <div className="mt-1 text-[12px] text-[var(--color-muted3)]">ккал усього</div>
+        <div className="mt-1 text-[14px] text-[var(--color-muted3)]">ккал усього</div>
       </div>
 
       <div className="mt-4 flex gap-2.5">
         {MACROS.map((m) => (
           <div key={m.key} className="flex-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] p-2.5">
             <div className="flex items-baseline justify-between">
-              <span className="text-[11px] text-[var(--color-muted3)]">{m.label}</span>
-              <span className="text-[13px] font-semibold text-[var(--color-text)]">
+              <span className="text-[13px] text-[var(--color-muted3)]">{m.label}</span>
+              <span className="text-[15px] font-semibold text-[var(--color-text)]">
                 {values[m.key]} г
               </span>
             </div>

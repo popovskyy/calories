@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { ADMIN_COOKIE } from "@/lib/admin-auth";
 import { SESSION_COOKIE, readSessionToken } from "@/lib/session";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/register"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/admin/login",
+  "/api/admin/login",
+];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -23,6 +30,30 @@ export async function middleware(req: NextRequest) {
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
 
+  // --- Admin zone ---
+  const isAdminPage = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isAdminApi = pathname.startsWith("/api/admin/");
+  if (isAdminPage || isAdminApi) {
+    if (pathname === "/admin/login" || pathname === "/api/admin/login") {
+      return NextResponse.next();
+    }
+    const adminToken = req.cookies.get(ADMIN_COOKIE)?.value;
+    const adminSession = adminToken ? await readSessionToken(adminToken) : null;
+    const isAdmin =
+      !!adminSession?.username?.startsWith("admin:");
+
+    if (!isAdmin) {
+      if (isAdminApi) {
+        return NextResponse.json({ error: "Потрібен вхід адміна" }, { status: 401 });
+      }
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  // --- App user zone ---
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const session = token ? await readSessionToken(token) : null;
 

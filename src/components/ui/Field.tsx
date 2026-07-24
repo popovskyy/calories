@@ -13,14 +13,14 @@ export function Field({
     <label className="flex flex-col gap-1.5">
       <span className="lbl">{label}</span>
       {children}
-      {hint ? <span className="text-[11px] text-[var(--color-muted3)]">{hint}</span> : null}
+      {hint ? <span className="text-[13px] text-[var(--color-muted3)]">{hint}</span> : null}
     </label>
   );
 }
 
 export const inputClass = cn(
   "w-full rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-tile)]",
-  "px-3 py-2.5 text-[15px] text-[var(--color-text)] outline-none",
+  "px-3 py-2.5 text-[17px] text-[var(--color-text)] outline-none",
   "placeholder:text-[var(--color-muted3)]",
   "focus:border-[var(--color-accent-500)] transition-colors",
 );

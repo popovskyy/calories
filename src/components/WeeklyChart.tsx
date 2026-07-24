@@ -46,7 +46,7 @@ export function WeeklyChart({ days, target }: WeeklyChartProps) {
         x={x}
         y={y + 12}
         textAnchor="middle"
-        fontSize={11}
+        fontSize={13}
         fontWeight={isToday ? 600 : 400}
         fill={isToday ? "var(--color-text)" : "var(--color-muted3)"}
       >
@@ -91,7 +91,7 @@ export function WeeklyChart({ days, target }: WeeklyChartProps) {
               value: String(target),
               position: "right",
               fill: "#75798c",
-              fontSize: 10,
+              fontSize: 12,
             }}
           />
           <Bar
@@ -113,7 +113,7 @@ export function WeeklyChart({ days, target }: WeeklyChartProps) {
               dataKey="value"
               position="top"
               formatter={(v) => (Number(v) > 0 ? String(v) : "")}
-              fontSize={9}
+              fontSize={11}
               fill="#75798c"
             />
           </Bar>

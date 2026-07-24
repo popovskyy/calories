@@ -66,12 +66,12 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
         </defs>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-        <motion.div className="text-[44px] font-semibold leading-none tracking-tight text-[var(--color-text)]">
+        <motion.div className="text-[48px] font-semibold leading-none tracking-tight text-[var(--color-text)]">
           {rounded}
         </motion.div>
-        <div className="text-[13px] text-[var(--color-muted3)]">із {target.toLocaleString("uk-UA")} ккал</div>
+        <div className="text-[15px] text-[var(--color-muted3)]">із {target.toLocaleString("uk-UA")} ккал</div>
         <div
-          className="mt-1.5 text-[12px] font-semibold"
+          className="mt-1.5 text-[14px] font-semibold"
           style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
         >
           {over

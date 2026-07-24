@@ -50,7 +50,7 @@ export interface RegisterInput {
   imageMimeType?: string;
 }
 export const register = (input: RegisterInput) =>
-  req<UserDTO>("/api/auth/register", {
+  req<UserDTO & { avatarWarning?: string | null }>("/api/auth/register", {
     method: "POST",
     body: JSON.stringify(input),
   });

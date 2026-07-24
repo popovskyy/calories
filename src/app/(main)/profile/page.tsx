@@ -29,11 +29,11 @@ export default function ProfilePage() {
   return (
     <>
       <header className="flex items-center justify-between">
-        <h1 className="text-[20px] font-semibold text-[var(--color-text)]">Профіль</h1>
+        <h1 className="text-[22px] font-semibold text-[var(--color-text)]">Профіль</h1>
         <button
           onClick={() => logout.mutate()}
           disabled={logout.isPending}
-          className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--color-divider)] px-3 py-2 text-[13px] font-medium text-[var(--color-muted2)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
+          className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--color-divider)] px-3 py-2 text-[15px] font-medium text-[var(--color-muted2)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
         >
           <LogOut size={16} />
           Вийти
@@ -43,9 +43,9 @@ export default function ProfilePage() {
       <div className="mcard flex items-center gap-3 p-4">
         <Avatar name={user.name} avatarUrl={user.avatarUrl} size={64} />
         <div className="min-w-0 flex-1">
-          <div className="text-[18px] font-semibold text-[var(--color-text)]">{user.name}</div>
-          <div className="text-[13px] text-[var(--color-muted3)]">@{user.username}</div>
-          <div className="mt-1 text-[12px] text-[var(--color-muted2)]">
+          <div className="text-[20px] font-semibold text-[var(--color-text)]">{user.name}</div>
+          <div className="text-[15px] text-[var(--color-muted3)]">@{user.username}</div>
+          <div className="mt-1 text-[14px] text-[var(--color-muted2)]">
             {user.targetCalories.toLocaleString("uk-UA")} ккал ·{" "}
             {GOAL_LABELS[user.goal].toLowerCase()} · {user.age} р · {user.weight} кг ·{" "}
             {user.height} см

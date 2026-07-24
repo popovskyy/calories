@@ -22,11 +22,11 @@ export function DateSelector({ date, onPrev, onNext, subline }: DateSelectorProp
         <ChevronLeft size={18} />
       </button>
       <div className="text-center">
-        <div className="text-[19px] font-semibold text-[var(--color-text)]">
+        <div className="text-[21px] font-semibold text-[var(--color-text)]">
           {humanDateFull(date)}
         </div>
         {subline ? (
-          <div className="text-[12px] text-[var(--color-muted3)]">{subline}</div>
+          <div className="text-[14px] text-[var(--color-muted3)]">{subline}</div>
         ) : null}
       </div>
       <button

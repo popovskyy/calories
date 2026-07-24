@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { analyzeFood, GeminiError } from "@/lib/gemini";
+import { analyzeFood, AiError, GeminiError } from "@/lib/gemini";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       fats = ai.fats;
       carbs = ai.carbs;
     } catch (err) {
-      if (err instanceof GeminiError) {
+      if (err instanceof AiError || err instanceof GeminiError) {
         return NextResponse.json({ error: err.message }, { status: err.status });
       }
       return NextResponse.json(

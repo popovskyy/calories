@@ -14,9 +14,9 @@ export function EmptyState({ icon: Icon, title, subtitle, action }: EmptyStatePr
         <Icon size={26} strokeWidth={1.7} />
       </div>
       <div>
-        <p className="text-[15px] font-semibold text-[var(--color-text)]">{title}</p>
+        <p className="text-[17px] font-semibold text-[var(--color-text)]">{title}</p>
         {subtitle ? (
-          <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-muted3)]">
+          <p className="mt-1 text-[15px] leading-relaxed text-[var(--color-muted3)]">
             {subtitle}
           </p>
         ) : null}

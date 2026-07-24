@@ -36,11 +36,11 @@ export function Modal({
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <RD.Title className="text-[18px] font-semibold text-[var(--color-text)]">
+              <RD.Title className="text-[20px] font-semibold text-[var(--color-text)]">
                 {title}
               </RD.Title>
               {description ? (
-                <RD.Description className="mt-1 text-[12px] text-[var(--color-muted3)]">
+                <RD.Description className="mt-1 text-[14px] text-[var(--color-muted3)]">
                   {description}
                 </RD.Description>
               ) : (

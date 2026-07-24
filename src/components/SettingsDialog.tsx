@@ -44,7 +44,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
     >
       <form onSubmit={submit} className="flex flex-col gap-3.5">
         {user ? (
-          <p className="text-[13px] leading-relaxed text-[var(--color-muted2)]">
+          <p className="text-[15px] leading-relaxed text-[var(--color-muted2)]">
             Денну норму калорій змінюйте в профілі (вага, активність, мета). Тут лише
             ключ для ШІ-аналізу.
           </p>

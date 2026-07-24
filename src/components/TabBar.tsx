@@ -32,7 +32,7 @@ export function TabBar() {
             )}
           >
             <Icon size={22} strokeWidth={active ? 2.1 : 1.8} />
-            <span className={cn("text-[10px]", active && "font-semibold")}>
+            <span className={cn("text-[12px]", active && "font-semibold")}>
               {label}
             </span>
           </Link>

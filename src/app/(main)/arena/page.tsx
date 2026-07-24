@@ -31,11 +31,11 @@ export default function ArenaPage() {
     <>
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-[20px] font-semibold text-[var(--color-text)]">
+          <h1 className="flex items-center gap-2 text-[22px] font-semibold text-[var(--color-text)]">
             <Trophy size={22} className="text-[var(--color-accent)]" />
             Арена
           </h1>
-          <p className="mt-1 text-[13px] text-[var(--color-muted3)]">
+          <p className="mt-1 text-[15px] text-[var(--color-muted3)]">
             Рейтинг за сьогодні
             {date ? ` · ${humanDate(date)}` : ""}
           </p>
@@ -43,12 +43,12 @@ export default function ArenaPage() {
       </header>
 
       {entries.length === 0 ? (
-        <div className="mcard p-6 text-center text-[14px] text-[var(--color-muted3)]">
+        <div className="mcard p-6 text-center text-[16px] text-[var(--color-muted3)]">
           Поки немає гравців. Запросіть друзів зареєструватись.
         </div>
       ) : (
         <div className="overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
-          <div className="grid grid-cols-[36px_1fr_auto] gap-2 bg-[var(--color-surface)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-muted3)]">
+          <div className="grid grid-cols-[36px_1fr_auto] gap-2 bg-[var(--color-surface)] px-3 py-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-muted3)]">
             <span>#</span>
             <span>Гравець</span>
             <span className="text-right">Дефіцит</span>
@@ -61,7 +61,7 @@ export default function ArenaPage() {
         </div>
       )}
 
-      <p className="text-[12px] leading-relaxed text-[var(--color-muted3)]">
+      <p className="text-[14px] leading-relaxed text-[var(--color-muted3)]">
         Дефіцит = ціль − зʼїдене сьогодні. Хто в мінусі (перебір) — нижче в таблиці.
         Без записів за день — в кінці списку.
       </p>
@@ -84,21 +84,21 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
         entry.isMe && "bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)]",
       )}
     >
-      <span className="text-[14px] font-semibold tabular-nums text-[var(--color-muted2)]">
+      <span className="text-[16px] font-semibold tabular-nums text-[var(--color-muted2)]">
         {entry.rank}
       </span>
       <div className="flex min-w-0 items-center gap-2.5">
         <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size={36} />
         <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold text-[var(--color-text)]">
+          <div className="truncate text-[16px] font-semibold text-[var(--color-text)]">
             {entry.name}
             {entry.isMe ? (
-              <span className="ml-1.5 text-[11px] font-semibold text-[var(--color-accent)]">
+              <span className="ml-1.5 text-[13px] font-semibold text-[var(--color-accent)]">
                 ви
               </span>
             ) : null}
           </div>
-          <div className="truncate text-[11px] text-[var(--color-muted3)]">
+          <div className="truncate text-[13px] text-[var(--color-muted3)]">
             {entry.goalLabel} · {entry.todayCalories.toLocaleString("uk-UA")} /{" "}
             {entry.targetCalories.toLocaleString("uk-UA")} ккал
           </div>
@@ -107,7 +107,7 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
       <div className="text-right">
         <div
           className={cn(
-            "text-[15px] font-semibold tabular-nums",
+            "text-[17px] font-semibold tabular-nums",
             !entry.hasLog
               ? "text-[var(--color-muted3)]"
               : over
@@ -117,7 +117,7 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
         >
           {deficitLabel}
         </div>
-        <div className="text-[10px] text-[var(--color-muted3)]">
+        <div className="text-[12px] text-[var(--color-muted3)]">
           {!entry.hasLog ? "немає логу" : over ? "перебір" : "залишок"}
         </div>
       </div>

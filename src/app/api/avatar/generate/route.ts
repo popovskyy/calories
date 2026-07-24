@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
-import { GeminiError } from "@/lib/gemini";
+import { AiError, GeminiError } from "@/lib/gemini";
 import { generateMascotAvatar } from "@/lib/gemini-avatar";
 
 export const runtime = "nodejs";
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const avatarUrl = await generateMascotAvatar(parsed.data);
     return NextResponse.json({ avatarUrl });
   } catch (err) {
-    if (err instanceof GeminiError) {
+    if (err instanceof AiError || err instanceof GeminiError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
     const msg = err instanceof Error ? err.message : "Помилка генерації аватара";

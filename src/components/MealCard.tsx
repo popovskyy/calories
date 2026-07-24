@@ -32,20 +32,20 @@ export function MealCard({ meal, index = 0, onDelete, deleting }: MealCardProps)
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-accent-300)]">
+          <div className="text-[13px] font-semibold uppercase tracking-wide text-[var(--color-accent-300)]">
             {kicker(meal.createdAt)}
           </div>
-          <div className="mt-0.5 truncate text-[15px] font-semibold text-[var(--color-text)]">
+          <div className="mt-0.5 truncate text-[17px] font-semibold text-[var(--color-text)]">
             {meal.description}
           </div>
         </div>
         <div className="shrink-0 text-right leading-none">
-          <span className="text-[18px] font-semibold text-[var(--color-text)]">{meal.calories}</span>
-          <span className="ml-1 text-[11px] text-[var(--color-muted3)]">ккал</span>
+          <span className="text-[20px] font-semibold text-[var(--color-text)]">{meal.calories}</span>
+          <span className="ml-1 text-[13px] text-[var(--color-muted3)]">ккал</span>
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <div className="text-[12px] text-[var(--color-muted2)]">
+        <div className="text-[14px] text-[var(--color-muted2)]">
           <span>Б </span>
           <span className="text-[var(--color-text)]">{meal.protein}</span>
           <span> · Ж </span>

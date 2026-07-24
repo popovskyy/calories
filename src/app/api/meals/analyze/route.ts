@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
-import { analyzeFood, GeminiError } from "@/lib/gemini";
+import { analyzeFood, AiError, GeminiError } from "@/lib/gemini";
 import type { AnalyzeResult } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const result: AnalyzeResult = await analyzeFood(parsed.data);
     return NextResponse.json(result);
   } catch (err) {
-    if (err instanceof GeminiError) {
+    if (err instanceof AiError || err instanceof GeminiError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
     return NextResponse.json({ error: "Помилка аналізу страви" }, { status: 502 });

@@ -19,14 +19,14 @@ export function MacroTiles({ protein, fats, carbs }: MacroTilesProps) {
           key={m.key}
           className="flex-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] py-2 text-center"
         >
-          <div className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--color-muted3)]">
+          <div className="flex items-center justify-center gap-1.5 text-[13px] text-[var(--color-muted3)]">
             <span
               className="inline-block h-1.5 w-1.5 rounded-full"
               style={{ background: m.color }}
             />
             {m.label}
           </div>
-          <div className="text-[16px] font-semibold text-[var(--color-text)]">
+          <div className="text-[18px] font-semibold text-[var(--color-text)]">
             {values[m.key]} г
           </div>
         </div>

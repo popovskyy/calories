@@ -98,7 +98,7 @@ export default function AddFoodPage() {
     return (
       <AppFrame>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-          <p className="text-[15px] text-[var(--color-muted)]">
+          <p className="text-[17px] text-[var(--color-muted)]">
             Спершу створіть профіль на вкладці «Профіль».
           </p>
           <Link href="/" className="btn btn-primary">
@@ -114,7 +114,7 @@ export default function AddFoodPage() {
       {/* Хедер */}
       <header
         className="flex items-center gap-3 px-[18px] pb-2"
-        style={{ paddingTop: "calc(18px + env(safe-area-inset-top))" }}
+        style={{ paddingTop: "18px" }}
       >
         <button
           onClick={() => router.back()}
@@ -124,9 +124,9 @@ export default function AddFoodPage() {
           <ChevronLeft size={18} />
         </button>
         <div>
-          <h1 className="text-[20px] font-semibold text-[var(--color-text)]">Новий прийом їжі</h1>
+          <h1 className="text-[22px] font-semibold text-[var(--color-text)]">Новий прийом їжі</h1>
           {mounted ? (
-            <p className="text-[12px] text-[var(--color-muted3)]">{humanDateFull(selectedDate)}</p>
+            <p className="text-[14px] text-[var(--color-muted3)]">{humanDateFull(selectedDate)}</p>
           ) : null}
         </div>
       </header>
@@ -148,13 +148,13 @@ export default function AddFoodPage() {
         <div className="flex gap-3">
           <button
             onClick={() => cameraRef.current?.click()}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[13px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
           >
             <Camera size={18} /> Зробити фото
           </button>
           <button
             onClick={() => uploadRef.current?.click()}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[13px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
           >
             <Upload size={18} /> Завантажити
           </button>

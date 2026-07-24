@@ -1,69 +1,16 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import sharp from "sharp";
-import { GeminiError } from "@/lib/gemini";
+import { AiError, gptApiKey } from "@/lib/ai-error";
+import { AVATAR_PROMPT } from "@/lib/avatar-prompt";
+import { generateMascotAvatarOpenAI } from "@/lib/openai-avatar";
 
-/** Окрема модель для генерації зображень; можна перевизначити через env. */
+export { AVATAR_PROMPT } from "@/lib/avatar-prompt";
+
 const IMAGE_MODEL =
   process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 
-export const AVATAR_PROMPT = `You are an AI avatar generator.
-
-Your task is to create a cute, consistent mascot-style avatar based on the uploaded user photo.
-
-Requirements:
-
-- Preserve the person's identity and recognizable facial features.
-- Convert the person into a friendly cartoon mascot.
-- Keep proportions slightly stylized with a larger head and expressive eyes.
-- Use a clean modern mobile-app illustration style inspired by premium productivity and fitness apps.
-- Soft rounded shapes.
-- Smooth gradients.
-- No realistic skin texture.
-- No wrinkles.
-- No facial imperfections.
-- Bright but natural colors.
-- White or transparent background.
-- Front-facing pose.
-- Arms relaxed.
-- Full body visible.
-- High resolution.
-- Symmetrical composition.
-
-Hair:
-- Preserve hairstyle.
-- Preserve hair color.
-
-Face:
-- Preserve eye color when possible.
-- Preserve beard, mustache and glasses if present.
-
-Body:
-- Simplified athletic proportions.
-- Neutral standing pose.
-
-Clothes:
-- Preserve clothing colors when possible.
-- Simplify clothing details.
-- Remove logos, text and brands.
-
-Style:
-- Cute
-- Modern
-- Friendly
-- Duolingo-level mascot quality
-- Mobile application illustration
-- Pixar-inspired
-- Soft lighting
-- High quality
-- Premium icon style
-
-Output:
-Generate only one avatar.
-Transparent PNG.
-1024x1024.`;
-
 export interface GenerateAvatarInput {
-  imageBase64: string; // без data: префікса
+  imageBase64: string;
   imageMimeType?: string;
   apiKey?: string;
 }
@@ -71,34 +18,36 @@ export interface GenerateAvatarInput {
 function mapGeminiError(err: unknown, model: string): never {
   const msg = err instanceof Error ? err.message : "Помилка запиту до Gemini";
   if (/429|quota|RESOURCE_EXHAUSTED|rate limit/i.test(msg)) {
-    throw new GeminiError(
+    throw new AiError(
       "Вичерпано квоту Gemini для цього ключа. Перевірте план/білінг або спробуйте пізніше.",
       429,
     );
   }
   if (/API[_ ]?KEY|API key|invalid.*key|permission|PERMISSION_DENIED|\b401\b|\b403\b/i.test(msg)) {
-    throw new GeminiError("Невірний або недоступний GEMINI_API_KEY", 401);
+    throw new AiError("Невірний або недоступний GEMINI_API_KEY", 401);
   }
   if (/no longer available|\b404\b|not found|not supported/i.test(msg)) {
-    throw new GeminiError(
+    throw new AiError(
       `Модель зображень "${model}" недоступна для цього ключа. Змініть GEMINI_IMAGE_MODEL у .env.`,
       502,
     );
   }
   if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|network/i.test(msg)) {
-    throw new GeminiError(
+    throw new AiError(
       "Немає з'єднання з Gemini. Перевірте мережу та спробуйте ще раз.",
       503,
     );
   }
-  throw new GeminiError(msg);
+  throw new AiError(msg);
 }
 
-/** Стискає PNG/JPEG до квадрата ≤512 для зберігання в БД. */
 async function compressAvatarPng(rawBase64: string): Promise<string> {
   const buf = Buffer.from(rawBase64, "base64");
   const out = await sharp(buf)
-    .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(512, 512, {
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
     .png({ compressionLevel: 8 })
     .toBuffer();
   return `data:image/png;base64,${out.toString("base64")}`;
@@ -130,22 +79,18 @@ function extractInlineImage(response: {
   return null;
 }
 
-/**
- * Генерує мультяшний аватар з фото користувача.
- * Повертає data-URL PNG (стиснутий до 512×512).
- */
-export async function generateMascotAvatar(
+async function generateMascotAvatarGemini(
   input: GenerateAvatarInput,
 ): Promise<string> {
   const apiKey = input.apiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    throw new GeminiError(
+    throw new AiError(
       "Не задано GEMINI_API_KEY. Додайте ключ у налаштуваннях або в .env",
       400,
     );
   }
   if (!input.imageBase64?.trim()) {
-    throw new GeminiError("Потрібне фото для аватара", 400);
+    throw new AiError("Потрібне фото для аватара", 400);
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -177,7 +122,7 @@ export async function generateMascotAvatar(
 
   const image = extractInlineImage(response);
   if (!image) {
-    throw new GeminiError(
+    throw new AiError(
       "Gemini не повернув зображення. Спробуйте інше фото або пізніше.",
       502,
     );
@@ -186,10 +131,35 @@ export async function generateMascotAvatar(
   try {
     return await compressAvatarPng(image.data);
   } catch {
-    // Якщо sharp не зміг — повертаємо як є
     const mime = image.mimeType.startsWith("image/")
       ? image.mimeType
       : "image/png";
     return `data:${mime};base64,${image.data}`;
+  }
+}
+
+/** Gemini → при помилці GPT (якщо є GPT_API_KEY). */
+export async function generateMascotAvatar(
+  input: GenerateAvatarInput,
+): Promise<string> {
+  if (!input.imageBase64?.trim()) {
+    throw new AiError("Потрібне фото для аватара", 400);
+  }
+
+  try {
+    return await generateMascotAvatarGemini(input);
+  } catch (geminiErr) {
+    if (!gptApiKey()) throw geminiErr;
+    try {
+      console.warn(
+        "[avatar] Gemini failed, falling back to OpenAI:",
+        geminiErr instanceof Error ? geminiErr.message : geminiErr,
+      );
+      return await generateMascotAvatarOpenAI(input);
+    } catch (gptErr) {
+      const g = geminiErr instanceof Error ? geminiErr.message : "Gemini error";
+      const o = gptErr instanceof Error ? gptErr.message : "GPT error";
+      throw new AiError(`Gemini: ${g} | GPT: ${o}`, 502);
+    }
   }
 }

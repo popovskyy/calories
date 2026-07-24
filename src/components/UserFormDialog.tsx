@@ -52,7 +52,7 @@ const empty: FormState = {
 
 const segmentBtn = (active: boolean) =>
   cn(
-    "flex-1 rounded-[var(--radius-md)] px-3 py-2.5 text-[13px] font-semibold transition-colors",
+    "flex-1 rounded-[var(--radius-md)] px-3 py-2.5 text-[15px] font-semibold transition-colors",
     active
       ? "bg-[var(--color-accent)] text-[#f5f4ff]"
       : "bg-[var(--color-tile)] text-[var(--color-muted2)] hover:text-[var(--color-text)]",
@@ -207,10 +207,10 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-4 py-4">
           <Avatar name={form.name || "?"} avatarUrl={avatarUrl} size={88} />
           <div className="text-center">
-            <div className="text-[13px] font-semibold text-[var(--color-text)]">
+            <div className="text-[15px] font-semibold text-[var(--color-text)]">
               Мультяшний аватар
             </div>
-            <div className="mt-0.5 text-[12px] text-[var(--color-muted3)]">
+            <div className="mt-0.5 text-[14px] text-[var(--color-muted3)]">
               Завантажте селфі — Gemini намалює маскота
             </div>
           </div>
@@ -257,7 +257,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
           {!avatarUrl ? (
             <button
               type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[var(--color-muted2)] px-3 py-3 text-[13px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent-300)]"
+              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[var(--color-muted2)] px-3 py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent-300)]"
               disabled={generating}
               onClick={() => fileRef.current?.click()}
             >
@@ -371,25 +371,25 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         </div>
 
         <div className="rounded-[var(--radius-lg)] border border-[var(--color-accent-800)] bg-[var(--color-tile)] px-4 py-3.5">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--color-accent-300)]">
+          <div className="text-[14px] font-semibold uppercase tracking-[0.08em] text-[var(--color-accent-300)]">
             Ваша норма
           </div>
           {preview ? (
             <>
-              <div className="mt-1 text-[28px] font-semibold tabular-nums text-[var(--color-text)]">
+              <div className="mt-1 text-[30px] font-semibold tabular-nums text-[var(--color-text)]">
                 {preview.targetCalories.toLocaleString("uk-UA")}
-                <span className="ml-1.5 text-[14px] font-medium text-[var(--color-muted3)]">
+                <span className="ml-1.5 text-[16px] font-medium text-[var(--color-muted3)]">
                   ккал/день
                 </span>
               </div>
-              <div className="mt-1 text-[12px] text-[var(--color-muted3)]">
+              <div className="mt-1 text-[14px] text-[var(--color-muted3)]">
                 {preview.age} р · BMR {preview.bmr.toLocaleString("uk-UA")} · TDEE{" "}
                 {preview.tdee.toLocaleString("uk-UA")}
                 {form.goal === "deficit" ? " · −15%" : ""}
               </div>
             </>
           ) : (
-            <div className="mt-1 text-[14px] text-[var(--color-muted3)]">
+            <div className="mt-1 text-[16px] text-[var(--color-muted3)]">
               Заповніть дані, щоб побачити норму
             </div>
           )}

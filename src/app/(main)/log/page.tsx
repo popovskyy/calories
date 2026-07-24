@@ -45,9 +45,9 @@ export default function LogPage() {
 
       <section className="mcard p-[15px_16px]">
         <div className="mb-2.5 flex items-center justify-between">
-          <span className="text-[13px] text-[var(--color-muted)]">Спожито за день</span>
+          <span className="text-[15px] text-[var(--color-muted)]">Спожито за день</span>
           <span
-            className="text-[13px] font-semibold"
+            className="text-[15px] font-semibold"
             style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
           >
             {Math.round(pct * 100)}%
