@@ -1,0 +1,143 @@
+import {
+  GoogleGenerativeAI,
+  SchemaType,
+  type ResponseSchema,
+} from "@google/generative-ai";
+import type { AnalyzeResult } from "./types";
+
+/** Модель можна перевизначити через env; дефолт — актуальний flash */
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+
+const SYSTEM_PROMPT = `Ти — нутриціолог-аналітик. За текстовим описом та/або фото страви оціни харчову цінність.
+Відповідай СУВОРО у JSON за схемою. Правила:
+- calories — сумарна калорійність усієї страви (ккал, ціле число).
+- protein, fats, carbs — грами білків, жирів і вуглеводів (цілі числа).
+- parsedItems — короткий список розпізнаних складників з кількістю українською,
+  напр. ["2 × яйце", "100 г авокадо", "40 г хліба"].
+Оцінюй реалістично за звичайними довідковими значеннями. Якщо кількість не вказана — припусти типову порцію.`;
+
+const responseSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    calories: { type: SchemaType.NUMBER },
+    protein: { type: SchemaType.NUMBER },
+    fats: { type: SchemaType.NUMBER },
+    carbs: { type: SchemaType.NUMBER },
+    parsedItems: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+  },
+  required: ["calories", "protein", "fats", "carbs", "parsedItems"],
+};
+
+export interface AnalyzeInput {
+  description?: string;
+  imageBase64?: string; // без префікса data:
+  imageMimeType?: string; // напр. image/jpeg
+  apiKey?: string; // ключ із профілю (UI); фолбек — env
+}
+
+export class GeminiError extends Error {
+  status: number;
+  constructor(message: string, status = 502) {
+    super(message);
+    this.name = "GeminiError";
+    this.status = status;
+  }
+}
+
+const round = (n: unknown): number => {
+  const v = Math.round(Number(n));
+  return Number.isFinite(v) && v >= 0 ? v : 0;
+};
+
+export async function analyzeFood(input: AnalyzeInput): Promise<AnalyzeResult> {
+  const apiKey = input.apiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    throw new GeminiError(
+      "Не задано GEMINI_API_KEY. Додайте ключ у налаштуваннях або в .env",
+      400,
+    );
+  }
+
+  const description = input.description?.trim();
+  if (!description && !input.imageBase64) {
+    throw new GeminiError("Потрібен опис страви або фото", 400);
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: SYSTEM_PROMPT,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema,
+      temperature: 0.2,
+    },
+  });
+
+  const parts: Array<
+    { text: string } | { inlineData: { data: string; mimeType: string } }
+  > = [];
+  parts.push({
+    text: description
+      ? `Опис страви: ${description}`
+      : "Проаналізуй страву на фото.",
+  });
+  if (input.imageBase64) {
+    parts.push({
+      inlineData: {
+        data: input.imageBase64,
+        mimeType: input.imageMimeType || "image/jpeg",
+      },
+    });
+  }
+
+  let text: string;
+  try {
+    const result = await model.generateContent(parts);
+    text = result.response.text();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Помилка запиту до Gemini";
+    // Порядок важливий: спершу квота/аутентифікація, потім модель.
+    if (/429|quota|RESOURCE_EXHAUSTED|rate limit/i.test(msg)) {
+      throw new GeminiError(
+        "Вичерпано квоту Gemini для цього ключа. Перевірте план/білінг або спробуйте пізніше.",
+        429,
+      );
+    }
+    if (/API[_ ]?KEY|API key|invalid.*key|permission|PERMISSION_DENIED|\b401\b|\b403\b/i.test(msg)) {
+      throw new GeminiError("Невірний або недоступний GEMINI_API_KEY", 401);
+    }
+    if (/no longer available|\b404\b|not found/i.test(msg)) {
+      throw new GeminiError(
+        `Модель "${MODEL}" недоступна для цього ключа. Змініть GEMINI_MODEL у .env.`,
+        502,
+      );
+    }
+    if (/fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|network/i.test(msg)) {
+      throw new GeminiError("Немає з'єднання з Gemini. Перевірте мережу та спробуйте ще раз.", 503);
+    }
+    throw new GeminiError(msg);
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new GeminiError("Gemini повернув некоректний JSON");
+  }
+
+  const items = Array.isArray(parsed.parsedItems)
+    ? parsed.parsedItems.map((s) => String(s)).filter(Boolean)
+    : [];
+
+  return {
+    calories: round(parsed.calories),
+    protein: round(parsed.protein),
+    fats: round(parsed.fats),
+    carbs: round(parsed.carbs),
+    parsedItems: items,
+  };
+}

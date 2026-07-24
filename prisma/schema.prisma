@@ -1,0 +1,39 @@
+// Калькулятор калорій — Prisma schema
+// Дані ізольовані в Postgres-схемі "calories" на спільній Neon-базі,
+// щоб не зачіпати таблиці іншого проєкту (див. CALORIES_DATABASE_URL у .env).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("CALORIES_DATABASE_URL")
+  directUrl = env("CALORIES_DIRECT_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  targetCalories Int // базова денна норма калорій
+  age            Int       @default(30)
+  weight         Float     @default(70)
+  height         Float     @default(175)
+  meals          MealLog[]
+}
+
+model MealLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        String // YYYY-MM-DD
+  description String
+  calories    Int
+  protein     Int
+  fats        Int
+  carbs       Int
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, date])
+}

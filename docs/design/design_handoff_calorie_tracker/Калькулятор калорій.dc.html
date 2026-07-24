@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/nocturne-3263bd1f-d0fc-4bcf-a15a-7017b34d0fc5/styles.css">
+<script src="_ds/nocturne-3263bd1f-d0fc-4bcf-a15a-7017b34d0fc5/_ds_bundle.js"></script>
+<style>
+  body { background:#0f111c; }
+  .scr { width:390px; flex:0 0 390px; background:var(--color-bg); border-radius:28px; box-shadow:var(--shadow-md); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .scr-body { padding:20px 18px 24px; display:flex; flex-direction:column; gap:16px; overflow:hidden; }
+  .statusbar { display:flex; justify-content:space-between; align-items:center; padding:12px 20px 0; font-size:12px; font-weight:600; color:var(--color-text); letter-spacing:.02em; }
+  .mcard { background:var(--color-surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); }
+  .ico { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; display:block; }
+  .lbl { font-size:12px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:#75798c; }
+  ::selection { background:color-mix(in srgb, var(--color-accent) 32%, transparent); }
+</style>
+</helmet>
+
+<div style="display:flex; gap:44px; padding:56px 60px; align-items:flex-start; font-family:var(--font-body);">
+
+  <!-- ══════════ SCREEN 1 — DASHBOARD ══════════ -->
+  <div style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:baseline; gap:10px;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#75798c;">01</span>
+      <span style="font-size:15px; color:#b2b6ca;">Дашборд</span>
+    </div>
+    <div class="scr" style="height:812px;">
+      <div class="statusbar"><span>9:41</span><span style="display:flex; gap:5px; align-items:center;">
+        <svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M2 20h.01M6 20v-4M10 20V12M14 20V8M18 20V4"/></svg>
+        <svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01"/></svg>
+        <svg class="ico" style="width:22px;height:16px" viewBox="0 0 26 16"><rect x="1" y="3" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="3" y="5" width="14" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M23 6v4"/></svg>
+      </span></div>
+
+      <div class="scr-body" style="overflow-y:auto;">
+        <!-- header: profile switcher + settings -->
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:10px; background:var(--color-surface); padding:6px 8px 6px 6px; border-radius:999px; box-shadow:var(--shadow-sm);">
+            <div style="width:32px; height:32px; border-radius:999px; background:linear-gradient(135deg,#5d5294,#968ae0); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:#f5f4ff;">О</div>
+            <div style="line-height:1.1;">
+              <div style="font-size:14px; font-weight:600;">Олег</div>
+              <div style="font-size:11px; color:#75798c;">Ціль 2000 ккал</div>
+            </div>
+            <svg class="ico" style="width:16px;height:16px;color:#9397ab;margin-left:2px" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <button style="width:40px; height:40px; border-radius:999px; background:transparent; border:1px solid var(--color-divider); color:#b2b6ca; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+            <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.31.22.65.22 1z"/></svg>
+          </button>
+        </div>
+
+        <!-- ring card -->
+        <div class="mcard" style="padding:22px 20px; display:flex; flex-direction:column; align-items:center; gap:8px;">
+          <div style="align-self:flex-start; display:flex; justify-content:space-between; width:100%;">
+            <span class="lbl">Сьогодні · Нд, 24 лип</span>
+            <span class="tag tag-accent" style="font-size:11px;">Дефіцит</span>
+          </div>
+          <div style="position:relative; width:200px; height:200px; margin:6px 0 2px;">
+            <svg width="200" height="200" viewBox="0 0 200 200" style="transform:rotate(-90deg);">
+              <circle cx="100" cy="100" r="86" fill="none" stroke="#2b2d3a" stroke-width="16"/>
+              <circle cx="100" cy="100" r="86" fill="none" stroke="url(#ring)" stroke-width="16" stroke-linecap="round" stroke-dasharray="540.4" stroke-dashoffset="156.7"/>
+              <defs><linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b5abfc"/><stop offset="1" stop-color="#796cbf"/></linearGradient></defs>
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+              <div style="font-size:44px; font-weight:600; line-height:1; letter-spacing:-.02em;">1420</div>
+              <div style="font-size:13px; color:#75798c;">із 2000 ккал</div>
+              <div style="margin-top:6px; font-size:12px; color:#6bbf8a; font-weight:600;">Залишилось 580</div>
+            </div>
+          </div>
+          <div style="display:flex; width:100%; gap:10px;">
+            <div style="flex:1; text-align:center; padding:8px 0; border-radius:var(--radius-md); background:#1c1e2b;">
+              <div style="font-size:11px; color:#75798c;">Білки</div><div style="font-size:16px; font-weight:600;">84 г</div>
+            </div>
+            <div style="flex:1; text-align:center; padding:8px 0; border-radius:var(--radius-md); background:#1c1e2b;">
+              <div style="font-size:11px; color:#75798c;">Жири</div><div style="font-size:16px; font-weight:600;">38 г</div>
+            </div>
+            <div style="flex:1; text-align:center; padding:8px 0; border-radius:var(--radius-md); background:#1c1e2b;">
+              <div style="font-size:11px; color:#75798c;">Вуглев.</div><div style="font-size:16px; font-weight:600;">166 г</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- weekly bar chart -->
+        <div class="mcard" style="padding:18px 18px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;">
+            <span class="lbl">Останні 7 днів</span>
+            <span style="font-size:12px; color:#75798c;">ціль 2000</span>
+          </div>
+          <div style="position:relative; height:132px;">
+            <div style="position:absolute; left:0; right:0; bottom:100px; border-top:1px dashed #595d6c; z-index:2;"></div>
+            <div style="position:absolute; right:0; bottom:102px; font-size:10px; color:#75798c;">2000</div>
+            <div style="display:flex; align-items:flex-end; gap:9px; height:120px;">
+              <div style="flex:1; height:92px; background:linear-gradient(#6bbf8a,#4f9d6e); border-radius:5px 5px 3px 3px;"></div>
+              <div style="flex:1; height:108px; background:linear-gradient(#e0808c,#c05f6c); border-radius:5px 5px 3px 3px;"></div>
+              <div style="flex:1; height:86px; background:linear-gradient(#6bbf8a,#4f9d6e); border-radius:5px 5px 3px 3px;"></div>
+              <div style="flex:1; height:99px; background:linear-gradient(#6bbf8a,#4f9d6e); border-radius:5px 5px 3px 3px;"></div>
+              <div style="flex:1; height:116px; background:linear-gradient(#e0808c,#c05f6c); border-radius:5px 5px 3px 3px;"></div>
+              <div style="flex:1; height:102px; background:linear-gradient(#e0808c,#c05f6c); border-radius:5px 5px 3px 3px;"></div>
+              <div style="flex:1; height:71px; background:linear-gradient(#b5abfc,#796cbf); border-radius:5px 5px 3px 3px; outline:2px solid #b5abfc; outline-offset:1px;"></div>
+            </div>
+          </div>
+          <div style="display:flex; gap:9px; margin-top:8px;">
+            <div style="flex:1; text-align:center; font-size:11px; color:#75798c;">Пн</div>
+            <div style="flex:1; text-align:center; font-size:11px; color:#75798c;">Вт</div>
+            <div style="flex:1; text-align:center; font-size:11px; color:#75798c;">Ср</div>
+            <div style="flex:1; text-align:center; font-size:11px; color:#75798c;">Чт</div>
+            <div style="flex:1; text-align:center; font-size:11px; color:#75798c;">Пт</div>
+            <div style="flex:1; text-align:center; font-size:11px; color:#75798c;">Сб</div>
+            <div style="flex:1; text-align:center; font-size:11px; color:#e9e9ed; font-weight:600;">Нд</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- bottom nav -->
+      <div style="display:flex; padding:10px 30px 26px; border-top:1px solid var(--color-divider); background:var(--color-bg);">
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--color-accent);">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10"/></svg><span style="font-size:10px; font-weight:600;">Огляд</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:#75798c;">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span style="font-size:10px;">Журнал</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:#75798c;">
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 16 0v1"/></svg><span style="font-size:10px;">Профіль</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 2 — DAY LOG ══════════ -->
+  <div style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:baseline; gap:10px;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#75798c;">02</span>
+      <span style="font-size:15px; color:#b2b6ca;">Журнал за день</span>
+    </div>
+    <div class="scr" style="height:812px;">
+      <div class="statusbar"><span>9:41</span><span style="display:flex; gap:5px; align-items:center;">
+        <svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M2 20h.01M6 20v-4M10 20V12M14 20V8M18 20V4"/></svg>
+        <svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01"/></svg>
+        <svg class="ico" style="width:22px;height:16px" viewBox="0 0 26 16"><rect x="1" y="3" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="3" y="5" width="14" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M23 6v4"/></svg>
+      </span></div>
+
+      <div class="scr-body" style="overflow-y:auto;">
+        <!-- day selector -->
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <button style="width:36px;height:36px;border-radius:999px;background:var(--color-surface);border:none;color:#b2b6ca;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-sm);"><svg class="ico" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div style="text-align:center;">
+            <div style="font-size:19px; font-weight:600;">Неділя, 24 лип</div>
+            <div style="font-size:12px; color:#75798c;">Олег · 1420 / 2000 ккал</div>
+          </div>
+          <button style="width:36px;height:36px;border-radius:999px;background:var(--color-surface);border:none;color:#b2b6ca;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-sm);"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+
+        <!-- progress strip -->
+        <div class="mcard" style="padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; justify-content:space-between; font-size:13px;">
+            <span style="color:#b2b6ca;">Спожито сьогодні</span>
+            <span style="color:#6bbf8a; font-weight:600;">71%</span>
+          </div>
+          <div style="height:8px; border-radius:999px; background:#1c1e2b; overflow:hidden;">
+            <div style="width:71%; height:100%; border-radius:999px; background:linear-gradient(90deg,#796cbf,#b5abfc);"></div>
+          </div>
+        </div>
+
+        <!-- meal cards -->
+        <div style="display:flex; flex-direction:column; gap:12px;">
+
+          <div class="mcard" style="padding:15px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+              <div>
+                <div style="font-size:11px; color:var(--color-accent-300); font-weight:600; letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px;">Сніданок · 08:20</div>
+                <div style="font-size:15px; font-weight:600; line-height:1.3;">Вівсянка з бананом та горіхами</div>
+              </div>
+              <div style="text-align:right; flex-shrink:0;">
+                <div style="font-size:18px; font-weight:600;">420</div>
+                <div style="font-size:11px; color:#75798c;">ккал</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:14px; margin-top:12px; font-size:12px; color:#9397ab;">
+              <span>Б <b style="color:#e9e9ed">12</b></span><span>Ж <b style="color:#e9e9ed">14</b></span><span>В <b style="color:#e9e9ed">58</b></span>
+              <button style="margin-left:auto; background:none; border:none; color:#75798c; display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;"><svg class="ico" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+            </div>
+          </div>
+
+          <div class="mcard" style="padding:15px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+              <div>
+                <div style="font-size:11px; color:var(--color-accent-300); font-weight:600; letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px;">Обід · 13:05</div>
+                <div style="font-size:15px; font-weight:600; line-height:1.3;">Куряча грудка, рис, овочі</div>
+              </div>
+              <div style="text-align:right; flex-shrink:0;">
+                <div style="font-size:18px; font-weight:600;">610</div>
+                <div style="font-size:11px; color:#75798c;">ккал</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:14px; margin-top:12px; font-size:12px; color:#9397ab;">
+              <span>Б <b style="color:#e9e9ed">48</b></span><span>Ж <b style="color:#e9e9ed">12</b></span><span>В <b style="color:#e9e9ed">66</b></span>
+              <button style="margin-left:auto; background:none; border:none; color:#75798c; display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;"><svg class="ico" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+            </div>
+          </div>
+
+          <div class="mcard" style="padding:15px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+              <div>
+                <div style="font-size:11px; color:var(--color-accent-300); font-weight:600; letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px;">Перекус · 16:40</div>
+                <div style="font-size:15px; font-weight:600; line-height:1.3;">Грецький йогурт з ягодами</div>
+              </div>
+              <div style="text-align:right; flex-shrink:0;">
+                <div style="font-size:18px; font-weight:600;">190</div>
+                <div style="font-size:11px; color:#75798c;">ккал</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:14px; margin-top:12px; font-size:12px; color:#9397ab;">
+              <span>Б <b style="color:#e9e9ed">16</b></span><span>Ж <b style="color:#e9e9ed">4</b></span><span>В <b style="color:#e9e9ed">22</b></span>
+              <button style="margin-left:auto; background:none; border:none; color:#75798c; display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;"><svg class="ico" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+            </div>
+          </div>
+
+          <div class="mcard" style="padding:15px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+              <div>
+                <div style="font-size:11px; color:var(--color-accent-300); font-weight:600; letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px;">Напій · 17:15</div>
+                <div style="font-size:15px; font-weight:600; line-height:1.3;">Кава з молоком</div>
+              </div>
+              <div style="text-align:right; flex-shrink:0;">
+                <div style="font-size:18px; font-weight:600;">200</div>
+                <div style="font-size:11px; color:#75798c;">ккал</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:14px; margin-top:12px; font-size:12px; color:#9397ab;">
+              <span>Б <b style="color:#e9e9ed">8</b></span><span>Ж <b style="color:#e9e9ed">8</b></span><span>В <b style="color:#e9e9ed">20</b></span>
+              <button style="margin-left:auto; background:none; border:none; color:#75798c; display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;"><svg class="ico" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAB add -->
+      <button style="position:absolute; right:20px; bottom:96px; width:56px; height:56px; border-radius:999px; border:none; background:linear-gradient(135deg,#968ae0,#5d5294); color:#f5f4ff; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 22px rgba(93,82,148,.55); cursor:pointer;">
+        <svg class="ico" style="width:26px;height:26px;stroke-width:2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+
+      <div style="display:flex; padding:10px 30px 26px; border-top:1px solid var(--color-divider); background:var(--color-bg);">
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:#75798c;">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10"/></svg><span style="font-size:10px;">Огляд</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--color-accent);">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span style="font-size:10px; font-weight:600;">Журнал</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:#75798c;">
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 16 0v1"/></svg><span style="font-size:10px;">Профіль</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 3 — ADD FOOD (AI) ══════════ -->
+  <div style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:baseline; gap:10px;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#75798c;">03</span>
+      <span style="font-size:15px; color:#b2b6ca;">Додати їжу · ШІ-аналіз</span>
+    </div>
+    <div class="scr" style="height:812px;">
+      <div class="statusbar"><span>9:41</span><span style="display:flex; gap:5px; align-items:center;">
+        <svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M2 20h.01M6 20v-4M10 20V12M14 20V8M18 20V4"/></svg>
+        <svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01"/></svg>
+        <svg class="ico" style="width:22px;height:16px" viewBox="0 0 26 16"><rect x="1" y="3" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="3" y="5" width="14" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M23 6v4"/></svg>
+      </span></div>
+
+      <div class="scr-body" style="overflow-y:auto;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button style="width:36px;height:36px;border-radius:999px;background:var(--color-surface);border:none;color:#b2b6ca;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-sm);"><svg class="ico" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <h4 style="margin:0; font-size:20px;">Новий прийом їжі</h4>
+        </div>
+
+        <!-- text input -->
+        <div>
+          <div class="lbl" style="margin-bottom:8px;">Опишіть страву</div>
+          <div style="background:var(--color-surface); border:1px solid var(--color-divider); border-radius:var(--radius-md); padding:12px 14px; font-size:14px; color:#e9e9ed; min-height:74px; line-height:1.5;">2 яйця, 100 г авокадо, шматок цільнозернового хліба</div>
+        </div>
+
+        <!-- photo -->
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1; border:1px dashed #595d6c; border-radius:var(--radius-md); padding:14px 0; display:flex; flex-direction:column; align-items:center; gap:6px; color:#9397ab; cursor:pointer;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M23 19V8a2 2 0 0 0-2-2h-3l-2-3H9L7 6H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h17a2 2 0 0 0 2-2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span style="font-size:12px;">Зробити фото</span>
+          </div>
+          <div style="flex:1; border:1px dashed #595d6c; border-radius:var(--radius-md); padding:14px 0; display:flex; flex-direction:column; align-items:center; gap:6px; color:#9397ab; cursor:pointer;">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <span style="font-size:12px;">Завантажити</span>
+          </div>
+        </div>
+
+        <!-- AI result state -->
+        <div class="mcard" style="padding:16px; border:1px solid var(--color-accent-800);">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+            <svg class="ico" style="width:18px;height:18px;color:var(--color-accent)" viewBox="0 0 24 24"><path d="M12 3l1.9 4.7L19 9l-4.5 2.2L12 16l-2.5-4.8L5 9l5.1-1.3z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+            <span style="font-size:13px; font-weight:600; color:var(--color-accent-200);">Розпізнано з опису</span>
+            <span class="tag tag-accent" style="margin-left:auto; font-size:10px;">Gemini</span>
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;">
+            <span class="tag tag-outline" style="font-size:11px;">2 × яйце</span>
+            <span class="tag tag-outline" style="font-size:11px;">100 г авокадо</span>
+            <span class="tag tag-outline" style="font-size:11px;">40 г хліба</span>
+          </div>
+
+          <div style="text-align:center; margin-bottom:16px;">
+            <div style="font-size:40px; font-weight:600; line-height:1; letter-spacing:-.02em;">468</div>
+            <div style="font-size:12px; color:#75798c; margin-top:2px;">ккал усього</div>
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1; text-align:center; padding:10px 0; border-radius:var(--radius-md); background:#1c1e2b;">
+              <div style="font-size:11px; color:#75798c;">Білки</div><div style="font-size:17px; font-weight:600;">21 г</div>
+              <div style="height:4px; margin:6px 8px 0; border-radius:999px; background:#6bbf8a;"></div>
+            </div>
+            <div style="flex:1; text-align:center; padding:10px 0; border-radius:var(--radius-md); background:#1c1e2b;">
+              <div style="font-size:11px; color:#75798c;">Жири</div><div style="font-size:17px; font-weight:600;">34 г</div>
+              <div style="height:4px; margin:6px 8px 0; border-radius:999px; background:#e0c06b;"></div>
+            </div>
+            <div style="flex:1; text-align:center; padding:10px 0; border-radius:var(--radius-md); background:#1c1e2b;">
+              <div style="font-size:11px; color:#75798c;">Вуглев.</div><div style="font-size:17px; font-weight:600;">24 г</div>
+              <div style="height:4px; margin:6px 8px 0; border-radius:999px; background:#8fa4e0;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- sticky action -->
+      <div style="padding:14px 18px 26px; border-top:1px solid var(--color-divider); background:var(--color-bg); display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-primary btn-block" style="justify-content:center; font-size:15px; padding:13px;">Зберегти в журнал</button>
+        <button class="btn btn-ghost btn-block" style="justify-content:center; font-size:13px; color:#9397ab;">Перерахувати</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
