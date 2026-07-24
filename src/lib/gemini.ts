@@ -148,6 +148,24 @@ export async function analyzeFood(input: AnalyzeInput): Promise<AnalyzeResult> {
     throw new AiError("Потрібен опис страви або фото", 400);
   }
 
+  const preferGpt = process.env.AI_PROVIDER?.trim().toLowerCase() === "openai";
+
+  if (preferGpt && gptApiKey()) {
+    try {
+      return await analyzeFoodOpenAI(input);
+    } catch (gptErr) {
+      console.warn(
+        "[analyzeFood] OpenAI failed, falling back to Gemini:",
+        gptErr instanceof Error ? gptErr.message : gptErr,
+      );
+      try {
+        return await analyzeFoodGemini(input);
+      } catch (geminiErr) {
+        throw bothFailed(gptErr, geminiErr);
+      }
+    }
+  }
+
   try {
     return await analyzeFoodGemini(input);
   } catch (geminiErr) {
@@ -160,9 +178,16 @@ export async function analyzeFood(input: AnalyzeInput): Promise<AnalyzeResult> {
       );
       return await analyzeFoodOpenAI(input);
     } catch (gptErr) {
-      const g = geminiErr instanceof Error ? geminiErr.message : "Gemini error";
-      const o = gptErr instanceof Error ? gptErr.message : "GPT error";
-      throw new AiError(`Gemini: ${g} | GPT: ${o}`, 502);
+      throw bothFailed(geminiErr, gptErr);
     }
   }
+}
+
+function bothFailed(a: unknown, b: unknown): AiError {
+  const first = a instanceof Error ? a.message : "помилка";
+  const second = b instanceof Error ? b.message : "помилка";
+  return new AiError(
+    `Обидва ШІ недоступні. ${first} Також запасний: ${second}`,
+    502,
+  );
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/Avatar";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { Modal } from "@/components/ui/Dialog";
 import { Field, inputClass } from "@/components/ui/Field";
 import { useGenerateAvatar, useSaveUser } from "@/hooks/useQueries";
@@ -17,6 +18,7 @@ import {
   type Goal,
   type Sex,
 } from "@/lib/calories";
+import { isPresetAvatar } from "@/lib/avatar-presets";
 import type { UserDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -84,6 +86,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
   const [form, setForm] = useState<FormState>(empty);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarDirty, setAvatarDirty] = useState(false);
+  const [showPhoto, setShowPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -204,66 +207,77 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       description={undefined}
     >
       <form onSubmit={submit} className="flex flex-col gap-3.5">
-        <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-4 py-4">
+        <div className="flex flex-col items-center gap-3">
           <Avatar name={form.name || "?"} avatarUrl={avatarUrl} size={88} />
-          <div className="text-center">
-            <div className="text-[15px] font-semibold text-[var(--color-text)]">
-              Мультяшний аватар
-            </div>
-            <div className="mt-0.5 text-[14px] text-[var(--color-muted3)]">
-              Завантажте селфі — Gemini намалює маскота
-            </div>
-          </div>
-          <div className="flex w-full gap-2">
+          <AvatarPicker
+            value={isPresetAvatar(avatarUrl) ? avatarUrl : null}
+            onChange={(url) => {
+              setAvatarUrl(url);
+              setAvatarDirty(true);
+            }}
+          />
+          <div className="w-full rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-3 py-3">
             <button
               type="button"
-              className="btn btn-ghost flex-1"
-              disabled={generating}
-              onClick={() => fileRef.current?.click()}
+              className="flex w-full items-center justify-between text-left text-[14px] font-medium text-[var(--color-muted2)]"
+              onClick={() => setShowPhoto((v) => !v)}
             >
-              {generating ? (
-                <>
-                  <Sparkles size={16} className="animate-pulse" /> Малюємо…
-                </>
-              ) : (
-                <>
-                  <Camera size={16} /> {avatarUrl ? "Нове фото" : "Фото"}
-                </>
-              )}
+              <span>Або з селфі (ШІ)</span>
+              <span className="text-[var(--color-muted3)]">{showPhoto ? "▴" : "▾"}</span>
             </button>
-            {avatarUrl ? (
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled={generating}
-                aria-label="Прибрати аватар"
-                onClick={() => {
-                  setAvatarUrl(null);
-                  setAvatarDirty(true);
-                }}
-              >
-                <Trash2 size={16} />
-              </button>
+            {showPhoto ? (
+              <div className="mt-3 flex flex-col items-center gap-2">
+                <div className="flex w-full gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-ghost flex-1"
+                    disabled={generating}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    {generating ? (
+                      <>
+                        <Sparkles size={16} className="animate-pulse" /> Малюємо…
+                      </>
+                    ) : (
+                      <>
+                        <Camera size={16} /> Фото
+                      </>
+                    )}
+                  </button>
+                  {avatarUrl && !isPresetAvatar(avatarUrl) ? (
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      disabled={generating}
+                      aria-label="Прибрати аватар"
+                      onClick={() => {
+                        setAvatarUrl(null);
+                        setAvatarDirty(true);
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  ) : null}
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  hidden
+                  onChange={onPickPhoto}
+                />
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[var(--color-muted2)] px-3 py-2.5 text-[14px] text-[var(--color-muted2)]"
+                  disabled={generating}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Upload size={16} /> Завантажити селфі
+                </button>
+              </div>
             ) : null}
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            capture="user"
-            hidden
-            onChange={onPickPhoto}
-          />
-          {!avatarUrl ? (
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[var(--color-muted2)] px-3 py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent-300)]"
-              disabled={generating}
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload size={16} /> Завантажити фото
-            </button>
-          ) : null}
         </div>
 
         <Field label="Ім'я">

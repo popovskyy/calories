@@ -132,7 +132,7 @@ export default function AddFoodPage() {
       </header>
 
       {/* Контент */}
-      <div className="no-scrollbar flex flex-1 flex-col gap-4 overflow-y-auto px-[18px] py-4">
+      <div className="no-scrollbar min-h-0 flex-1 flex flex-col gap-4 overflow-y-auto overscroll-contain px-[18px] py-4">
         <label className="flex flex-col gap-1.5">
           <span className="lbl">Опишіть страву</span>
           <textarea

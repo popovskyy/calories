@@ -138,7 +138,7 @@ async function generateMascotAvatarGemini(
   }
 }
 
-/** Gemini → при помилці GPT (якщо є GPT_API_KEY). */
+/** Gemini → при помилці GPT → якщо обидва впали — стиснуте оригінальне фото. */
 export async function generateMascotAvatar(
   input: GenerateAvatarInput,
 ): Promise<string> {
@@ -149,17 +149,26 @@ export async function generateMascotAvatar(
   try {
     return await generateMascotAvatarGemini(input);
   } catch (geminiErr) {
-    if (!gptApiKey()) throw geminiErr;
-    try {
+    if (gptApiKey()) {
+      try {
+        console.warn(
+          "[avatar] Gemini failed, falling back to OpenAI:",
+          geminiErr instanceof Error ? geminiErr.message : geminiErr,
+        );
+        return await generateMascotAvatarOpenAI(input);
+      } catch (gptErr) {
+        console.warn(
+          "[avatar] OpenAI images also failed, using original photo:",
+          gptErr instanceof Error ? gptErr.message : gptErr,
+        );
+      }
+    } else {
       console.warn(
-        "[avatar] Gemini failed, falling back to OpenAI:",
+        "[avatar] Gemini failed, no GPT_API_KEY — using original photo:",
         geminiErr instanceof Error ? geminiErr.message : geminiErr,
       );
-      return await generateMascotAvatarOpenAI(input);
-    } catch (gptErr) {
-      const g = geminiErr instanceof Error ? geminiErr.message : "Gemini error";
-      const o = gptErr instanceof Error ? gptErr.message : "GPT error";
-      throw new AiError(`Gemini: ${g} | GPT: ${o}`, 502);
     }
+    // Останній резерв: просто стиснути завантажене фото (без cartoon)
+    return compressAvatarPng(input.imageBase64);
   }
 }

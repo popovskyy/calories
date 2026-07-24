@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   let finalAvatar = avatarUrl ?? null;
   let avatarWarning: string | null = null;
-  if (!finalAvatar && imageBase64) {
+  if (imageBase64) {
     try {
       finalAvatar = await generateMascotAvatar({
         imageBase64,
@@ -80,7 +80,8 @@ export async function POST(req: NextRequest) {
           ? err.message
           : "Не вдалося згенерувати аватар";
       console.error("[register] avatar generation failed:", avatarWarning);
-      finalAvatar = null;
+      // лишаємо preset / попередній avatarUrl якщо був
+      finalAvatar = avatarUrl ?? null;
     }
   }
 

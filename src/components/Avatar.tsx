@@ -1,3 +1,7 @@
+"use client";
+
+import { PresetMascot } from "@/components/avatars/PresetMascot";
+import { parsePresetId } from "@/lib/avatar-presets";
 import { cn } from "@/lib/cn";
 
 export function Avatar({
@@ -5,13 +9,28 @@ export function Avatar({
   avatarUrl,
   size = 32,
   className,
+  animated = true,
 }: {
   name: string;
   avatarUrl?: string | null;
   size?: number;
   className?: string;
+  /** Idle-анімація для пресетів (вимкнути в дрібних списках) */
+  animated?: boolean;
 }) {
   const initial = (name.trim()[0] ?? "?").toUpperCase();
+  const presetId = parsePresetId(avatarUrl);
+
+  if (presetId) {
+    return (
+      <PresetMascot
+        id={presetId}
+        size={size}
+        animated={animated && size >= 40}
+        className={className}
+      />
+    );
+  }
 
   if (avatarUrl) {
     return (

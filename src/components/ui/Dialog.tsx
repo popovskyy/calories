@@ -27,15 +27,14 @@ export function Modal({
         <RD.Overlay className="dlg-overlay fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px]" />
         <RD.Content
           className={cn(
-            "dlg-content fixed left-1/2 top-1/2 z-50 w-[calc(100%-36px)] max-w-[384px]",
-            "-translate-x-1/2 -translate-y-1/2 outline-none",
-            "rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-5",
-            "shadow-[var(--shadow-card-lg)]",
+            "dlg-content fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-24px)] max-w-[400px]",
+            "max-h-[min(92dvh,720px)] -translate-x-1/2 -translate-y-1/2 flex-col outline-none",
+            "rounded-[var(--radius-lg)] bg-[var(--color-surface)] shadow-[var(--shadow-card-lg)]",
             className,
           )}
         >
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div>
+          <div className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-5">
+            <div className="min-w-0">
               <RD.Title className="text-[20px] font-semibold text-[var(--color-text)]">
                 {title}
               </RD.Title>
@@ -54,7 +53,11 @@ export function Modal({
               <X size={18} />
             </RD.Close>
           </div>
-          {children}
+          <div
+            className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(20px,env(safe-area-inset-bottom))]"
+          >
+            {children}
+          </div>
         </RD.Content>
       </RD.Portal>
     </RD.Root>

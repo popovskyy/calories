@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Camera, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { Field, inputClass } from "@/components/ui/Field";
 import { useLogin, useRegister } from "@/hooks/useQueries";
 import {
@@ -15,6 +16,7 @@ import {
   type Goal,
   type Sex,
 } from "@/lib/calories";
+import { toPresetUrl } from "@/lib/avatar-presets";
 import { cn } from "@/lib/cn";
 
 type Mode = "login" | "register";
@@ -67,6 +69,8 @@ export function AuthForm() {
   const [height, setHeight] = useState("175");
   const [photo, setPhoto] = useState<{ base64: string; mime: string } | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [avatarPreset, setAvatarPreset] = useState<string>(toPresetUrl("kiwi"));
+  const [showPhoto, setShowPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const preview = useMemo(() => {
@@ -132,16 +136,15 @@ export function AuthForm() {
         goal,
         weight: parseFloat(weight),
         height: parseFloat(height),
+        avatarUrl: avatarPreset,
         imageBase64: photo?.base64,
         imageMimeType: photo?.mime,
       });
       if (saved.avatarWarning) {
         toast.warning(
-          `Акаунт створено, але аватар не намалювався: ${saved.avatarWarning}. Можна спробувати знову в Профілі.`,
-          { duration: 8000 },
+          `Акаунт створено, але аватар з фото не намалювався. Обрано персонажа з бібліотеки.`,
+          { duration: 6000 },
         );
-      } else if (photo) {
-        toast.success("Акаунт і мультяшний аватар готові");
       } else {
         toast.success("Акаунт створено");
       }
@@ -153,7 +156,10 @@ export function AuthForm() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[420px] flex-col gap-4 px-[18px] py-8">
+    <div
+      className="mx-auto flex w-full max-w-[420px] flex-col gap-4 px-[18px] pt-6"
+      style={{ paddingBottom: "calc(28px + env(safe-area-inset-bottom, 0px))" }}
+    >
       <div>
         <h1 className="text-[30px] font-semibold tracking-tight text-[var(--color-text)]">
           Калорії
@@ -231,30 +237,58 @@ export function AuthForm() {
             />
           </Field>
 
-          <div className="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-4 py-4">
-            {photoPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={photoPreview}
-                alt="Фото"
-                className="h-20 w-20 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-surface)] text-[var(--color-muted3)]">
-                <Camera size={28} />
-              </div>
-            )}
-            <p className="text-center text-[14px] text-[var(--color-muted3)]">
-              Опційно: селфі → Gemini намалює мультяшний аватар
-            </p>
+          <AvatarPicker
+            value={photo ? null : avatarPreset}
+            onChange={(url) => {
+              setAvatarPreset(url);
+              setPhoto(null);
+              setPhotoPreview(null);
+            }}
+          />
+
+          <div className="rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-3 py-3">
             <button
               type="button"
-              className="btn btn-ghost"
-              onClick={() => fileRef.current?.click()}
+              className="flex w-full items-center justify-between text-left text-[14px] font-medium text-[var(--color-muted2)]"
+              onClick={() => setShowPhoto((v) => !v)}
             >
-              <Upload size={16} /> {photoPreview ? "Інше фото" : "Додати фото"}
+              <span>Або аватар з селфі (ШІ)</span>
+              <span className="text-[var(--color-muted3)]">{showPhoto ? "▴" : "▾"}</span>
             </button>
-            <input ref={fileRef} type="file" accept="image/*" capture="user" hidden onChange={onPhoto} />
+            {showPhoto ? (
+              <div className="mt-3 flex flex-col items-center gap-2">
+                {photoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photoPreview}
+                    alt="Фото"
+                    className="h-16 w-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-surface)] text-[var(--color-muted3)]">
+                    <Camera size={22} />
+                  </div>
+                )}
+                <p className="text-center text-[13px] text-[var(--color-muted3)]">
+                  Селфі → Gemini / GPT намалює маскота
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Upload size={16} /> {photoPreview ? "Інше фото" : "Додати фото"}
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  hidden
+                  onChange={onPhoto}
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-1.5">
