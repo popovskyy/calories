@@ -26,7 +26,6 @@ export default function AddFoodPage() {
   const router = useRouter();
   const { user } = useCurrentUser();
   const selectedDate = useAppStore((s) => s.selectedDate);
-  const apiKey = useAppStore((s) => s.geminiApiKey);
 
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<ImageState | null>(null);
@@ -62,7 +61,6 @@ export default function AddFoodPage() {
         description: description.trim() || undefined,
         imageBase64: image?.base64,
         imageMimeType: image?.mime,
-        apiKey: apiKey || undefined,
       },
       {
         onSuccess: (r) => setResult(r),
@@ -184,10 +182,7 @@ export default function AddFoodPage() {
       </div>
 
       {/* Панель дій */}
-      <div
-        className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pt-3.5"
-        style={{ paddingBottom: "calc(20px + env(safe-area-inset-bottom))" }}
-      >
+      <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-3.5 pt-3.5">
         {result ? (
           <>
             <button className="btn btn-primary btn-block" onClick={runSave} disabled={save.isPending}>

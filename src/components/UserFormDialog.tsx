@@ -8,7 +8,6 @@ import { AvatarPicker } from "@/components/AvatarPicker";
 import { Modal } from "@/components/ui/Dialog";
 import { Field, inputClass } from "@/components/ui/Field";
 import { useGenerateAvatar, useSaveUser } from "@/hooks/useQueries";
-import { useAppStore } from "@/store/useAppStore";
 import {
   ACTIVITY_LABELS,
   GOAL_LABELS,
@@ -82,7 +81,6 @@ async function readImageAsJpegBase64(file: File): Promise<{ base64: string; mime
 export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps) {
   const saveUser = useSaveUser();
   const generateAvatar = useGenerateAvatar();
-  const geminiApiKey = useAppStore((s) => s.geminiApiKey);
   const [form, setForm] = useState<FormState>(empty);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarDirty, setAvatarDirty] = useState(false);
@@ -152,7 +150,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       const res = await generateAvatar.mutateAsync({
         imageBase64: base64,
         imageMimeType: mime,
-        apiKey: geminiApiKey || undefined,
       });
       setAvatarUrl(res.avatarUrl);
       setAvatarDirty(true);

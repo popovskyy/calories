@@ -17,8 +17,7 @@ export function TabBar() {
 
   return (
     <nav
-      className="flex shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-2 pt-2.5"
-      style={{ paddingBottom: "calc(20px + env(safe-area-inset-bottom))" }}
+      className="flex shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-2 pb-2 pt-2.5"
     >
       {TABS.map(({ href, label, icon: Icon }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);

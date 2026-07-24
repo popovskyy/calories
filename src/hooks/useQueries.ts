@@ -18,11 +18,13 @@ import {
   register,
   saveMeal,
   saveUser,
+  updateMeal,
   type AnalyzeInput,
   type GenerateAvatarInput,
   type LoginInput,
   type RegisterInput,
   type SaveMealInput,
+  type UpdateMealInput,
   type UserInput,
 } from "@/lib/api";
 import type { MealDTO } from "@/lib/types";
@@ -144,6 +146,21 @@ export function useDeleteMeal(date: string) {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["arena"] });
+    },
+  });
+}
+
+export function useUpdateMeal(listDate: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateMealInput) => updateMeal(input),
+    onSuccess: (updated, vars) => {
+      const dates = new Set([listDate, updated.date, vars.date].filter(Boolean) as string[]);
+      for (const d of dates) {
+        qc.invalidateQueries({ queryKey: ["meals", d] });
+      }
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
     },

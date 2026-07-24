@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import type { MealDTO } from "@/lib/types";
 
 function kicker(createdAt: string): string {
@@ -15,11 +15,18 @@ function kicker(createdAt: string): string {
 interface MealCardProps {
   meal: MealDTO;
   index?: number;
+  onEdit: (meal: MealDTO) => void;
   onDelete: (id: string) => void;
   deleting?: boolean;
 }
 
-export function MealCard({ meal, index = 0, onDelete, deleting }: MealCardProps) {
+export function MealCard({
+  meal,
+  index = 0,
+  onEdit,
+  onDelete,
+  deleting,
+}: MealCardProps) {
   return (
     <motion.div
       layout
@@ -53,14 +60,26 @@ export function MealCard({ meal, index = 0, onDelete, deleting }: MealCardProps)
           <span> · В </span>
           <span className="text-[var(--color-text)]">{meal.carbs}</span>
         </div>
-        <button
-          onClick={() => onDelete(meal.id)}
-          disabled={deleting}
-          aria-label="Видалити"
-          className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-red)] disabled:opacity-50"
-        >
-          <Trash2 size={16} />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => onEdit(meal)}
+            disabled={deleting}
+            aria-label="Редагувати"
+            className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-accent)] disabled:opacity-50"
+          >
+            <Pencil size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(meal.id)}
+            disabled={deleting}
+            aria-label="Видалити"
+            className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-red)] disabled:opacity-50"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
     </motion.div>
   );

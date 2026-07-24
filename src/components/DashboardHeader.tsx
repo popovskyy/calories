@@ -1,14 +1,10 @@
 "use client";
 
-import { Settings } from "lucide-react";
-import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
-import { SettingsDialog } from "@/components/SettingsDialog";
 import { useCurrentUser } from "@/hooks/useQueries";
 
 export function DashboardHeader() {
   const { user } = useCurrentUser();
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div className="flex items-center justify-between">
@@ -25,16 +21,6 @@ export function DashboardHeader() {
           </span>
         </span>
       </div>
-
-      <button
-        onClick={() => setSettingsOpen(true)}
-        aria-label="Налаштування"
-        className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-divider)] text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)]"
-      >
-        <Settings size={20} />
-      </button>
-
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} user={user} />
     </div>
   );
 }

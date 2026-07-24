@@ -156,10 +156,7 @@ export function AuthForm() {
   };
 
   return (
-    <div
-      className="mx-auto flex w-full max-w-[420px] flex-col gap-4 px-[18px] pt-6"
-      style={{ paddingBottom: "calc(28px + env(safe-area-inset-bottom, 0px))" }}
-    >
+    <div className="mx-auto flex w-full max-w-[420px] flex-col gap-4 px-[18px] pb-6 pt-6">
       <div>
         <h1 className="text-[30px] font-semibold tracking-tight text-[var(--color-text)]">
           Калорії

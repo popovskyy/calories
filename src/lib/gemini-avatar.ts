@@ -85,7 +85,7 @@ async function generateMascotAvatarGemini(
   const apiKey = input.apiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
     throw new AiError(
-      "Не задано GEMINI_API_KEY. Додайте ключ у налаштуваннях або в .env",
+      "Не задано GEMINI_API_KEY у середовищі сервера",
       400,
     );
   }

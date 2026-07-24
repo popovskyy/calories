@@ -54,7 +54,7 @@ export function Modal({
             </RD.Close>
           </div>
           <div
-            className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(20px,env(safe-area-inset-bottom))]"
+            className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4"
           >
             {children}
           </div>

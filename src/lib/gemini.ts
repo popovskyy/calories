@@ -10,7 +10,7 @@ import { analyzeFoodOpenAI } from "@/lib/openai-food";
 export { AiError, GeminiError };
 
 /** Модель можна перевизначити через env; дефолт — актуальний flash */
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
 const SYSTEM_PROMPT = `Ти — нутриціолог-аналітик. За текстовим описом та/або фото страви оціни харчову цінність.
 Відповідай СУВОРО у JSON за схемою. Правила:
@@ -51,7 +51,7 @@ async function analyzeFoodGemini(input: AnalyzeInput): Promise<AnalyzeResult> {
   const apiKey = input.apiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
     throw new AiError(
-      "Не задано GEMINI_API_KEY. Додайте ключ у налаштуваннях або в .env",
+      "Не задано GEMINI_API_KEY у середовищі сервера",
       400,
     );
   }

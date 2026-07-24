@@ -1,17 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { DateSelector } from "@/components/DateSelector";
 import { ProgressBar } from "@/components/ProgressBar";
 import { MealCard } from "@/components/MealCard";
+import { EditMealDialog } from "@/components/EditMealDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useCurrentUser, useDeleteMeal, useMeals } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { useAppStore } from "@/store/useAppStore";
 import { shiftYMD } from "@/lib/date";
+import type { MealDTO } from "@/lib/types";
 
 export default function LogPage() {
   const mounted = useMounted();
@@ -20,6 +23,7 @@ export default function LogPage() {
   const setSelectedDate = useAppStore((s) => s.setSelectedDate);
   const meals = useMeals(selectedDate);
   const del = useDeleteMeal(selectedDate);
+  const [editMeal, setEditMeal] = useState<MealDTO | null>(null);
 
   if (!mounted || isLoading || !user) return <LogSkeleton />;
 
@@ -76,6 +80,7 @@ export default function LogPage() {
                 key={m.id}
                 meal={m}
                 index={i}
+                onEdit={setEditMeal}
                 onDelete={onDelete}
                 deleting={del.isPending && del.variables === m.id}
               />
@@ -83,6 +88,15 @@ export default function LogPage() {
           </AnimatePresence>
         </div>
       )}
+
+      <EditMealDialog
+        open={!!editMeal}
+        onOpenChange={(open) => {
+          if (!open) setEditMeal(null);
+        }}
+        meal={editMeal}
+        listDate={selectedDate}
+      />
     </>
   );
 }

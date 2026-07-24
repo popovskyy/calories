@@ -117,6 +117,21 @@ export const saveMeal = (input: SaveMealInput) =>
 export const deleteMeal = (id: string) =>
   req<{ ok: true }>(`/api/meals/${id}`, { method: "DELETE" });
 
+export interface UpdateMealInput {
+  id: string;
+  description: string;
+  calories: number;
+  protein: number;
+  fats: number;
+  carbs: number;
+  date?: string;
+}
+export const updateMeal = ({ id, ...body }: UpdateMealInput) =>
+  req<MealDTO>(`/api/meals/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+
 // --- Stats ---
 export const getDashboard = (date?: string) =>
   req<DashboardResponse>(
