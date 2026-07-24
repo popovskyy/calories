@@ -36,8 +36,12 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
     };
   }, [progress, consumed, offset, count]);
 
+  const digits = String(Math.round(Math.abs(consumed))).length;
+  const numSize =
+    digits >= 5 ? "text-[28px]" : digits >= 4 ? "text-[34px]" : "text-[38px]";
+
   return (
-    <div className="relative my-1.5 h-[200px] w-[200px]">
+    <div className="relative my-1.5 h-[200px] w-[200px] shrink-0 overflow-hidden">
       <svg
         width="200"
         height="200"
@@ -65,21 +69,25 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
         </defs>
       </svg>
 
-      {/* Число точно в центрі кільця; підписи нижче */}
-      <div className="pointer-events-none absolute inset-0">
-        <motion.div className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 text-[44px] font-semibold leading-none tracking-tight text-[var(--color-text)]">
-          {rounded}
-        </motion.div>
-        <div className="absolute left-1/2 top-[58%] w-[85%] -translate-x-1/2 text-center text-[14px] leading-tight text-[var(--color-muted3)]">
-          із {target.toLocaleString("uk-UA")} ккал
-        </div>
-        <div
-          className="absolute left-1/2 top-[70%] w-[90%] -translate-x-1/2 text-center text-[13px] font-semibold leading-tight"
-          style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
-        >
-          {over
-            ? `Перебір ${Math.abs(remaining).toLocaleString("uk-UA")}`
-            : `Залишилось ${remaining.toLocaleString("uk-UA")}`}
+      {/* Текст лише всередині «дірки» кільця (~128px), без вилазу */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="flex w-[112px] flex-col items-center justify-center overflow-hidden text-center">
+          <motion.div
+            className={`${numSize} font-semibold leading-none tracking-tight text-[var(--color-text)]`}
+          >
+            {rounded}
+          </motion.div>
+          <div className="mt-1 max-w-full truncate text-[12px] leading-tight text-[var(--color-muted3)]">
+            із {target.toLocaleString("uk-UA")} ккал
+          </div>
+          <div
+            className="mt-1 max-w-full truncate text-[11px] font-semibold leading-tight"
+            style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
+          >
+            {over
+              ? `Перебір ${Math.abs(remaining).toLocaleString("uk-UA")}`
+              : `Ще ${remaining.toLocaleString("uk-UA")}`}
+          </div>
         </div>
       </div>
     </div>

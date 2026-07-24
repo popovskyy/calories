@@ -18,11 +18,15 @@ export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <div className="shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)]">
-      <div className="flex items-center justify-end px-3 pt-1.5">
+    <div
+      className="relative shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      {/* Монети над табами — без окремого ряду, що роздував висоту */}
+      <div className="pointer-events-auto absolute -top-9 right-3 z-10">
         <CoinsPill size="sm" />
       </div>
-      <nav className="flex px-1 pb-1 pt-0.5">
+      <nav className="flex px-1 pb-0.5 pt-1">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
