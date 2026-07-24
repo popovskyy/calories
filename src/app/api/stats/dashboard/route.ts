@@ -7,7 +7,7 @@ import type { DashboardDay, DashboardResponse } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** GET /api/stats/dashboard?date=YYYY-MM-DD — дашборд поточного користувача */
+/** GET /api/stats/dashboard?date=YYYY-MM-DD */
 export async function GET(req: NextRequest) {
   const auth = await requireSession();
   if (!auth.ok) return auth.response;
@@ -21,13 +21,22 @@ export async function GET(req: NextRequest) {
   }
 
   const dates = lastNDays(end, 7);
-  const meals = await prisma.mealLog.findMany({
-    where: { userId, date: { in: dates } },
-    select: { date: true, calories: true, protein: true, fats: true, carbs: true },
-  });
+  const [meals, activities] = await Promise.all([
+    prisma.mealLog.findMany({
+      where: { userId, date: { in: dates }, status: { not: "cancelled" } },
+      select: { date: true, calories: true, protein: true, fats: true, carbs: true },
+    }),
+    prisma.activityLog.findMany({
+      where: { userId, date: { in: dates }, status: { not: "cancelled" } },
+      select: { date: true, caloriesBurned: true },
+    }),
+  ]);
 
-  const byDate = new Map<string, { c: number; p: number; f: number; cb: number }>();
-  for (const d of dates) byDate.set(d, { c: 0, p: 0, f: 0, cb: 0 });
+  const byDate = new Map<
+    string,
+    { c: number; burned: number; p: number; f: number; cb: number }
+  >();
+  for (const d of dates) byDate.set(d, { c: 0, burned: 0, p: 0, f: 0, cb: 0 });
   for (const m of meals) {
     const agg = byDate.get(m.date);
     if (!agg) continue;
@@ -36,19 +45,27 @@ export async function GET(req: NextRequest) {
     agg.f += m.fats;
     agg.cb += m.carbs;
   }
+  for (const a of activities) {
+    const agg = byDate.get(a.date);
+    if (!agg) continue;
+    agg.burned += a.caloriesBurned;
+  }
 
   const target = user.targetCalories;
   const days: DashboardDay[] = dates.map((date) => {
     const a = byDate.get(date)!;
+    const net = a.c - a.burned;
     return {
       date,
-      totalCalories: a.c,
+      totalCalories: net,
+      consumedCalories: a.c,
+      burnedCalories: a.burned,
       targetCalories: target,
       protein: a.p,
       fats: a.f,
       carbs: a.cb,
-      status: a.c <= target ? "green" : "red",
-      difference: target - a.c,
+      status: net <= target ? "green" : "red",
+      difference: target - net,
     };
   });
 

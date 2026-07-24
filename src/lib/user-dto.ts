@@ -10,8 +10,10 @@ import {
 } from "@/lib/calories";
 import type { UserDTO } from "@/lib/types";
 
+type UserWithSkins = User & { skins?: { skinId: string }[] };
+
 /** Prisma User → DTO з похідним age і типізованими enum-полями. */
-export function toUserDTO(user: User): UserDTO {
+export function toUserDTO(user: UserWithSkins): UserDTO {
   const sex: Sex = isSex(user.sex) ? user.sex : "male";
   const activityLevel: ActivityLevel = isActivityLevel(user.activityLevel)
     ? user.activityLevel
@@ -32,5 +34,7 @@ export function toUserDTO(user: User): UserDTO {
     height: user.height,
     age: ageFromBirth(user.birthYear, user.birthMonth),
     avatarUrl: user.avatarUrl ?? null,
+    coins: user.coins,
+    ownedSkinIds: user.skins?.map((s) => s.skinId) ?? [],
   };
 }

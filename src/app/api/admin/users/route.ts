@@ -13,7 +13,10 @@ export async function GET() {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.response;
 
-  const users = await prisma.user.findMany({ orderBy: { createdAt: "desc" } });
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { skins: { select: { skinId: true } } },
+  });
   return NextResponse.json(users.map(toUserDTO));
 }
 
@@ -41,6 +44,7 @@ const updateSchema = z.object({
   height: z.number().positive().optional(),
   targetCalories: z.number().int().positive().optional(),
   avatarUrl: z.string().nullable().optional(),
+  coins: z.number().int().min(0).max(10_000_000).optional(),
   recalcTarget: z.boolean().optional(),
 });
 
@@ -91,12 +95,6 @@ export async function PATCH(req: NextRequest) {
       sex: next.sex as "male" | "female",
       weightKg: next.weight,
       heightCm: next.height,
-      activityLevel: next.activityLevel as
-        | "sedentary"
-        | "light"
-        | "moderate"
-        | "active"
-        | "very_active",
       goal: next.goal as "maintain" | "deficit",
     });
     targetCalories = t;
@@ -109,8 +107,10 @@ export async function PATCH(req: NextRequest) {
       ...(rest.username ? { username: rest.username.toLowerCase() } : {}),
       ...(password ? { passwordHash: await hashPassword(password) } : {}),
       ...(rest.avatarUrl !== undefined ? { avatarUrl: rest.avatarUrl } : {}),
+      ...(rest.coins !== undefined ? { coins: rest.coins } : {}),
       targetCalories,
     },
+    include: { skins: { select: { skinId: true } } },
   });
 
   return NextResponse.json(toUserDTO(user));

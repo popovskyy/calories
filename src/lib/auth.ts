@@ -56,7 +56,10 @@ export async function getSession(): Promise<SessionPayload | null> {
 export async function getSessionUser(): Promise<UserDTO | null> {
   const session = await getSession();
   if (!session) return null;
-  const user = await prisma.user.findUnique({ where: { id: session.userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    include: { skins: { select: { skinId: true } } },
+  });
   if (!user) return null;
   return toUserDTO(user);
 }

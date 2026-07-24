@@ -8,6 +8,7 @@ import {
 import { calcTargetCalories } from "@/lib/calories";
 import { generateMascotAvatar } from "@/lib/gemini-avatar";
 import { prisma } from "@/lib/prisma";
+import { assertAvatarAllowed } from "@/lib/skin-catalog";
 import { toUserDTO } from "@/lib/user-dto";
 
 export const runtime = "nodejs";
@@ -28,13 +29,10 @@ const registerSchema = z.object({
   birthYear: z.number().int().min(1920).max(currentYear),
   birthMonth: z.number().int().min(1).max(12),
   sex: z.enum(["male", "female"]),
-  activityLevel: z.enum([
-    "sedentary",
-    "light",
-    "moderate",
-    "active",
-    "very_active",
-  ]),
+  activityLevel: z
+    .enum(["sedentary", "light", "moderate", "active", "very_active"])
+    .optional()
+    .default("sedentary"),
   goal: z.enum(["maintain", "deficit"]),
   weight: z.number().positive(),
   height: z.number().positive(),
@@ -80,9 +78,13 @@ export async function POST(req: NextRequest) {
           ? err.message
           : "Не вдалося згенерувати аватар";
       console.error("[register] avatar generation failed:", avatarWarning);
-      // лишаємо preset / попередній avatarUrl якщо був
       finalAvatar = avatarUrl ?? null;
     }
+  }
+
+  const gate = await assertAvatarAllowed(null, finalAvatar);
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: 403 });
   }
 
   const { targetCalories } = calcTargetCalories({
@@ -91,7 +93,6 @@ export async function POST(req: NextRequest) {
     sex: profile.sex,
     weightKg: profile.weight,
     heightCm: profile.height,
-    activityLevel: profile.activityLevel,
     goal: profile.goal,
   });
 
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
       birthYear: profile.birthYear,
       birthMonth: profile.birthMonth,
       sex: profile.sex,
-      activityLevel: profile.activityLevel,
+      activityLevel: "sedentary",
       goal: profile.goal,
       weight: profile.weight,
       height: profile.height,

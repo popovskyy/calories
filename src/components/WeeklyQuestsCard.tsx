@@ -1,0 +1,85 @@
+"use client";
+
+import { Check, Lock } from "lucide-react";
+import { CoinIcon } from "@/components/icons/CurrencyIcons";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useQuests } from "@/hooks/useQueries";
+import { humanDate } from "@/lib/date";
+import { cn } from "@/lib/cn";
+
+export function WeeklyQuestsCard() {
+  const q = useQuests();
+
+  return (
+    <section className="mcard flex flex-col gap-3 p-[18px]">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="lbl">Квести тижня</span>
+        {q.data ? (
+          <span className="text-[13px] text-[var(--color-muted3)]">
+            {humanDate(q.data.weekStart)} – {humanDate(q.data.weekEnd)}
+          </span>
+        ) : null}
+      </div>
+      <p className="text-[13px] text-[var(--color-muted3)]">
+        Великі монети — за дисципліну ±5%. Без точних днів у цілі магазин майже не відкриється.
+      </p>
+
+      {q.isLoading || !q.data ? (
+        <div className="flex flex-col gap-2">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {q.data.quests.map((quest) => {
+            const pct = quest.target > 0 ? Math.min(1, quest.progress / quest.target) : 0;
+            return (
+              <li
+                key={quest.id}
+                className={cn(
+                  "rounded-[var(--radius-md)] border border-[var(--color-divider)] p-3",
+                  quest.claimed && "opacity-80",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[15px] font-semibold text-[var(--color-text)]">
+                      {quest.claimed ? (
+                        <Check size={16} className="text-[var(--color-accent)]" />
+                      ) : quest.done ? (
+                        <Check size={16} className="text-[var(--color-accent)]" />
+                      ) : (
+                        <Lock size={14} className="text-[var(--color-muted3)]" />
+                      )}
+                      {quest.titleUk}
+                    </div>
+                    <p className="mt-0.5 text-[12px] text-[var(--color-muted3)]">
+                      {quest.description}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1 text-[14px] font-semibold tabular-nums">
+                    <CoinIcon size={14} />
+                    {quest.rewardCoins}
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-tile)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--color-accent)] transition-[width]"
+                      style={{ width: `${pct * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[12px] tabular-nums text-[var(--color-muted3)]">
+                    {quest.progress}/{quest.target}
+                    {quest.claimed ? " · ✓" : ""}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}

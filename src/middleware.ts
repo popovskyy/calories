@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   "/api/auth/register",
   "/admin/login",
   "/api/admin/login",
+  "/api/skins/catalog",
 ];
 
 export async function middleware(req: NextRequest) {
@@ -16,6 +17,8 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/icons") ||
+    pathname.startsWith("/mascots") ||
+    pathname.startsWith("/api/skins/") ||
     pathname === "/favicon.ico" ||
     pathname === "/icon.svg" ||
     pathname === "/sw.js" ||

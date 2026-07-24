@@ -1,6 +1,7 @@
-/** Розрахунок денної норми калорій (Mifflin–St Jeor → TDEE → ціль). */
+/** Розрахунок денної норми: Mifflin–St Jeor BMR (вік, кг, см, стать) — без множника «скільки разів на тиждень». */
 
 export type Sex = "male" | "female";
+/** @deprecated Залишено для сумісності БД; у формулі більше не використовується. */
 export type ActivityLevel =
   | "sedentary"
   | "light"
@@ -51,27 +52,27 @@ export interface CalorieInput {
   sex: Sex;
   weightKg: number;
   heightCm: number;
-  activityLevel: ActivityLevel;
   goal: Goal;
-  /** Для тестів / детермінізму; за замовчуванням — зараз */
+  /** Ігнорується — залишено для старих викликів. */
+  activityLevel?: ActivityLevel;
   now?: Date;
 }
 
 export interface CalorieBreakdown {
   age: number;
   bmr: number;
+  /** = BMR (активність додається окремими записами в журналі). */
   tdee: number;
   targetCalories: number;
 }
 
-/** Повні роки від року+місяця народження до `now`. */
 export function ageFromBirth(
   birthYear: number,
   birthMonth: number,
   now: Date = new Date(),
 ): number {
   const y = now.getFullYear();
-  const m = now.getMonth() + 1; // 1–12
+  const m = now.getMonth() + 1;
   let age = y - birthYear;
   if (m < birthMonth) age -= 1;
   return Math.max(0, age);
@@ -88,15 +89,19 @@ export function calcBmr(input: {
   return input.sex === "male" ? base + 5 : base - 161;
 }
 
-export function calcTdee(bmr: number, activityLevel: ActivityLevel): number {
-  return bmr * ACTIVITY_MULTIPLIERS[activityLevel];
+/** @deprecated Множник активності більше не входить у денну норму. */
+export function calcTdee(bmr: number, _activityLevel?: ActivityLevel): number {
+  return bmr;
 }
 
-/** Мін. безпечна норма при дефіциті. */
 export function deficitFloor(sex: Sex): number {
   return sex === "female" ? 1200 : 1500;
 }
 
+/**
+ * Ціль = BMR (підтримка) або BMR×0.85 (дефіцит, з підлогою).
+ * Тренування враховуються окремими ActivityLog, не множником.
+ */
 export function calcTargetCalories(input: CalorieInput): CalorieBreakdown {
   const age = ageFromBirth(input.birthYear, input.birthMonth, input.now);
   const bmr = calcBmr({
@@ -105,10 +110,10 @@ export function calcTargetCalories(input: CalorieInput): CalorieBreakdown {
     age,
     sex: input.sex,
   });
-  const tdee = calcTdee(bmr, input.activityLevel);
+  const base = Math.round(bmr);
 
   let target =
-    input.goal === "maintain" ? Math.round(tdee) : Math.round(tdee * 0.85);
+    input.goal === "maintain" ? base : Math.round(base * 0.85);
 
   if (input.goal === "deficit") {
     target = Math.max(target, deficitFloor(input.sex));
@@ -116,8 +121,8 @@ export function calcTargetCalories(input: CalorieInput): CalorieBreakdown {
 
   return {
     age,
-    bmr: Math.round(bmr),
-    tdee: Math.round(tdee),
+    bmr: base,
+    tdee: base,
     targetCalories: target,
   };
 }

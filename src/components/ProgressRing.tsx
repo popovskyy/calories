@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 
 const R = 86;
-const C = 2 * Math.PI * R; // ≈ 540.35
+const C = 2 * Math.PI * R;
 
 interface ProgressRingProps {
   consumed: number;
@@ -17,9 +17,7 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
   const remaining = target - consumed;
   const over = remaining < 0;
 
-  // Анімоване заповнення кільця
   const offset = useMotionValue(C);
-  // Count-up числа
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
 
@@ -44,6 +42,7 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
         width="200"
         height="200"
         viewBox="0 0 200 200"
+        className="block"
         style={{ transform: "rotate(-90deg)" }}
       >
         <circle cx="100" cy="100" r={R} fill="none" stroke="#2b2d3a" strokeWidth="16" />
@@ -65,13 +64,17 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
           </linearGradient>
         </defs>
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-        <motion.div className="text-[48px] font-semibold leading-none tracking-tight text-[var(--color-text)]">
+
+      {/* Число точно в центрі кільця; підписи нижче */}
+      <div className="pointer-events-none absolute inset-0">
+        <motion.div className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 text-[44px] font-semibold leading-none tracking-tight text-[var(--color-text)]">
           {rounded}
         </motion.div>
-        <div className="text-[15px] text-[var(--color-muted3)]">із {target.toLocaleString("uk-UA")} ккал</div>
+        <div className="absolute left-1/2 top-[58%] w-[85%] -translate-x-1/2 text-center text-[14px] leading-tight text-[var(--color-muted3)]">
+          із {target.toLocaleString("uk-UA")} ккал
+        </div>
         <div
-          className="mt-1.5 text-[14px] font-semibold"
+          className="absolute left-1/2 top-[70%] w-[90%] -translate-x-1/2 text-center text-[13px] font-semibold leading-tight"
           style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
         >
           {over

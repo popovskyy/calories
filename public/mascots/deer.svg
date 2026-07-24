@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="34%" r="78%">
+      <stop offset="0" stop-color="#3d5c40"/>
+      <stop offset="1" stop-color="#0d160e"/>
+    </radialGradient>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9a06a"/>
+      <stop offset="1" stop-color="#8a5a28"/>
+    </linearGradient>
+    <linearGradient id="antler" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0e0c0"/>
+      <stop offset="1" stop-color="#a88850"/>
+    </linearGradient>
+    <linearGradient id="muzzle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5e6d0"/>
+      <stop offset="1" stop-color="#dcc4a0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="120" fill="url(#bg)"/>
+  <!-- moon + trees vibe -->
+  <circle cx="198" cy="52" r="20" fill="#f0e6c8" opacity=".4"/>
+  <path d="M42 70 l8 34 h-16z" fill="#1a2a18" opacity=".55"/>
+  <path d="M58 78 l6 26 h-12z" fill="#1a2a18" opacity=".4"/>
+  <path d="M210 78 l7 28 h-14z" fill="#1a2a18" opacity=".45"/>
+
+  <!-- branched antlers -->
+  <path d="M98 96
+           C88 70 78 48 72 28
+           C78 42 86 58 94 72
+           C86 56 74 44 62 36
+           C74 48 84 64 92 80
+           C84 66 70 58 56 54
+           C70 62 82 74 90 88z" fill="url(#antler)" stroke="#7a6038" stroke-width="1.5"/>
+  <path d="M158 96
+           C168 70 178 48 184 28
+           C178 42 170 58 162 72
+           C170 56 182 44 194 36
+           C182 48 172 64 164 80
+           C172 66 186 58 200 54
+           C186 62 174 74 166 88z" fill="url(#antler)" stroke="#7a6038" stroke-width="1.5"/>
+
+  <!-- tall pointed ears -->
+  <path d="M78 118 L68 62 Q88 78 92 118 Z" fill="url(#fur)" stroke="#6a4420" stroke-width="2"/>
+  <path d="M178 118 L188 62 Q168 78 164 118 Z" fill="url(#fur)" stroke="#6a4420" stroke-width="2"/>
+  <path d="M80 112 L74 74 Q86 84 88 112 Z" fill="#e8b090"/>
+  <path d="M176 112 L182 74 Q170 84 168 112 Z" fill="#e8b090"/>
+
+  <!-- elongated deer head (not round pig) -->
+  <ellipse cx="128" cy="132" rx="48" ry="52" fill="url(#fur)" stroke="#6a4420" stroke-width="2.5"/>
+  <!-- cheek narrowing into snout -->
+  <path d="M90 148
+           Q100 176 128 188
+           Q156 176 166 148
+           Q148 168 128 172
+           Q108 168 90 148z" fill="url(#fur)"/>
+
+  <!-- long deer muzzle -->
+  <ellipse cx="128" cy="176" rx="26" ry="30" fill="url(#muzzle)" stroke="#b89870" stroke-width="1.5"/>
+  <!-- black nose tip -->
+  <ellipse cx="128" cy="192" rx="14" ry="10" fill="#2a1a10"/>
+  <ellipse cx="124" cy="190" rx="3" ry="2.2" fill="#fff" opacity=".35"/>
+  <!-- nostrils -->
+  <ellipse cx="122" cy="194" rx="3" ry="2.2" fill="#100808"/>
+  <ellipse cx="134" cy="194" rx="3" ry="2.2" fill="#100808"/>
+
+  <!-- soft spots -->
+  <ellipse cx="104" cy="128" rx="5" ry="4" fill="#a07040" opacity=".45"/>
+  <ellipse cx="150" cy="134" rx="4.5" ry="3.5" fill="#a07040" opacity=".4"/>
+  <ellipse cx="118" cy="150" rx="4" ry="3" fill="#a07040" opacity=".35"/>
+
+  <!-- large dark eyes + forest glow -->
+  <ellipse cx="106" cy="128" rx="13" ry="15" fill="#1a1008"/>
+  <ellipse cx="150" cy="128" rx="13" ry="15" fill="#1a1008"/>
+  <ellipse cx="108" cy="130" rx="6.5" ry="7.5" fill="#7dffb3"/>
+  <ellipse cx="148" cy="130" rx="6.5" ry="7.5" fill="#7dffb3"/>
+  <circle cx="110" cy="127" r="2.2" fill="#fff"/>
+  <circle cx="150" cy="127" r="2.2" fill="#fff"/>
+
+  <!-- brows -->
+  <path d="M92 112 q14 -8 28 2" fill="none" stroke="#5c4030" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M136 114 q14 -8 28 2" fill="none" stroke="#5c4030" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- subtle smile -->
+  <path d="M118 206 q10 6 20 0" fill="none" stroke="#8a6a48" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+
+  <path d="M86 88 a50 48 0 0 1 36 -22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".2"/>
+
+  <text x="128" y="232" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="11" font-weight="900" fill="#c8e6c0" stroke="#0d160e" stroke-width="3" paint-order="stroke" letter-spacing="0.2">99 ночей в лесу</text>
+</svg>

@@ -36,7 +36,7 @@ export default function ArenaPage() {
             Арена
           </h1>
           <p className="mt-1 text-[15px] text-[var(--color-muted3)]">
-            Рейтинг за сьогодні
+            Хто ближче до своєї норми
             {date ? ` · ${humanDate(date)}` : ""}
           </p>
         </div>
@@ -51,7 +51,7 @@ export default function ArenaPage() {
           <div className="grid grid-cols-[36px_1fr_auto] gap-2 bg-[var(--color-surface)] px-3 py-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-muted3)]">
             <span>#</span>
             <span>Гравець</span>
-            <span className="text-right">Дефіцит</span>
+            <span className="text-right">До цілі</span>
           </div>
           <ul className="divide-y divide-[var(--color-divider)] bg-[var(--color-bg)]">
             {entries.map((e) => (
@@ -62,8 +62,8 @@ export default function ArenaPage() {
       )}
 
       <p className="text-[14px] leading-relaxed text-[var(--color-muted3)]">
-        Дефіцит = ціль − зʼїдене сьогодні. Хто в мінусі (перебір) — нижче в таблиці.
-        Без записів за день — в кінці списку.
+        Рейтинг за |зʼїдене − ціль|: чим менше відхилення, тим вище. Голодування не
+        дає переваги. Без записів за день — в кінці списку.
       </p>
     </>
   );
@@ -71,11 +71,14 @@ export default function ArenaPage() {
 
 function ArenaRow({ entry }: { entry: ArenaEntry }) {
   const over = entry.difference < 0;
-  const deficitLabel = !entry.hasLog
+  const exact = entry.hasLog && entry.absError === 0;
+  const label = !entry.hasLog
     ? "—"
-    : over
-      ? `+${Math.abs(entry.difference).toLocaleString("uk-UA")}`
-      : entry.difference.toLocaleString("uk-UA");
+    : exact
+      ? "0"
+      : over
+        ? `+${entry.absError.toLocaleString("uk-UA")}`
+        : `−${entry.absError.toLocaleString("uk-UA")}`;
 
   return (
     <li
@@ -110,15 +113,17 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
             "text-[17px] font-semibold tabular-nums",
             !entry.hasLog
               ? "text-[var(--color-muted3)]"
-              : over
-                ? "text-[var(--color-red)]"
-                : "text-[var(--color-green)]",
+              : exact
+                ? "text-[var(--color-green)]"
+                : over
+                  ? "text-[var(--color-red)]"
+                  : "text-[var(--color-accent-300)]",
           )}
         >
-          {deficitLabel}
+          {label}
         </div>
         <div className="text-[12px] text-[var(--color-muted3)]">
-          {!entry.hasLog ? "немає логу" : over ? "перебір" : "залишок"}
+          {!entry.hasLog ? "немає логу" : exact ? "влучно" : over ? "перебір" : "недобір"}
         </div>
       </div>
     </li>

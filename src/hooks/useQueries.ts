@@ -7,34 +7,49 @@ import {
 } from "@tanstack/react-query";
 import {
   analyzeMeal,
+  analyzeActivityApi,
+  buySkin,
+  changePassword,
+  deleteActivity,
   deleteMeal,
+  equipSkin,
   generateAvatar,
+  getActivities,
   getArena,
   getDashboard,
   getMe,
   getMeals,
+  getQuests,
+  getRecentMeals,
+  getShop,
+  getStreak,
   login,
   logout,
   register,
+  saveActivity,
   saveMeal,
   saveUser,
   updateMeal,
   type AnalyzeInput,
+  type ChangePasswordInput,
   type GenerateAvatarInput,
   type LoginInput,
   type RegisterInput,
+  type SaveActivityInput,
   type SaveMealInput,
   type UpdateMealInput,
   type UserInput,
 } from "@/lib/api";
-import type { MealDTO } from "@/lib/types";
+import type { ActivityDTO, MealDTO } from "@/lib/types";
 
 export function useMe() {
   return useQuery({
     queryKey: ["me"],
     queryFn: getMe,
     retry: false,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -124,9 +139,36 @@ export function useSaveMeal() {
     mutationFn: (input: SaveMealInput) => saveMeal(input),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["meals", vars.date] });
+      qc.invalidateQueries({ queryKey: ["meals", "recent"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
+      qc.invalidateQueries({ queryKey: ["streak"] });
+      qc.invalidateQueries({ queryKey: ["me"] }); // баланс монет
+      qc.invalidateQueries({ queryKey: ["shop"] });
+      qc.invalidateQueries({ queryKey: ["quests"] });
     },
+  });
+}
+
+export function useRecentMeals(limit = 12) {
+  return useQuery({
+    queryKey: ["meals", "recent", limit],
+    queryFn: () => getRecentMeals(limit),
+    staleTime: 30_000,
+  });
+}
+
+export function useStreak() {
+  return useQuery({
+    queryKey: ["streak"],
+    queryFn: getStreak,
+    staleTime: 30_000,
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (input: ChangePasswordInput) => changePassword(input),
   });
 }
 
@@ -146,8 +188,10 @@ export function useDeleteMeal(date: string) {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ["meals", "recent"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
+      qc.invalidateQueries({ queryKey: ["streak"] });
     },
   });
 }
@@ -161,6 +205,48 @@ export function useUpdateMeal(listDate: string) {
       for (const d of dates) {
         qc.invalidateQueries({ queryKey: ["meals", d] });
       }
+      qc.invalidateQueries({ queryKey: ["meals", "recent"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["arena"] });
+      qc.invalidateQueries({ queryKey: ["streak"] });
+    },
+  });
+}
+
+export function useActivities(date: string) {
+  return useQuery({
+    queryKey: ["activities", date],
+    queryFn: () => getActivities(date),
+  });
+}
+
+export function useAnalyzeActivity() {
+  return useMutation({
+    mutationFn: (input: { description: string }) => analyzeActivityApi(input),
+  });
+}
+
+export function useSaveActivity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SaveActivityInput) => saveActivity(input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["activities", vars.date] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["arena"] });
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["shop"] });
+      qc.invalidateQueries({ queryKey: ["quests"] });
+    },
+  });
+}
+
+export function useDeleteActivity(date: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteActivity(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["activities", date] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
     },
@@ -172,5 +258,47 @@ export function useArena() {
     queryKey: ["arena"],
     queryFn: getArena,
     refetchInterval: 60_000,
+  });
+}
+
+export function useQuests() {
+  return useQuery({
+    queryKey: ["quests"],
+    queryFn: () => getQuests(),
+    staleTime: 30_000,
+    refetchOnMount: "always",
+  });
+}
+
+// --- Shop ---
+export function useShop() {
+  return useQuery({
+    queryKey: ["shop"],
+    queryFn: getShop,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+}
+
+export function useBuySkin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (skinId: string) => buySkin(skinId),
+    onSuccess: (shop) => {
+      qc.setQueryData(["shop"], shop);
+      qc.invalidateQueries({ queryKey: ["me"] }); // списані монети
+    },
+  });
+}
+
+export function useEquipSkin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (skinId: string) => equipSkin(skinId),
+    onSuccess: (user) => {
+      qc.setQueryData(["me"], user);
+      qc.invalidateQueries({ queryKey: ["shop"] }); // прапорці equipped
+      qc.invalidateQueries({ queryKey: ["arena"] }); // аватар в арені
+    },
   });
 }

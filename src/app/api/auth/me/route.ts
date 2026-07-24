@@ -9,5 +9,8 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Не авторизовано" }, { status: 401 });
   }
-  return NextResponse.json(user);
+  // Без кешу — баланс монет завжди свіжий (адмінка може нарахувати)
+  return NextResponse.json(user, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }

@@ -2,9 +2,11 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  AVATAR_PRESETS,
+  BUILTIN_MASCOT_IDS,
   getPreset,
-  type AvatarPresetId,
+  mascotAssetPath,
+  parsePresetId,
+  type SkinArtKind,
 } from "@/lib/avatar-presets";
 import { cn } from "@/lib/cn";
 
@@ -58,8 +60,16 @@ function Smile({ y = 78 }: { y?: number }) {
   );
 }
 
-function MascotArt({ id }: { id: AvatarPresetId }) {
-  const preset = getPreset(id)!;
+function MascotArt({ id }: { id: string }) {
+  const preset = getPreset(id);
+  if (!preset) {
+    return (
+      <Face bg="#888">
+        <Eyes />
+        <Smile />
+      </Face>
+    );
+  }
 
   switch (id) {
     case "kiwi":
@@ -199,6 +209,7 @@ function MascotArt({ id }: { id: AvatarPresetId }) {
           <Smile y={90} />
         </Face>
       );
+    // --- Ассети / інлайн: рендеряться з img ---
     default:
       return null;
   }
@@ -210,22 +221,34 @@ export function PresetMascot({
   size = 64,
   animated = true,
   className,
+  artKind,
+  nameUk,
+  bg,
 }: {
-  id: AvatarPresetId;
+  id: string;
   size?: number;
   animated?: boolean;
   className?: string;
+  artKind?: SkinArtKind;
+  nameUk?: string;
+  bg?: string;
 }) {
   const reduce = useReducedMotion();
   const preset = getPreset(id);
-  if (!preset) return null;
-
+  const kind: SkinArtKind =
+    artKind ?? (BUILTIN_MASCOT_IDS.has(id) ? "builtin" : "file");
   const idle = animated && !reduce;
+  const asset = mascotAssetPath(id, kind);
+  const label = nameUk ?? preset?.nameUk ?? id;
 
   return (
     <motion.div
       className={cn("shrink-0 overflow-hidden rounded-full", className)}
-      style={{ width: size, height: size }}
+      style={{
+        width: size,
+        height: size,
+        background: !asset ? bg ?? preset?.bg : undefined,
+      }}
       animate={idle ? { y: [0, -3, 0] } : undefined}
       transition={
         idle
@@ -237,7 +260,19 @@ export function PresetMascot({
           : undefined
       }
     >
-      <MascotArt id={id} />
+      {asset ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={asset}
+          alt={label}
+          width={size}
+          height={size}
+          draggable={false}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <MascotArt id={id} />
+      )}
     </motion.div>
   );
 }
@@ -253,10 +288,8 @@ export function PresetMascotByUrl({
   animated?: boolean;
   className?: string;
 }) {
-  const id = avatarUrl.startsWith("preset:")
-    ? (avatarUrl.slice("preset:".length) as AvatarPresetId)
-    : null;
-  if (!id || !AVATAR_PRESETS.some((p) => p.id === id)) return null;
+  const id = parsePresetId(avatarUrl);
+  if (!id) return null;
   return (
     <PresetMascot id={id} size={size} animated={animated} className={className} />
   );

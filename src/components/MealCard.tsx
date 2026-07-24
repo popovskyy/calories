@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Pencil, Trash2 } from "lucide-react";
 import type { MealDTO } from "@/lib/types";
+import { cn } from "@/lib/cn";
 
 function kicker(createdAt: string): string {
   const d = new Date(createdAt);
@@ -15,8 +16,8 @@ function kicker(createdAt: string): string {
 interface MealCardProps {
   meal: MealDTO;
   index?: number;
-  onEdit: (meal: MealDTO) => void;
-  onDelete: (id: string) => void;
+  onEdit?: (meal: MealDTO) => void;
+  onDelete?: (id: string) => void;
   deleting?: boolean;
 }
 
@@ -27,6 +28,8 @@ export function MealCard({
   onDelete,
   deleting,
 }: MealCardProps) {
+  const cancelled = meal.status === "cancelled";
+
   return (
     <motion.div
       layout
@@ -34,15 +37,23 @@ export function MealCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -24, height: 0, marginBottom: 0, transition: { duration: 0.22 } }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1], delay: index * 0.04 }}
-      className="mcard flex flex-col gap-3 p-[15px_16px]"
+      className={cn(
+        "mcard flex flex-col gap-3 p-[15px_16px]",
+        cancelled && "opacity-55",
+      )}
       style={{ marginBottom: 12, opacity: deleting ? 0.5 : undefined }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[13px] font-semibold uppercase tracking-wide text-[var(--color-accent-300)]">
-            {kicker(meal.createdAt)}
+            {cancelled ? "Скасовано адміном" : kicker(meal.createdAt)}
           </div>
-          <div className="mt-0.5 truncate text-[17px] font-semibold text-[var(--color-text)]">
+          <div
+            className={cn(
+              "mt-0.5 truncate text-[17px] font-semibold text-[var(--color-text)]",
+              cancelled && "line-through",
+            )}
+          >
             {meal.description}
           </div>
         </div>
@@ -52,34 +63,40 @@ export function MealCard({
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <div className="text-[14px] text-[var(--color-muted2)]">
-          <span>Б </span>
+        <div className="text-[13px] text-[var(--color-muted2)]">
+          <span>Білки </span>
           <span className="text-[var(--color-text)]">{meal.protein}</span>
-          <span> · Ж </span>
+          <span> · Жири </span>
           <span className="text-[var(--color-text)]">{meal.fats}</span>
-          <span> · В </span>
+          <span> · Вуглеводи </span>
           <span className="text-[var(--color-text)]">{meal.carbs}</span>
         </div>
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() => onEdit(meal)}
-            disabled={deleting}
-            aria-label="Редагувати"
-            className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-accent)] disabled:opacity-50"
-          >
-            <Pencil size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(meal.id)}
-            disabled={deleting}
-            aria-label="Видалити"
-            className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-red)] disabled:opacity-50"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+        {!cancelled && (onEdit || onDelete) ? (
+          <div className="flex items-center gap-0.5">
+            {onEdit ? (
+              <button
+                type="button"
+                onClick={() => onEdit(meal)}
+                disabled={deleting}
+                aria-label="Редагувати"
+                className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-accent)] disabled:opacity-50"
+              >
+                <Pencil size={16} />
+              </button>
+            ) : null}
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={() => onDelete(meal.id)}
+                disabled={deleting}
+                aria-label="Видалити"
+                className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-red)] disabled:opacity-50"
+              >
+                <Trash2 size={16} />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </motion.div>
   );

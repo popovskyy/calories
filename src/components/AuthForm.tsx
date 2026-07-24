@@ -8,11 +8,9 @@ import { AvatarPicker } from "@/components/AvatarPicker";
 import { Field, inputClass } from "@/components/ui/Field";
 import { useLogin, useRegister } from "@/hooks/useQueries";
 import {
-  ACTIVITY_LABELS,
   GOAL_LABELS,
   MONTH_LABELS_UK,
   calcTargetCalories,
-  type ActivityLevel,
   type Goal,
   type Sex,
 } from "@/lib/calories";
@@ -63,7 +61,6 @@ export function AuthForm() {
   const [birthYear, setBirthYear] = useState(String(currentYear - 30));
   const [birthMonth, setBirthMonth] = useState("1");
   const [sex, setSex] = useState<Sex>("male");
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel>("moderate");
   const [goal, setGoal] = useState<Goal>("maintain");
   const [weight, setWeight] = useState("70");
   const [height, setHeight] = useState("175");
@@ -86,10 +83,9 @@ export function AuthForm() {
       sex,
       weightKg: w,
       heightCm: h,
-      activityLevel,
       goal,
     });
-  }, [mode, birthYear, birthMonth, sex, weight, height, activityLevel, goal]);
+  }, [mode, birthYear, birthMonth, sex, weight, height, goal]);
 
   const busy = loginMut.isPending || registerMut.isPending;
 
@@ -132,7 +128,6 @@ export function AuthForm() {
         birthYear: parseInt(birthYear, 10),
         birthMonth: parseInt(birthMonth, 10),
         sex,
-        activityLevel,
         goal,
         weight: parseFloat(weight),
         height: parseFloat(height),
@@ -241,6 +236,7 @@ export function AuthForm() {
               setPhoto(null);
               setPhotoPreview(null);
             }}
+            freeOnly
           />
 
           <div className="rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-3 py-3">
@@ -321,14 +317,6 @@ export function AuthForm() {
               <input className={inputClass} value={height} onChange={(e) => setHeight(e.target.value)} inputMode="decimal" />
             </Field>
           </div>
-
-          <Field label="Фізична активність">
-            <select className={inputClass} value={activityLevel} onChange={(e) => setActivityLevel(e.target.value as ActivityLevel)}>
-              {(Object.keys(ACTIVITY_LABELS) as ActivityLevel[]).map((key) => (
-                <option key={key} value={key}>{ACTIVITY_LABELS[key]}</option>
-              ))}
-            </select>
-          </Field>
 
           <div className="flex flex-col gap-1.5">
             <span className="lbl">Мета</span>

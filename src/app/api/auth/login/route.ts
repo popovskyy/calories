@@ -27,7 +27,10 @@ export async function POST(req: NextRequest) {
   }
 
   const login = parsed.data.username.trim().toLowerCase();
-  const user = await prisma.user.findUnique({ where: { username: login } });
+  const user = await prisma.user.findUnique({
+    where: { username: login },
+    include: { skins: { select: { skinId: true } } },
+  });
   if (!user) {
     return NextResponse.json(
       { error: "Невірний логін або пароль" },

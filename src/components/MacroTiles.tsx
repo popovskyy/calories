@@ -7,7 +7,7 @@ interface MacroTilesProps {
 const MACROS = [
   { key: "protein", label: "Білки", color: "var(--color-macro-protein)" },
   { key: "fats", label: "Жири", color: "var(--color-macro-fats)" },
-  { key: "carbs", label: "Вуглев.", color: "var(--color-macro-carbs)" },
+  { key: "carbs", label: "Вуглеводи", color: "var(--color-macro-carbs)" },
 ] as const;
 
 export function MacroTiles({ protein, fats, carbs }: MacroTilesProps) {

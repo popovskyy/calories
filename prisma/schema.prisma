@@ -26,8 +26,73 @@ model User {
   weight         Float     @default(70)
   height         Float     @default(175)
   avatarUrl      String? // data:image/png;base64,… (мультяшний аватар від Gemini)
+  coins          Int       @default(0) // внутрішня валюта за звички
   createdAt      DateTime  @default(now())
   meals          MealLog[]
+  activities     ActivityLog[]
+  skins          UserSkin[]
+  claims         RewardClaim[]
+}
+
+/** Тижневі квести (Пн–Нд, Kyiv). Адмін може правити або додавати свої. */
+model WeeklyQuest {
+  id          String   @id @default(cuid())
+  weekStart   String // YYYY-MM-DD понеділок
+  code        String // sniper_5 | custom_…
+  titleUk     String
+  description String
+  kind        String // in_target_days | log_days | activity_days | dual_days | no_blowout | weekend_clean
+  target      Int // скільки днів / умов виконати
+  rewardCoins Int
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([weekStart, code])
+  @@index([weekStart, active])
+}
+
+/**
+ * Каталог скінів (адмінка може міняти ціни / додавати нові).
+ * artKind: builtin = малюнок у PresetMascot; file = /mascots/{id}.svg; inline = поле svg.
+ */
+model SkinDef {
+  id        String   @id // slug: kiwi, deer, potter…
+  nameUk    String
+  tier      String // free | premium
+  price     Int      @default(0)
+  rarity    String   @default("common") // common|rare|epic|legendary
+  bg        String   @default("#58CC02")
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  artKind   String   @default("file") // builtin | file | inline
+  svg       String? // inline SVG (адмінські кастомні скіни)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Куплені преміум-скіни (skinId = preset-id, напр. "dragon")
+model UserSkin {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skinId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, skinId])
+}
+
+// Ідемпотентність нагород: кожен унікальний ключ нараховується лише раз
+model RewardClaim {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String // daily_log:YMD | in_target:YMD | streak:N | arena:YMD
+  coins     Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, key])
 }
 
 model MealLog {
@@ -41,7 +106,26 @@ model MealLog {
   fats        Int
   carbs       Int
   imageUrl    String?
+  /** approved (за замовч.) | cancelled (адмін скасував) */
+  status      String   @default("approved")
   createdAt   DateTime @default(now())
 
   @@index([userId, date])
+  @@index([status, createdAt])
+}
+
+/** Тренування / активність — ШІ оцінює спалені ккал. */
+model ActivityLog {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            String // YYYY-MM-DD
+  description     String
+  caloriesBurned  Int
+  durationMin     Int? // хвилини, якщо відомо
+  status          String   @default("approved") // approved | cancelled
+  createdAt       DateTime @default(now())
+
+  @@index([userId, date])
+  @@index([status, createdAt])
 }

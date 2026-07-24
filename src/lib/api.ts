@@ -1,8 +1,16 @@
 import type {
+  ActivityDTO,
+  AnalyzeActivityResult,
   AnalyzeResult,
   ArenaResponse,
   DashboardResponse,
+  GrantedReward,
   MealDTO,
+  QuestsResponse,
+  RecentMealDTO,
+  SaveMealResult,
+  ShopResponse,
+  StreakResponse,
   UserDTO,
 } from "./types";
 import type { ActivityLevel, Goal, Sex } from "./calories";
@@ -41,7 +49,7 @@ export interface RegisterInput {
   birthYear: number;
   birthMonth: number;
   sex: Sex;
-  activityLevel: ActivityLevel;
+  activityLevel?: ActivityLevel;
   goal: Goal;
   weight: number;
   height: number;
@@ -60,13 +68,23 @@ export const logout = () =>
 
 export const getMe = () => req<UserDTO>("/api/auth/me");
 
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+export const changePassword = (input: ChangePasswordInput) =>
+  req<{ ok: true }>("/api/auth/password", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+
 // --- Profile ---
 export interface UserInput {
   name: string;
   birthYear: number;
   birthMonth: number;
   sex: Sex;
-  activityLevel: ActivityLevel;
+  activityLevel?: ActivityLevel;
   goal: Goal;
   weight: number;
   height: number;
@@ -90,6 +108,9 @@ export const generateAvatar = (input: GenerateAvatarInput) =>
 export const getMeals = (date: string) =>
   req<MealDTO[]>(`/api/meals?date=${encodeURIComponent(date)}`);
 
+export const getRecentMeals = (limit = 12) =>
+  req<RecentMealDTO[]>(`/api/meals/recent?limit=${limit}`);
+
 export interface AnalyzeInput {
   description?: string;
   imageBase64?: string;
@@ -112,7 +133,7 @@ export interface SaveMealInput extends AnalyzeInput {
   imageUrl?: string | null;
 }
 export const saveMeal = (input: SaveMealInput) =>
-  req<MealDTO>("/api/meals", { method: "POST", body: JSON.stringify(input) });
+  req<SaveMealResult>("/api/meals", { method: "POST", body: JSON.stringify(input) });
 
 export const deleteMeal = (id: string) =>
   req<{ ok: true }>(`/api/meals/${id}`, { method: "DELETE" });
@@ -132,10 +153,58 @@ export const updateMeal = ({ id, ...body }: UpdateMealInput) =>
     body: JSON.stringify(body),
   });
 
+// --- Activities ---
+export const getActivities = (date: string) =>
+  req<ActivityDTO[]>(`/api/activities?date=${encodeURIComponent(date)}`);
+
+export const analyzeActivityApi = (input: { description: string; apiKey?: string }) =>
+  req<AnalyzeActivityResult>("/api/activities/analyze", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export interface SaveActivityInput {
+  date: string;
+  description: string;
+  caloriesBurned?: number;
+  durationMin?: number | null;
+  apiKey?: string;
+}
+export const saveActivity = (input: SaveActivityInput) =>
+  req<ActivityDTO & { notes?: string[]; rewards?: GrantedReward[] }>("/api/activities", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const deleteActivity = (id: string) =>
+  req<{ ok: true }>(`/api/activities/${id}`, { method: "DELETE" });
+
 // --- Stats ---
 export const getDashboard = (date?: string) =>
   req<DashboardResponse>(
     `/api/stats/dashboard${date ? `?date=${encodeURIComponent(date)}` : ""}`,
   );
 
+export const getStreak = () => req<StreakResponse>("/api/stats/streak");
+
 export const getArena = () => req<ArenaResponse>("/api/arena");
+
+export const getQuests = (week?: string) =>
+  req<QuestsResponse>(
+    `/api/quests${week ? `?week=${encodeURIComponent(week)}` : ""}`,
+  );
+
+// --- Shop ---
+export const getShop = () => req<ShopResponse>("/api/shop");
+
+export const buySkin = (skinId: string) =>
+  req<ShopResponse>("/api/shop/buy", {
+    method: "POST",
+    body: JSON.stringify({ skinId }),
+  });
+
+export const equipSkin = (skinId: string) =>
+  req<UserDTO>("/api/shop/equip", {
+    method: "POST",
+    body: JSON.stringify({ skinId }),
+  });

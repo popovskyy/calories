@@ -31,6 +31,9 @@ export async function PATCH(
   if (!meal || meal.userId !== auth.session.userId) {
     return NextResponse.json({ error: "Запис не знайдено" }, { status: 404 });
   }
+  if (meal.status === "cancelled") {
+    return NextResponse.json({ error: "Запис скасовано адміном" }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = updateSchema.safeParse(body);

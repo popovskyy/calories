@@ -1,13 +1,38 @@
 /**
- * Застосунок стартує з ПОРОЖНЬОЮ базою.
- * Профілі створюються користувачем через форму (вкладка «Профіль» / перемикач профілів),
- * прийоми їжі додаються вручну через ШІ-форму. Демо-дані навмисно відсутні.
- *
- * Цей файл лишено як точку розширення — за потреби сюди можна додати власні
- * початкові дані й запустити `npx prisma db seed`.
+ * Сід каталогу скінів (ціни/нові скіни далі керуються з адмінки).
  */
+import { PrismaClient } from "@prisma/client";
+import { DEFAULT_SKINS } from "../src/lib/avatar-presets";
+
+const prisma = new PrismaClient();
+
 async function main() {
-  console.log("ℹ️  Seed пропущено: застосунок працює з даними, які ви створюєте самі.");
+  let created = 0;
+  for (const s of DEFAULT_SKINS) {
+    const exists = await prisma.skinDef.findUnique({ where: { id: s.id } });
+    if (exists) continue;
+    await prisma.skinDef.create({
+      data: {
+        id: s.id,
+        nameUk: s.nameUk,
+        tier: s.tier,
+        price: s.price,
+        rarity: s.rarity,
+        bg: s.bg,
+        enabled: true,
+        sortOrder: s.sortOrder ?? 0,
+        artKind: s.artKind,
+        svg: s.svg ?? null,
+      },
+    });
+    created += 1;
+  }
+  console.log(`✅ Skin catalog: +${created} нових (існуючі не змінювались).`);
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

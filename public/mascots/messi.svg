@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#9AD1FF"/>
+      <stop offset="1" stop-color="#245C9E"/>
+    </radialGradient>
+    <linearGradient id="sk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F8CBA2"/>
+      <stop offset="1" stop-color="#DDA067"/>
+    </linearGradient>
+    <linearGradient id="hr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6E4A2C"/>
+      <stop offset="1" stop-color="#4A3120"/>
+    </linearGradient>
+    <clipPath id="cl"><circle cx="128" cy="128" r="128"/></clipPath>
+  </defs>
+  <g clip-path="url(#cl)">
+    <circle cx="128" cy="128" r="128" fill="url(#bg)"/>
+    <!-- jersey: Argentina sky-blue & white -->
+    <path d="M36 256 V226 Q128 188 220 226 V256 Z" fill="#EFF6FF" stroke="#274a7a" stroke-width="6"/>
+    <rect x="72" y="212" width="15" height="44" fill="#79C3EE"/>
+    <rect x="105" y="204" width="15" height="52" fill="#79C3EE"/>
+    <rect x="136" y="204" width="15" height="52" fill="#79C3EE"/>
+    <rect x="169" y="212" width="15" height="44" fill="#79C3EE"/>
+    <path d="M36 256 V226 Q128 188 220 226 V256 Z" fill="none" stroke="#274a7a" stroke-width="6"/>
+    <!-- neck -->
+    <path d="M110 184 h36 v22 q-18 12 -36 0 Z" fill="url(#sk)" stroke="#C68A54" stroke-width="5"/>
+    <!-- ears -->
+    <circle cx="74" cy="124" r="12" fill="url(#sk)" stroke="#C68A54" stroke-width="5"/>
+    <circle cx="182" cy="124" r="12" fill="url(#sk)" stroke="#C68A54" stroke-width="5"/>
+    <!-- head -->
+    <ellipse cx="128" cy="120" rx="56" ry="60" fill="url(#sk)" stroke="#C68A54" stroke-width="5"/>
+    <!-- trimmed beard hugging jaw -->
+    <path d="M78 126 Q84 172 128 184 Q172 172 178 126 Q170 150 150 160 Q128 166 106 160 Q86 150 78 126 Z" fill="#5E4028"/>
+    <!-- hair (integrated, side sweep) -->
+    <path d="M70 112 Q60 56 128 52 Q196 56 186 112 Q178 84 150 78 Q170 90 168 108 Q150 84 128 84 Q108 84 92 106 Q86 92 108 80 Q80 84 70 112 Z" fill="url(#hr)" stroke="#3C2917" stroke-width="4"/>
+    <!-- eyebrows -->
+    <path d="M92 102 q17 -8 33 0" fill="none" stroke="#4A3120" stroke-width="9" stroke-linecap="round"/>
+    <path d="M131 102 q17 -8 33 0" fill="none" stroke="#4A3120" stroke-width="9" stroke-linecap="round"/>
+    <!-- eyes -->
+    <ellipse cx="108" cy="120" rx="14" ry="16" fill="#fff" stroke="#3a2a1e" stroke-width="3.5"/>
+    <ellipse cx="148" cy="120" rx="14" ry="16" fill="#fff" stroke="#3a2a1e" stroke-width="3.5"/>
+    <circle cx="110" cy="123" r="7.5" fill="#4A3626"/>
+    <circle cx="150" cy="123" r="7.5" fill="#4A3626"/>
+    <circle cx="113" cy="119" r="2.6" fill="#fff"/>
+    <circle cx="153" cy="119" r="2.6" fill="#fff"/>
+    <!-- nose -->
+    <path d="M128 126 q-5 12 -1 18 q4 3 8 0" fill="none" stroke="#C68A56" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- calm smile -->
+    <path d="M110 158 Q128 170 146 158" fill="none" stroke="#6a3f24" stroke-width="5" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#18A862"/>
+      <stop offset="1" stop-color="#053B22"/>
+    </radialGradient>
+    <linearGradient id="sk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7D0AC"/>
+      <stop offset="1" stop-color="#E0A87E"/>
+    </linearGradient>
+    <linearGradient id="hr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A2630"/>
+      <stop offset="1" stop-color="#100E15"/>
+    </linearGradient>
+    <clipPath id="cl"><circle cx="128" cy="128" r="128"/></clipPath>
+  </defs>
+  <g clip-path="url(#cl)">
+    <circle cx="128" cy="128" r="128" fill="url(#bg)"/>
+    <!-- jersey: Portugal red with green trim -->
+    <path d="M36 256 V226 Q128 188 220 226 V256 Z" fill="#E11D2A" stroke="#04250f" stroke-width="6"/>
+    <path d="M92 214 q36 14 72 0" fill="none" stroke="#0B7A3B" stroke-width="7" stroke-linecap="round"/>
+    <!-- neck -->
+    <path d="M110 184 h36 v22 q-18 12 -36 0 Z" fill="url(#sk)" stroke="#C68A56" stroke-width="5"/>
+    <!-- ears -->
+    <circle cx="74" cy="122" r="12" fill="url(#sk)" stroke="#C68A56" stroke-width="5"/>
+    <circle cx="182" cy="122" r="12" fill="url(#sk)" stroke="#C68A56" stroke-width="5"/>
+    <!-- head -->
+    <ellipse cx="128" cy="120" rx="55" ry="59" fill="url(#sk)" stroke="#C68A56" stroke-width="5"/>
+    <!-- light stubble jaw -->
+    <path d="M84 132 Q90 170 128 180 Q166 170 172 132 Q160 152 128 156 Q96 152 84 132 Z" fill="#3a3138" opacity="0.28"/>
+    <!-- hair: short quiff with side part -->
+    <path d="M72 108 Q66 56 128 52 Q192 56 186 110 Q176 82 150 76 Q140 92 132 100 Q150 80 150 74 Q120 78 104 100 Q98 84 118 74 Q86 82 72 108 Z" fill="url(#hr)" stroke="#0c0a10" stroke-width="4"/>
+    <path d="M120 74 Q112 92 108 104" fill="none" stroke="#0c0a10" stroke-width="3" stroke-linecap="round"/>
+    <!-- eyebrows (right one raised = confident) -->
+    <path d="M92 102 q17 -6 33 1" fill="none" stroke="#17141b" stroke-width="9" stroke-linecap="round"/>
+    <path d="M131 96 q17 -6 33 3" fill="none" stroke="#17141b" stroke-width="9" stroke-linecap="round"/>
+    <!-- eyes -->
+    <ellipse cx="108" cy="120" rx="14" ry="16" fill="#fff" stroke="#2a2630" stroke-width="3.5"/>
+    <ellipse cx="148" cy="120" rx="14" ry="16" fill="#fff" stroke="#2a2630" stroke-width="3.5"/>
+    <circle cx="110" cy="123" r="7.5" fill="#241f14"/>
+    <circle cx="150" cy="123" r="7.5" fill="#241f14"/>
+    <circle cx="113" cy="119" r="2.6" fill="#fff"/>
+    <circle cx="153" cy="119" r="2.6" fill="#fff"/>
+    <!-- nose -->
+    <path d="M128 126 q-5 12 -1 18 q4 3 8 0" fill="none" stroke="#C68A56" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- confident grin -->
+    <path d="M106 156 Q128 172 150 156" fill="none" stroke="#7a4a2a" stroke-width="5" stroke-linecap="round"/>
+    <path d="M108 157 Q128 164 148 157" fill="#fff"/>
+  </g>
+</svg>

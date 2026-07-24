@@ -4,6 +4,7 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { ProgressRing } from "@/components/ProgressRing";
 import { MacroTiles } from "@/components/MacroTiles";
 import { WeeklyChart } from "@/components/WeeklyChart";
+import { WeeklyQuestsCard } from "@/components/WeeklyQuestsCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useCurrentUser, useDashboard } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
@@ -60,6 +61,9 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Квести тижня */}
+      <WeeklyQuestsCard />
 
       {/* Тижневий графік */}
       <section className="mcard p-[18px_18px_16px]">

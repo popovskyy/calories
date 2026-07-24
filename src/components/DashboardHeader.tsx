@@ -1,17 +1,22 @@
 "use client";
 
+import Link from "next/link";
+import { Flame } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { useCurrentUser } from "@/hooks/useQueries";
+import { CoinsPill } from "@/components/CoinsPill";
+import { useCurrentUser, useStreak } from "@/hooks/useQueries";
 
 export function DashboardHeader() {
   const { user } = useCurrentUser();
+  const streak = useStreak();
+  const days = streak.data?.streak ?? 0;
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2.5 rounded-[var(--radius-pill)] bg-[var(--color-surface)] py-1.5 pl-1.5 pr-3 shadow-[var(--shadow-card)]">
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex min-w-0 items-center gap-2.5 rounded-[var(--radius-pill)] bg-[var(--color-surface)] py-1.5 pl-1.5 pr-3 shadow-[var(--shadow-card)]">
         <Avatar name={user?.name ?? "?"} avatarUrl={user?.avatarUrl} size={32} />
-        <span className="text-left leading-tight">
-          <span className="block text-[16px] font-semibold text-[var(--color-text)]">
+        <span className="min-w-0 text-left leading-tight">
+          <span className="block truncate text-[16px] font-semibold text-[var(--color-text)]">
             {user?.name ?? "Профіль"}
           </span>
           <span className="block text-[13px] text-[var(--color-muted3)]">
@@ -20,6 +25,22 @@ export function DashboardHeader() {
               : "Не обрано"}
           </span>
         </span>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        {days > 0 ? (
+          <div
+            className="flex items-center gap-1 rounded-[var(--radius-pill)] border border-[var(--color-divider)] bg-[var(--color-tile)] px-2.5 py-1.5"
+            title="Дні підряд із записом їжі"
+          >
+            <Flame size={16} className="text-[var(--color-accent)]" />
+            <span className="text-[14px] font-semibold tabular-nums text-[var(--color-text)]">
+              {days}
+            </span>
+          </div>
+        ) : null}
+
+        <CoinsPill />
       </div>
     </div>
   );

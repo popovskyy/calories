@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="34%" r="78%">
+      <stop offset="0" stop-color="#3d2a6b"/>
+      <stop offset="1" stop-color="#0c0818"/>
+    </radialGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3d0ad"/>
+      <stop offset="1" stop-color="#d0a078"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a1c12"/>
+      <stop offset="1" stop-color="#0e0906"/>
+    </linearGradient>
+    <linearGradient id="robe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b1d2a"/>
+      <stop offset="1" stop-color="#3a0e16"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="120" fill="url(#bg)"/>
+  <circle cx="52" cy="70" r="2" fill="#ffd34e" opacity=".8"/>
+  <circle cx="200" cy="90" r="1.6" fill="#fff" opacity=".7"/>
+  <circle cx="70" cy="180" r="1.8" fill="#ffd34e" opacity=".5"/>
+  <!-- messy hair -->
+  <ellipse cx="128" cy="96" rx="62" ry="44" fill="url(#hair)"/>
+  <path d="M70 100 q12 -40 40 -48 q20 4 28 20 q8 -24 36 -28 q22 8 34 40 q-14 -20 -32 -26 q-28 -8 -50 6 q-16 10 -22 36z" fill="#1a1008"/>
+  <!-- glasses round -->
+  <ellipse cx="128" cy="140" rx="52" ry="54" fill="url(#skin)"/>
+  <!-- lightning scar -->
+  <path d="M108 108 l6 14 l-8 4 l10 16" fill="none" stroke="#c44" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- brows -->
+  <path d="M96 122 q14 -6 26 0" fill="none" stroke="#2a1c12" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M134 122 q14 -6 26 0" fill="none" stroke="#2a1c12" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- eyes -->
+  <ellipse cx="108" cy="136" rx="11" ry="13" fill="#fff"/>
+  <ellipse cx="148" cy="136" rx="11" ry="13" fill="#fff"/>
+  <circle cx="110" cy="138" r="5.5" fill="#3a5a2a"/>
+  <circle cx="146" cy="138" r="5.5" fill="#3a5a2a"/>
+  <circle cx="112" cy="135" r="1.8" fill="#fff"/>
+  <circle cx="148" cy="135" r="1.8" fill="#fff"/>
+  <!-- round glasses -->
+  <circle cx="108" cy="136" r="18" fill="none" stroke="#c9a227" stroke-width="3.5"/>
+  <circle cx="148" cy="136" r="18" fill="none" stroke="#c9a227" stroke-width="3.5"/>
+  <path d="M126 136 h4" stroke="#c9a227" stroke-width="3" stroke-linecap="round"/>
+  <!-- nose / smile -->
+  <ellipse cx="128" cy="156" rx="6" ry="4.5" fill="#c07a4e"/>
+  <path d="M112 170 q16 12 32 0" fill="none" stroke="#8a4e32" stroke-width="3" stroke-linecap="round"/>
+  <!-- Gryffindor collar -->
+  <path d="M80 180 q48 20 96 0 q-6 16 -48 20 q-42 -4 -48 -20z" fill="url(#robe)"/>
+  <path d="M118 184 v14" stroke="#c9a227" stroke-width="4" opacity=".9"/>
+  <path d="M78 78 a60 44 0 0 1 42 -22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".2"/>
+  <text x="128" y="226" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="13" font-weight="900" fill="#c9a227" stroke="#0c0818" stroke-width="3" paint-order="stroke" letter-spacing="0.5">Harry Potter</text>
+</svg>

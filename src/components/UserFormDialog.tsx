@@ -9,11 +9,9 @@ import { Modal } from "@/components/ui/Dialog";
 import { Field, inputClass } from "@/components/ui/Field";
 import { useGenerateAvatar, useSaveUser } from "@/hooks/useQueries";
 import {
-  ACTIVITY_LABELS,
   GOAL_LABELS,
   MONTH_LABELS_UK,
   calcTargetCalories,
-  type ActivityLevel,
   type Goal,
   type Sex,
 } from "@/lib/calories";
@@ -32,7 +30,6 @@ interface FormState {
   birthYear: string;
   birthMonth: string;
   sex: Sex;
-  activityLevel: ActivityLevel;
   goal: Goal;
   weight: string;
   height: string;
@@ -45,7 +42,6 @@ const empty: FormState = {
   birthYear: String(currentYear - 30),
   birthMonth: "1",
   sex: "male",
-  activityLevel: "moderate",
   goal: "maintain",
   weight: "70",
   height: "175",
@@ -94,7 +90,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       birthYear: String(user.birthYear),
       birthMonth: String(user.birthMonth),
       sex: user.sex,
-      activityLevel: user.activityLevel,
       goal: user.goal,
       weight: String(user.weight),
       height: String(user.height),
@@ -131,7 +126,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       sex: form.sex,
       weightKg: weight,
       heightCm: height,
-      activityLevel: form.activityLevel,
       goal: form.goal,
     });
   }, [form]);
@@ -181,7 +175,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         birthYear,
         birthMonth,
         sex: form.sex,
-        activityLevel: form.activityLevel,
         goal: form.goal,
         weight,
         height,
@@ -212,6 +205,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               setAvatarUrl(url);
               setAvatarDirty(true);
             }}
+            ownedIds={user?.ownedSkinIds ?? []}
           />
           <div className="w-full rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-3 py-3">
             <button
@@ -350,20 +344,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
             />
           </Field>
         </div>
-
-        <Field label="Фізична активність">
-          <select
-            className={inputClass}
-            value={form.activityLevel}
-            onChange={set("activityLevel")}
-          >
-            {(Object.keys(ACTIVITY_LABELS) as ActivityLevel[]).map((key) => (
-              <option key={key} value={key}>
-                {ACTIVITY_LABELS[key]}
-              </option>
-            ))}
-          </select>
-        </Field>
 
         <div className="flex flex-col gap-1.5">
           <span className="lbl">Мета</span>

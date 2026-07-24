@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut, Pencil } from "lucide-react";
+import Link from "next/link";
+import { KeyRound, LogOut, Pencil, ShoppingBag } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { CoinIcon } from "@/components/icons/CurrencyIcons";
+import { ReminderToggle } from "@/components/ReminderToggle";
 import { UserFormDialog } from "@/components/UserFormDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useCurrentUser, useLogout } from "@/hooks/useQueries";
+import { useCurrentUser, useLogout, useStreak } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { GOAL_LABELS } from "@/lib/calories";
 
@@ -13,7 +17,9 @@ export default function ProfilePage() {
   const mounted = useMounted();
   const { user, isLoading } = useCurrentUser();
   const logout = useLogout();
+  const streak = useStreak();
   const [formOpen, setFormOpen] = useState(false);
+  const [pwdOpen, setPwdOpen] = useState(false);
 
   if (!mounted || isLoading) {
     return (
@@ -25,6 +31,8 @@ export default function ProfilePage() {
   }
 
   if (!user) return null;
+
+  const streakDays = streak.data?.streak ?? 0;
 
   return (
     <>
@@ -50,6 +58,12 @@ export default function ProfilePage() {
             {GOAL_LABELS[user.goal].toLowerCase()} · {user.age} р · {user.weight} кг ·{" "}
             {user.height} см
           </div>
+          {streakDays > 0 ? (
+            <div className="mt-1.5 text-[13px] font-semibold text-[var(--color-accent-300)]">
+              Стрік {streakDays}{" "}
+              {streakDays === 1 ? "день" : streakDays < 5 ? "дні" : "днів"}
+            </div>
+          ) : null}
         </div>
         <button
           onClick={() => setFormOpen(true)}
@@ -60,7 +74,47 @@ export default function ProfilePage() {
         </button>
       </div>
 
+      <Link
+        href="/shop"
+        className="mcard flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,#FFC800_15%,transparent)] text-[#FFC800]">
+          <ShoppingBag size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[16px] font-semibold text-[var(--color-text)]">Магазин</div>
+          <div className="text-[13px] text-[var(--color-muted3)]">
+            Скіни за монети
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1 text-[15px] font-semibold text-[var(--color-text)]">
+          <CoinIcon size={16} />
+          <span className="tabular-nums">{user.coins.toLocaleString("uk-UA")}</span>
+        </div>
+      </Link>
+
+      <ReminderToggle />
+
+      <button
+        type="button"
+        onClick={() => setPwdOpen(true)}
+        className="mcard flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-tile)] text-[var(--color-muted2)]">
+          <KeyRound size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[16px] font-semibold text-[var(--color-text)]">
+            Змінити пароль
+          </div>
+          <div className="text-[13px] text-[var(--color-muted3)]">
+            Оновіть пароль для входу
+          </div>
+        </div>
+      </button>
+
       <UserFormDialog open={formOpen} onOpenChange={setFormOpen} user={user} />
+      <ChangePasswordDialog open={pwdOpen} onOpenChange={setPwdOpen} />
     </>
   );
 }
