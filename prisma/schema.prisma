@@ -14,11 +14,19 @@ datasource db {
 
 model User {
   id             String    @id @default(cuid())
+  username       String    @unique
+  passwordHash   String
   name           String
-  targetCalories Int // базова денна норма калорій
-  age            Int       @default(30)
+  targetCalories Int // денна норма (обчислюється з формули, зберігається)
+  birthYear      Int       @default(1995)
+  birthMonth     Int       @default(1) // 1–12
+  sex            String    @default("male") // male | female
+  activityLevel  String    @default("moderate") // sedentary…very_active
+  goal           String    @default("maintain") // maintain | deficit
   weight         Float     @default(70)
   height         Float     @default(175)
+  avatarUrl      String? // data:image/png;base64,… (мультяшний аватар від Gemini)
+  createdAt      DateTime  @default(now())
   meals          MealLog[]
 }
 

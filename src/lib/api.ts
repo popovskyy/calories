@@ -1,14 +1,17 @@
 import type {
   AnalyzeResult,
+  ArenaResponse,
   DashboardResponse,
   MealDTO,
   UserDTO,
 } from "./types";
+import type { ActivityLevel, Goal, Sex } from "./calories";
 
 async function req<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    credentials: "same-origin",
   });
   if (!res.ok) {
     let message = `Помилка ${res.status}`;
@@ -23,23 +26,69 @@ async function req<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// --- Users ---
-export const getUsers = () => req<UserDTO[]>("/api/users");
+// --- Auth ---
+export interface LoginInput {
+  username: string;
+  password: string;
+}
+export const login = (input: LoginInput) =>
+  req<UserDTO>("/api/auth/login", { method: "POST", body: JSON.stringify(input) });
 
-export interface UserInput {
-  id?: string;
+export interface RegisterInput {
+  username: string;
+  password: string;
   name: string;
-  targetCalories: number;
-  age?: number;
-  weight?: number;
-  height?: number;
+  birthYear: number;
+  birthMonth: number;
+  sex: Sex;
+  activityLevel: ActivityLevel;
+  goal: Goal;
+  weight: number;
+  height: number;
+  avatarUrl?: string | null;
+  imageBase64?: string;
+  imageMimeType?: string;
+}
+export const register = (input: RegisterInput) =>
+  req<UserDTO>("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const logout = () =>
+  req<{ ok: true }>("/api/auth/logout", { method: "POST" });
+
+export const getMe = () => req<UserDTO>("/api/auth/me");
+
+// --- Profile ---
+export interface UserInput {
+  name: string;
+  birthYear: number;
+  birthMonth: number;
+  sex: Sex;
+  activityLevel: ActivityLevel;
+  goal: Goal;
+  weight: number;
+  height: number;
+  avatarUrl?: string | null;
 }
 export const saveUser = (input: UserInput) =>
   req<UserDTO>("/api/users", { method: "POST", body: JSON.stringify(input) });
 
+export interface GenerateAvatarInput {
+  imageBase64: string;
+  imageMimeType?: string;
+  apiKey?: string;
+}
+export const generateAvatar = (input: GenerateAvatarInput) =>
+  req<{ avatarUrl: string }>("/api/avatar/generate", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
 // --- Meals ---
-export const getMeals = (userId: string, date: string) =>
-  req<MealDTO[]>(`/api/meals?userId=${encodeURIComponent(userId)}&date=${date}`);
+export const getMeals = (date: string) =>
+  req<MealDTO[]>(`/api/meals?date=${encodeURIComponent(date)}`);
 
 export interface AnalyzeInput {
   description?: string;
@@ -54,7 +103,6 @@ export const analyzeMeal = (input: AnalyzeInput) =>
   });
 
 export interface SaveMealInput extends AnalyzeInput {
-  userId: string;
   date: string;
   description: string;
   calories?: number;
@@ -70,9 +118,9 @@ export const deleteMeal = (id: string) =>
   req<{ ok: true }>(`/api/meals/${id}`, { method: "DELETE" });
 
 // --- Stats ---
-export const getDashboard = (userId: string, date?: string) =>
+export const getDashboard = (date?: string) =>
   req<DashboardResponse>(
-    `/api/stats/dashboard?userId=${encodeURIComponent(userId)}${
-      date ? `&date=${date}` : ""
-    }`,
+    `/api/stats/dashboard${date ? `?date=${encodeURIComponent(date)}` : ""}`,
   );
+
+export const getArena = () => req<ArenaResponse>("/api/arena");

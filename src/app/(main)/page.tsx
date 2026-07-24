@@ -4,7 +4,6 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { ProgressRing } from "@/components/ProgressRing";
 import { MacroTiles } from "@/components/MacroTiles";
 import { WeeklyChart } from "@/components/WeeklyChart";
-import { OnboardingPrompt } from "@/components/OnboardingPrompt";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useCurrentUser, useDashboard } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
@@ -13,10 +12,9 @@ import { humanDate, todayYMD } from "@/lib/date";
 export default function DashboardPage() {
   const mounted = useMounted();
   const { user, isLoading } = useCurrentUser();
-  const dash = useDashboard(user?.id ?? null);
+  const dash = useDashboard();
 
-  if (!mounted || isLoading) return <DashboardSkeleton />;
-  if (!user) return <OnboardingPrompt />;
+  if (!mounted || isLoading || !user) return <DashboardSkeleton />;
 
   const today = dash.data?.today;
   const over = (today?.difference ?? 0) < 0;

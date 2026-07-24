@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { requireSession } from "@/lib/auth";
 import { analyzeFood, GeminiError } from "@/lib/gemini";
 import type { AnalyzeResult } from "@/lib/types";
 
@@ -19,6 +20,9 @@ const analyzeSchema = z
 
 /** POST /api/meals/analyze — лише ШІ-аналіз, без збереження */
 export async function POST(req: NextRequest) {
+  const auth = await requireSession();
+  if (!auth.ok) return auth.response;
+
   const body = await req.json().catch(() => null);
   const parsed = analyzeSchema.safeParse(body);
   if (!parsed.success) {

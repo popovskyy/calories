@@ -7,7 +7,6 @@ import { DateSelector } from "@/components/DateSelector";
 import { ProgressBar } from "@/components/ProgressBar";
 import { MealCard } from "@/components/MealCard";
 import { EmptyState } from "@/components/EmptyState";
-import { OnboardingPrompt } from "@/components/OnboardingPrompt";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useCurrentUser, useDeleteMeal, useMeals } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
@@ -19,11 +18,10 @@ export default function LogPage() {
   const { user, isLoading } = useCurrentUser();
   const selectedDate = useAppStore((s) => s.selectedDate);
   const setSelectedDate = useAppStore((s) => s.setSelectedDate);
-  const meals = useMeals(user?.id ?? null, selectedDate);
-  const del = useDeleteMeal(user?.id ?? null, selectedDate);
+  const meals = useMeals(selectedDate);
+  const del = useDeleteMeal(selectedDate);
 
-  if (!mounted || isLoading) return <LogSkeleton />;
-  if (!user) return <OnboardingPrompt />;
+  if (!mounted || isLoading || !user) return <LogSkeleton />;
 
   const list = meals.data ?? [];
   const consumed = list.reduce((s, m) => s + m.calories, 0);

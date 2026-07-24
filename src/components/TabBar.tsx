@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, ClipboardList, User } from "lucide-react";
+import { House, ClipboardList, Trophy, User } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const TABS = [
   { href: "/", label: "Огляд", icon: House },
   { href: "/log", label: "Журнал", icon: ClipboardList },
+  { href: "/arena", label: "Арена", icon: Trophy },
   { href: "/profile", label: "Профіль", icon: User },
 ] as const;
 
@@ -16,7 +17,7 @@ export function TabBar() {
 
   return (
     <nav
-      className="flex shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[30px] pt-2.5"
+      className="flex shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-2 pt-2.5"
       style={{ paddingBottom: "calc(20px + env(safe-area-inset-bottom))" }}
     >
       {TABS.map(({ href, label, icon: Icon }) => {

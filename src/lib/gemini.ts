@@ -6,7 +6,7 @@ import {
 import type { AnalyzeResult } from "./types";
 
 /** Модель можна перевизначити через env; дефолт — актуальний flash */
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
 const SYSTEM_PROMPT = `Ти — нутриціолог-аналітик. За текстовим описом та/або фото страви оціни харчову цінність.
 Відповідай СУВОРО у JSON за схемою. Правила:

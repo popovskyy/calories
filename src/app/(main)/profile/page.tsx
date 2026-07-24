@@ -1,104 +1,66 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Pencil, Plus } from "lucide-react";
+import { LogOut, Pencil } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { UserFormDialog } from "@/components/UserFormDialog";
-import { OnboardingPrompt } from "@/components/OnboardingPrompt";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useCurrentUser } from "@/hooks/useQueries";
+import { useCurrentUser, useLogout } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
-import { useAppStore } from "@/store/useAppStore";
-import type { UserDTO } from "@/lib/types";
+import { GOAL_LABELS } from "@/lib/calories";
 
 export default function ProfilePage() {
   const mounted = useMounted();
-  const { user, users, isLoading } = useCurrentUser();
-  const setCurrentUserId = useAppStore((s) => s.setCurrentUserId);
+  const { user, isLoading } = useCurrentUser();
+  const logout = useLogout();
   const [formOpen, setFormOpen] = useState(false);
-  const [editUser, setEditUser] = useState<UserDTO | null>(null);
 
   if (!mounted || isLoading) {
     return (
       <>
         <Skeleton className="h-8 w-40" />
-        {[0, 1].map((i) => (
-          <Skeleton key={i} className="h-[76px] w-full rounded-[var(--radius-lg)]" />
-        ))}
+        <Skeleton className="h-[120px] w-full rounded-[var(--radius-lg)]" />
       </>
     );
   }
-  if (users.length === 0) return <OnboardingPrompt />;
 
-  const openCreate = () => {
-    setEditUser(null);
-    setFormOpen(true);
-  };
-  const openEdit = (u: UserDTO) => {
-    setEditUser(u);
-    setFormOpen(true);
-  };
+  if (!user) return null;
 
   return (
     <>
       <header className="flex items-center justify-between">
-        <h1 className="text-[20px] font-semibold text-[var(--color-text)]">Профілі</h1>
+        <h1 className="text-[20px] font-semibold text-[var(--color-text)]">Профіль</h1>
         <button
-          onClick={openCreate}
-          aria-label="Новий профіль"
-          className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] border border-[var(--color-divider)] text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)]"
+          onClick={() => logout.mutate()}
+          disabled={logout.isPending}
+          className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--color-divider)] px-3 py-2 text-[13px] font-medium text-[var(--color-muted2)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
         >
-          <Plus size={18} />
+          <LogOut size={16} />
+          Вийти
         </button>
       </header>
 
-      <div className="flex flex-col gap-3">
-        {users.map((u) => {
-          const active = u.id === user?.id;
-          return (
-            <div
-              key={u.id}
-              className="mcard flex items-center gap-3 p-3.5"
-              style={active ? { boxShadow: "0 0 0 1px var(--color-accent-500)" } : undefined}
-            >
-              <button
-                onClick={() => setCurrentUserId(u.id)}
-                className="flex flex-1 items-center gap-3 text-left"
-              >
-                <Avatar name={u.name} size={44} />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[15px] font-semibold text-[var(--color-text)]">
-                      {u.name}
-                    </span>
-                    {active ? (
-                      <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--color-accent)]">
-                        <Check size={13} /> активний
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="mt-0.5 text-[12px] text-[var(--color-muted3)]">
-                    {u.targetCalories.toLocaleString("uk-UA")} ккал · {u.age} р · {u.weight} кг · {u.height} см
-                  </div>
-                </div>
-              </button>
-              <button
-                onClick={() => openEdit(u)}
-                aria-label="Редагувати"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted2)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-text)]"
-              >
-                <Pencil size={16} />
-              </button>
-            </div>
-          );
-        })}
+      <div className="mcard flex items-center gap-3 p-4">
+        <Avatar name={user.name} avatarUrl={user.avatarUrl} size={64} />
+        <div className="min-w-0 flex-1">
+          <div className="text-[18px] font-semibold text-[var(--color-text)]">{user.name}</div>
+          <div className="text-[13px] text-[var(--color-muted3)]">@{user.username}</div>
+          <div className="mt-1 text-[12px] text-[var(--color-muted2)]">
+            {user.targetCalories.toLocaleString("uk-UA")} ккал ·{" "}
+            {GOAL_LABELS[user.goal].toLowerCase()} · {user.age} р · {user.weight} кг ·{" "}
+            {user.height} см
+          </div>
+        </div>
+        <button
+          onClick={() => setFormOpen(true)}
+          aria-label="Редагувати"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted2)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-text)]"
+        >
+          <Pencil size={18} />
+        </button>
       </div>
 
-      <button className="btn btn-primary btn-block" onClick={openCreate}>
-        <Plus size={18} /> Новий профіль
-      </button>
-
-      <UserFormDialog open={formOpen} onOpenChange={setFormOpen} user={editUser} />
+      <UserFormDialog open={formOpen} onOpenChange={setFormOpen} user={user} />
     </>
   );
 }

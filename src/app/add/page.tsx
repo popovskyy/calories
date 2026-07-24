@@ -76,7 +76,6 @@ export default function AddFoodPage() {
     if (!user || !result) return;
     save.mutate(
       {
-        userId: user.id,
         date: selectedDate,
         description: description.trim() || result.parsedItems.join(", ") || "Прийом їжі",
         calories: result.calories,

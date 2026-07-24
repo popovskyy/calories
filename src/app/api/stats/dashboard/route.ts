@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { lastNDays, todayYMD } from "@/lib/date";
 import type { DashboardDay, DashboardResponse } from "@/lib/types";
@@ -6,13 +7,13 @@ import type { DashboardDay, DashboardResponse } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** GET /api/stats/dashboard?userId=&date=YYYY-MM-DD (date опційно, дефолт — сьогодні) */
+/** GET /api/stats/dashboard?date=YYYY-MM-DD — дашборд поточного користувача */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
+  const auth = await requireSession();
+  if (!auth.ok) return auth.response;
+
+  const userId = auth.session.userId;
   const end = req.nextUrl.searchParams.get("date") || todayYMD();
-  if (!userId) {
-    return NextResponse.json({ error: "Потрібен userId" }, { status: 400 });
-  }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {

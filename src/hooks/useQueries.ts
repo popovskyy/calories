@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import {
   useMutation,
   useQuery,
@@ -9,72 +8,105 @@ import {
 import {
   analyzeMeal,
   deleteMeal,
+  generateAvatar,
+  getArena,
   getDashboard,
+  getMe,
   getMeals,
-  getUsers,
+  login,
+  logout,
+  register,
   saveMeal,
   saveUser,
   type AnalyzeInput,
+  type GenerateAvatarInput,
+  type LoginInput,
+  type RegisterInput,
   type SaveMealInput,
   type UserInput,
 } from "@/lib/api";
 import type { MealDTO } from "@/lib/types";
-import { useAppStore } from "@/store/useAppStore";
 
-export function useUsers() {
-  return useQuery({ queryKey: ["users"], queryFn: getUsers });
+export function useMe() {
+  return useQuery({
+    queryKey: ["me"],
+    queryFn: getMe,
+    retry: false,
+    staleTime: 30_000,
+  });
 }
 
-/** Поточний профіль + авто-вибір першого, якщо не задано або зник */
+/** Поточний залогінений користувач (сесія). */
 export function useCurrentUser() {
-  const usersQuery = useUsers();
-  const currentUserId = useAppStore((s) => s.currentUserId);
-  const setCurrentUserId = useAppStore((s) => s.setCurrentUserId);
-  const users = usersQuery.data;
-
-  useEffect(() => {
-    if (!users) return;
-    const exists = currentUserId && users.some((u) => u.id === currentUserId);
-    if (!exists) {
-      setCurrentUserId(users[0]?.id ?? null);
-    }
-  }, [users, currentUserId, setCurrentUserId]);
-
-  const user =
-    users?.find((u) => u.id === currentUserId) ?? users?.[0] ?? null;
-
+  const me = useMe();
   return {
-    user,
-    users: users ?? [],
-    isLoading: usersQuery.isLoading,
-    isError: usersQuery.isError,
+    user: me.data ?? null,
+    isLoading: me.isLoading,
+    isError: me.isError,
+    refetch: me.refetch,
   };
+}
+
+export function useLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: LoginInput) => login(input),
+    onSuccess: (user) => {
+      qc.setQueryData(["me"], user);
+    },
+  });
+}
+
+export function useRegister() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RegisterInput) => register(input),
+    onSuccess: (user) => {
+      qc.setQueryData(["me"], user);
+    },
+  });
+}
+
+export function useLogout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => logout(),
+    onSuccess: () => {
+      qc.clear();
+      window.location.href = "/login";
+    },
+  });
 }
 
 export function useSaveUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: UserInput) => saveUser(input),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["users"] });
+    onSuccess: (user) => {
+      qc.setQueryData(["me"], user);
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["arena"] });
     },
   });
 }
 
-export function useDashboard(userId: string | null) {
-  return useQuery({
-    queryKey: ["dashboard", userId],
-    queryFn: () => getDashboard(userId!),
-    enabled: !!userId,
+export function useGenerateAvatar() {
+  return useMutation({
+    mutationFn: (input: GenerateAvatarInput) => generateAvatar(input),
   });
 }
 
-export function useMeals(userId: string | null, date: string) {
+export function useDashboard() {
   return useQuery({
-    queryKey: ["meals", userId, date],
-    queryFn: () => getMeals(userId!, date),
-    enabled: !!userId,
+    queryKey: ["dashboard"],
+    queryFn: () => getDashboard(),
+  });
+}
+
+export function useMeals(date: string) {
+  return useQuery({
+    queryKey: ["meals", date],
+    queryFn: () => getMeals(date),
   });
 }
 
@@ -89,18 +121,18 @@ export function useSaveMeal() {
   return useMutation({
     mutationFn: (input: SaveMealInput) => saveMeal(input),
     onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["meals", vars.userId, vars.date] });
-      qc.invalidateQueries({ queryKey: ["dashboard", vars.userId] });
+      qc.invalidateQueries({ queryKey: ["meals", vars.date] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["arena"] });
     },
   });
 }
 
-export function useDeleteMeal(userId: string | null, date: string) {
+export function useDeleteMeal(date: string) {
   const qc = useQueryClient();
-  const key = ["meals", userId, date];
+  const key = ["meals", date];
   return useMutation({
     mutationFn: (id: string) => deleteMeal(id),
-    // Оптимістичне видалення — картка зникає одразу з анімацією
     onMutate: async (id: string) => {
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<MealDTO[]>(key);
@@ -112,7 +144,16 @@ export function useDeleteMeal(userId: string | null, date: string) {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
-      qc.invalidateQueries({ queryKey: ["dashboard", userId] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["arena"] });
     },
+  });
+}
+
+export function useArena() {
+  return useQuery({
+    queryKey: ["arena"],
+    queryFn: getArena,
+    refetchInterval: 60_000,
   });
 }

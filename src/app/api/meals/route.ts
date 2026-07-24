@@ -1,26 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeFood, GeminiError } from "@/lib/gemini";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** GET /api/meals?userId=&date=YYYY-MM-DD */
+/** GET /api/meals?date=YYYY-MM-DD — журнал поточного користувача */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
+  const auth = await requireSession();
+  if (!auth.ok) return auth.response;
+
   const date = req.nextUrl.searchParams.get("date");
-  if (!userId || !date) {
-    return NextResponse.json(
-      { error: "Потрібні параметри userId і date" },
-      { status: 400 },
-    );
+  if (!date) {
+    return NextResponse.json({ error: "Потрібен параметр date" }, { status: 400 });
   }
   const meals = await prisma.mealLog.findMany({
-    where: { userId, date },
+    where: { userId: auth.session.userId, date },
     orderBy: { createdAt: "asc" },
   });
-  // createdAt: Date серіалізується у ISO-рядок (MealDTO) автоматично
   return NextResponse.json(meals);
 }
 
@@ -32,25 +31,22 @@ const macros = {
 };
 
 const saveSchema = z.object({
-  userId: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Дата має бути YYYY-MM-DD"),
   description: z.string().min(1, "Потрібен опис страви"),
   imageUrl: z.string().optional().nullable(),
   imageBase64: z.string().optional(),
   imageMimeType: z.string().optional(),
   apiKey: z.string().optional(),
-  // Якщо БЖУ вже пораховані на клієнті — зберігаємо без повторного виклику Gemini.
   calories: macros.calories.optional(),
   protein: macros.protein.optional(),
   fats: macros.fats.optional(),
   carbs: macros.carbs.optional(),
 });
 
-/**
- * POST /api/meals — зберегти прийом їжі.
- * Якщо БЖУ передані — зберігаємо напряму; інакше аналізуємо через Gemini й зберігаємо.
- */
 export async function POST(req: NextRequest) {
+  const auth = await requireSession();
+  if (!auth.ok) return auth.response;
+
   const body = await req.json().catch(() => null);
   const parsed = saveSchema.safeParse(body);
   if (!parsed.success) {
@@ -97,7 +93,7 @@ export async function POST(req: NextRequest) {
 
   const meal = await prisma.mealLog.create({
     data: {
-      userId: d.userId,
+      userId: auth.session.userId,
       date: d.date,
       description: d.description,
       calories: calories!,
