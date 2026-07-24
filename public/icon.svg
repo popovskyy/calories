@@ -1,15 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
   <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a1c2e"/>
+      <stop offset="1" stop-color="#12141f"/>
+    </linearGradient>
     <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#b5abfc"/>
+      <stop offset="0.55" stop-color="#968ae0"/>
       <stop offset="1" stop-color="#796cbf"/>
     </linearGradient>
+    <linearGradient id="glow" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#d2cefd" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#5d5294" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="0.35" cy="0.3" r="0.7">
+      <stop offset="0" stop-color="#968ae0" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#161826" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#161826"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#2b2d3a" stroke-width="34"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="url(#ring)" stroke-width="34"
-    stroke-linecap="round" stroke-dasharray="942" stroke-dashoffset="278"
-    transform="rotate(-90 256 256)"/>
-  <text x="256" y="288" text-anchor="middle" font-family="Inter, sans-serif"
-    font-size="120" font-weight="600" fill="#e9e9ed">к</text>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#spot)"/>
+  <circle cx="512" cy="512" r="340" fill="url(#glow)"/>
+
+  <circle cx="512" cy="512" r="286" fill="none" stroke="#2b2d3a" stroke-width="56"/>
+
+  <circle
+    cx="512" cy="512" r="286"
+    fill="none"
+    stroke="url(#ring)"
+    stroke-width="56"
+    stroke-linecap="round"
+    stroke-dasharray="1796"
+    stroke-dashoffset="503"
+    transform="rotate(-90 512 512)"
+    filter="url(#soft)"
+  />
+
+  <circle cx="512" cy="226" r="18" fill="#d2cefd" opacity="0.9"/>
+
+  <!-- Vector "к" — no font dependency -->
+  <g fill="#e9e9ed" transform="translate(512 512)">
+    <path d="
+      M -118 -168
+      L -52 -168
+      L -52 -28
+      L 78 -168
+      L 158 -168
+      L 8 -8
+      L 168 168
+      L 86 168
+      L -52 18
+      L -52 168
+      L -118 168
+      Z
+    "/>
+  </g>
 </svg>
