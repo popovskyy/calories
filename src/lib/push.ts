@@ -69,7 +69,9 @@ export async function notifyUser(
     title: payload.title,
     body: payload.body,
     url: payload.url ?? "/",
-    tag: payload.dedupeKey ?? payload.kind,
+    // Без dedupeKey тег має бути унікальним, інакше друге скасування підряд
+    // мовчки замінить перше у шторці сповіщень.
+    tag: payload.dedupeKey ?? `${payload.kind}:${Date.now()}`,
   });
 
   await Promise.allSettled(

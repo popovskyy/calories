@@ -45,6 +45,7 @@ export function WeightGoalCard() {
     currentWeight,
     targetWeight,
     expectedWeight,
+    deltaActual,
     plannedWeightToday,
     daysLeft,
     loggedDays,
@@ -103,7 +104,7 @@ export function WeightGoalCard() {
 
       <div className="flex gap-2.5">
         <Tile label="Старт" value={fmtKg(startWeight)} />
-        <Tile label="Зараз" value={fmtKg(currentWeight)} />
+        <Tile label="Зараз" value={fmtKg(currentWeight)} delta={deltaActual} />
         <Tile label="Ціль" value={fmtKg(targetWeight)} />
       </div>
 
@@ -114,8 +115,8 @@ export function WeightGoalCard() {
           Прогноз ШІ на сьогодні: {fmtKg(expectedWeight)}
         </p>
         <p className="mt-0.5 text-[13px] text-[var(--color-muted3)]">
-          за журналом — дані за {loggedDays} з {totalDays}{" "}
-          {pluralDays(totalDays)}
+          за журналом — дані за {loggedDays} {pluralDays(loggedDays)} з{" "}
+          {totalDays}
         </p>
       </div>
 
@@ -133,13 +134,36 @@ export function WeightGoalCard() {
   );
 }
 
-function Tile({ label, value }: { label: string; value: string }) {
+function Tile({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  /** Зміна від старту: <0 — схудли (зелений), >0 — набрали (червоний). */
+  delta?: number | null;
+}) {
+  const showDelta = delta != null && Math.abs(delta) >= 0.05;
   return (
     <div className="tile flex-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-2 py-2 text-center">
       <div className="text-[12px] text-[var(--color-muted3)]">{label}</div>
       <div className="text-[16px] font-semibold tabular-nums text-[var(--color-text)]">
         {value}
       </div>
+      {showDelta ? (
+        <div
+          className="text-[12px] font-semibold tabular-nums"
+          style={{
+            color: delta < 0 ? "var(--color-green)" : "var(--color-red)",
+          }}
+        >
+          {delta < 0 ? "−" : "+"}
+          {Math.abs(delta).toFixed(1).replace(".", ",")} кг
+        </div>
+      ) : delta != null ? (
+        <div className="text-[12px] text-[var(--color-muted3)]">без змін</div>
+      ) : null}
     </div>
   );
 }
@@ -152,7 +176,7 @@ function fmtKg(v: number | null | undefined): string {
 function pluralDays(n: number): string {
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "дня";
+  if (mod10 === 1 && mod100 !== 11) return "день";
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "дні";
   return "днів";
 }

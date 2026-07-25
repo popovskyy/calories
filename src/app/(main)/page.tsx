@@ -7,7 +7,6 @@ import { WeeklyChart } from "@/components/WeeklyChart";
 import { WeeklyQuestsCard } from "@/components/WeeklyQuestsCard";
 import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ThemeSync } from "@/components/ThemeSync";
 import { useCurrentUser, useDashboard } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { calcMacroTargets } from "@/lib/calories";
@@ -26,7 +25,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      <ThemeSync theme={user.theme} />
       <DashboardHeader />
 
       {/* Кільце прогресу */}

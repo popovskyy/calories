@@ -101,7 +101,8 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
   const totalDays = Math.max(0, daysBetween(startWeightDate, today));
   const expectedWeight =
     Math.round((startWeight - deficitSum / KCAL_PER_KG) * 10) / 10;
-  const deltaActual = Math.round((currentWeight - expectedWeight) * 10) / 10;
+  /** Фактична зміна ваги від старту: <0 — схудли, >0 — набрали. */
+  const deltaActual = Math.round((currentWeight - startWeight) * 10) / 10;
 
   const targetDate = shiftYMD(startWeightDate, targetWeeks * 7);
   const daysLeft = Math.max(0, daysBetween(today, targetDate));

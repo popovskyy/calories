@@ -3,6 +3,7 @@
 import { Flame } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { CoinsPill } from "@/components/CoinsPill";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useCurrentUser, useStreak } from "@/hooks/useQueries";
 
 export function DashboardHeader() {
@@ -39,6 +40,7 @@ export function DashboardHeader() {
           </div>
         ) : null}
 
+        <NotificationBell />
         <CoinsPill />
       </div>
     </div>

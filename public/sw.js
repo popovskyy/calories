@@ -69,6 +69,7 @@ self.addEventListener("push", (event) => {
       icon: "/icons/icon-192.png",
       badge: "/icons/favicon-32.png",
       tag: data.tag || "calories-push",
+      renotify: true,
       data: { url: data.url || "/" },
     }),
   );
