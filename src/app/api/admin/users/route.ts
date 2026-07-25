@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { calcTargetCalories } from "@/lib/calories";
 import { hashPassword } from "@/lib/auth";
+import { notifyUser } from "@/lib/push";
 import { prisma } from "@/lib/prisma";
 import { toUserDTO } from "@/lib/user-dto";
 
@@ -118,6 +119,17 @@ export async function PATCH(req: NextRequest) {
       themes: { select: { themeId: true } },
     },
   });
+
+  if (rest.coins !== undefined && rest.coins > existing.coins) {
+    const delta = rest.coins - existing.coins;
+    void notifyUser(id, {
+      kind: "system",
+      title: "Монети нараховано",
+      body: `Адмін нарахував +${delta.toLocaleString("uk-UA")} монет. Баланс: ${rest.coins.toLocaleString("uk-UA")}.`,
+      url: "/shop",
+      dedupeKey: null,
+    }).catch(console.error);
+  }
 
   return NextResponse.json(toUserDTO(user));
 }

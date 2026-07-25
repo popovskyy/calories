@@ -37,6 +37,8 @@
   --color-macro-protein: #6bbf8a;
   --color-macro-fats: #e0c06b;
   --color-macro-carbs: #8fa4e0;
+  --color-ring-from: #b5abfc;
+  --color-ring-to: #796cbf;
 
   /* Divider */
   --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
@@ -83,6 +85,8 @@ html[data-theme="minecraft"] {
   --color-macro-protein: #7cb342;
   --color-macro-fats: #fcdc5f;
   --color-macro-carbs: #8b5a2b;
+  --color-ring-from: #9cc760;
+  --color-ring-to: #3d5c1f;
   --color-divider: color-mix(in srgb, #f0e6d3 14%, transparent);
   --radius-sm: 0px;
   --radius-md: 0px;
@@ -126,6 +130,45 @@ html[data-theme="minecraft"] .app-frame::before {
   );
   z-index: 50;
   pointer-events: none;
+}
+
+/* FAB — кнопка «+» */
+.fab-wrap {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+}
+.fab-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--color-accent-400), var(--color-accent-600));
+  box-shadow: var(--shadow-fab);
+}
+.fab-btn-icon {
+  width: 26px;
+  height: 26px;
+}
+
+html[data-theme="minecraft"] .fab-wrap {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 108px);
+}
+html[data-theme="minecraft"] .fab-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+  background: linear-gradient(180deg, #7cb342 0%, #5b8731 55%, #3d5c1f 100%);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.25),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.45),
+    3px 3px 0 rgba(0, 0, 0, 0.55);
+}
+html[data-theme="minecraft"] .fab-btn-icon {
+  width: 22px;
+  height: 22px;
+}
+html[data-theme="minecraft"] .fab-btn:active {
+  box-shadow:
+    inset -2px -2px 0 rgba(255, 255, 255, 0.2),
+    inset 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 /* ============================================================

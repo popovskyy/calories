@@ -15,21 +15,16 @@ export function Fab({ href = "/add" }: { href?: string }) {
     <Link
       href={href}
       aria-label="Додати прийом їжі"
-      // Піднято над таб-баром: він став вищим (+~20px відступу знизу)
-      className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+78px)] right-4 z-20"
+      className="fab-wrap absolute right-4 z-20"
     >
       <motion.span
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 500, damping: 26, delay: 0.05 }}
         whileTap={{ scale: 0.9 }}
-        className="flex h-[68px] w-[68px] items-center justify-center rounded-[var(--radius-pill)] text-[#f5f4ff]"
-        style={{
-          background: "linear-gradient(135deg,#968ae0,#5d5294)",
-          boxShadow: "var(--shadow-fab)",
-        }}
+        className="fab-btn flex items-center justify-center text-[#f5f4ff]"
       >
-        <Plus size={34} strokeWidth={2.4} />
+        <Plus className="fab-btn-icon" strokeWidth={2.4} />
       </motion.span>
     </Link>
   );

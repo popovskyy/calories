@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
+import { THEME_COOKIE } from "@/lib/theme-constants";
 
-export const THEME_COOKIE = "calories_theme";
+export { THEME_COOKIE };
 
+/** Server-only: пише куку теми через next/headers. */
 export async function setThemeCookie(theme: string) {
   const jar = await cookies();
   jar.set(THEME_COOKIE, theme, {

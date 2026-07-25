@@ -17,7 +17,7 @@ export function TabBar() {
 
   return (
     <div className="relative z-30 shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">
-      <nav className="flex px-1 pt-1">
+      <nav className="flex px-1 pt-2.5">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);

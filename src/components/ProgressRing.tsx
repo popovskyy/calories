@@ -72,8 +72,8 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
         />
         <defs>
           <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#b5abfc" />
-            <stop offset="1" stopColor="#796cbf" />
+            <stop offset="0" stopColor="var(--color-ring-from)" />
+            <stop offset="1" stopColor="var(--color-ring-to)" />
           </linearGradient>
         </defs>
       </svg>

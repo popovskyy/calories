@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { THEME_COOKIE } from "@/lib/theme-cookie";
+import { THEME_COOKIE } from "@/lib/theme-constants";
 
 interface ThemeSyncProps {
   theme: string;
