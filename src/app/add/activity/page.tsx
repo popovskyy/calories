@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Dumbbell, Sparkles, Keyboard } from "lucide-react";
+import { ChevronLeft, Dumbbell, Sparkles, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { AppFrame } from "@/components/AppFrame";
 import { Field, inputClass } from "@/components/ui/Field";
@@ -15,10 +15,7 @@ import {
 import { useMounted } from "@/hooks/useMounted";
 import { useAppStore } from "@/store/useAppStore";
 import { humanDateFull } from "@/lib/date";
-import { cn } from "@/lib/cn";
 import type { AnalyzeActivityResult } from "@/lib/types";
-
-type Mode = "ai" | "manual";
 
 export default function AddActivityPage() {
   const mounted = useMounted();
@@ -26,7 +23,6 @@ export default function AddActivityPage() {
   const { user } = useCurrentUser();
   const selectedDate = useAppStore((s) => s.selectedDate);
 
-  const [mode, setMode] = useState<Mode>("ai");
   const [description, setDescription] = useState("");
   const [result, setResult] = useState<AnalyzeActivityResult | null>(null);
   const [calories, setCalories] = useState("");
@@ -55,7 +51,7 @@ export default function AddActivityPage() {
     if (!description.trim()) return toast.error("Опишіть активність");
     const cal = parseInt(calories, 10);
     if (!Number.isFinite(cal) || cal < 0) {
-      return toast.error("Вкажіть спалені ккал або натисніть «Оцінити ШІ»");
+      return toast.error("Спочатку оцініть спалені ккал");
     }
     const dur = duration.trim() ? parseInt(duration, 10) : null;
 
@@ -69,7 +65,7 @@ export default function AddActivityPage() {
       {
         onSuccess: (row) => {
           toast.success(`−${row.caloriesBurned} ккал від активності`);
-          router.push("/log");
+          router.replace("/log");
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
       },
@@ -95,13 +91,13 @@ export default function AddActivityPage() {
         className="flex items-center gap-3 px-[18px] pb-2"
         style={{ paddingTop: "18px" }}
       >
-        <button
-          onClick={() => router.back()}
+        <Link
+          href="/"
           aria-label="Назад"
           className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-surface)] text-[var(--color-muted)]"
         >
           <ChevronLeft size={18} />
-        </button>
+        </Link>
         <div className="min-w-0 flex-1">
           <h1 className="text-[22px] font-semibold text-[var(--color-text)]">
             Активність
@@ -114,44 +110,18 @@ export default function AddActivityPage() {
         </div>
       </header>
 
-      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-24 pt-4">
+      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-28 pt-4">
         <div className="flex gap-2">
-          <Link
-            href="/add"
-            className="flex flex-1 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-2.5 text-[14px] font-semibold text-[var(--color-muted2)]"
+          <button
+            type="button"
+            onClick={() => router.replace("/add")}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-2.5 text-[14px] font-semibold text-[var(--color-muted2)]"
           >
-            Їжа
-          </Link>
+            <UtensilsCrossed size={16} /> Їжа
+          </button>
           <span className="flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-3 py-2.5 text-[14px] font-semibold text-[#f5f4ff]">
             <Dumbbell size={16} /> Рух
           </span>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2.5 text-[14px] font-semibold",
-              mode === "ai"
-                ? "bg-[var(--color-accent)] text-[#f5f4ff]"
-                : "bg-[var(--color-tile)] text-[var(--color-muted2)]",
-            )}
-            onClick={() => setMode("ai")}
-          >
-            <Sparkles size={16} /> ШІ
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2.5 text-[14px] font-semibold",
-              mode === "manual"
-                ? "bg-[var(--color-accent)] text-[#f5f4ff]"
-                : "bg-[var(--color-tile)] text-[var(--color-muted2)]",
-            )}
-            onClick={() => setMode("manual")}
-          >
-            <Keyboard size={16} /> Вручну
-          </button>
         </div>
 
         <label className="flex flex-col gap-1.5">
@@ -168,18 +138,18 @@ export default function AddActivityPage() {
           />
         </label>
 
-        {mode === "ai" ? (
+        {description.trim() ? (
           <button
             type="button"
             className="btn btn-primary btn-block"
-            disabled={!description.trim() || analyze.isPending}
+            disabled={analyze.isPending}
             onClick={onAnalyze}
           >
             {analyze.isPending ? "Рахуємо…" : "Оцінити спалені ккал"}
           </button>
         ) : null}
 
-        {result || mode === "manual" ? (
+        {result ? (
           <div className="mcard flex flex-col gap-3 p-4">
             <Field label="Спалено, ккал">
               <input
@@ -197,24 +167,29 @@ export default function AddActivityPage() {
                 onChange={(e) => setDuration(e.target.value)}
               />
             </Field>
-            {result?.notes?.length ? (
+            {result.notes?.length ? (
               <ul className="list-inside list-disc text-[13px] text-[var(--color-muted3)]">
                 {result.notes.map((n) => (
                   <li key={n}>{n}</li>
                 ))}
               </ul>
             ) : null}
-            <button
-              type="button"
-              className="btn btn-primary btn-block"
-              disabled={save.isPending}
-              onClick={onSave}
-            >
-              {save.isPending ? "Зберігаємо…" : "Зберегти активність"}
-            </button>
           </div>
         ) : null}
       </div>
+
+      {result ? (
+        <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-3.5">
+          <button
+            type="button"
+            className="btn btn-primary btn-block"
+            disabled={save.isPending}
+            onClick={onSave}
+          >
+            {save.isPending ? "Зберігаємо…" : "Зберегти активність"}
+          </button>
+        </div>
+      ) : null}
     </AppFrame>
   );
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { calcTargetCalories } from "@/lib/calories";
+import { todayYMD } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { syncArenaRewards } from "@/lib/rewards";
 import { assertAvatarAllowed } from "@/lib/skin-catalog";
@@ -38,6 +39,8 @@ const updateSchema = z.object({
     .max(2_500_000, "Аватар занадто великий")
     .nullable()
     .optional(),
+  targetWeight: z.number().positive().nullable().optional(),
+  targetWeeks: z.number().int().min(1).max(104).nullable().optional(),
 });
 
 /** GET — поточний користувач (+ sync вчорашньої арени після settle). */
@@ -49,7 +52,10 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: auth.session.userId },
-    include: { skins: { select: { skinId: true } } },
+    include: {
+      skins: { select: { skinId: true } },
+      themes: { select: { themeId: true } },
+    },
   });
   if (!user) {
     return NextResponse.json({ error: "Користувача не знайдено" }, { status: 404 });
@@ -71,7 +77,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { avatarUrl, ...fields } = parsed.data;
+  const { avatarUrl, targetWeight, targetWeeks, ...fields } = parsed.data;
 
   if (avatarUrl !== undefined) {
     const gate = await assertAvatarAllowed(auth.session.userId, avatarUrl);
@@ -89,6 +95,26 @@ export async function POST(req: NextRequest) {
     goal: fields.goal,
   });
 
+  // Якщо змінили ціль по вазі — скидаємо startWeight і startWeightDate
+  const existing = await prisma.user.findUnique({
+    where: { id: auth.session.userId },
+    select: { targetWeight: true, targetWeeks: true, weight: true },
+  });
+
+  const goalChanged =
+    (targetWeight !== undefined &&
+      targetWeight !== (existing?.targetWeight ?? null)) ||
+    (targetWeeks !== undefined &&
+      targetWeeks !== (existing?.targetWeeks ?? null));
+
+  const goalData: Record<string, unknown> = {};
+  if (targetWeight !== undefined) goalData.targetWeight = targetWeight;
+  if (targetWeeks !== undefined) goalData.targetWeeks = targetWeeks;
+  if (goalChanged) {
+    goalData.startWeight = fields.weight;
+    goalData.startWeightDate = todayYMD();
+  }
+
   const user = await prisma.user.update({
     where: { id: auth.session.userId },
     data: {
@@ -96,8 +122,12 @@ export async function POST(req: NextRequest) {
       activityLevel: "sedentary",
       targetCalories,
       ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+      ...goalData,
     },
-    include: { skins: { select: { skinId: true } } },
+    include: {
+      skins: { select: { skinId: true } },
+      themes: { select: { themeId: true } },
+    },
   });
 
   return NextResponse.json(toUserDTO(user));

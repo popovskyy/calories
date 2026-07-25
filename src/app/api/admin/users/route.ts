@@ -15,7 +15,10 @@ export async function GET() {
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
-    include: { skins: { select: { skinId: true } } },
+    include: {
+      skins: { select: { skinId: true } },
+      themes: { select: { themeId: true } },
+    },
   });
   return NextResponse.json(users.map(toUserDTO));
 }
@@ -110,7 +113,10 @@ export async function PATCH(req: NextRequest) {
       ...(rest.coins !== undefined ? { coins: rest.coins } : {}),
       targetCalories,
     },
-    include: { skins: { select: { skinId: true } } },
+    include: {
+      skins: { select: { skinId: true } },
+      themes: { select: { themeId: true } },
+    },
   });
 
   return NextResponse.json(toUserDTO(user));

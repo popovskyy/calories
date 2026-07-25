@@ -4,8 +4,10 @@ import type {
   AnalyzeResult,
   ArenaResponse,
   DashboardResponse,
+  ForecastResponse,
   GrantedReward,
   MealDTO,
+  NotificationDTO,
   QuestsResponse,
   RecentMealDTO,
   SaveMealResult,
@@ -53,6 +55,8 @@ export interface RegisterInput {
   goal: Goal;
   weight: number;
   height: number;
+  targetWeight?: number | null;
+  targetWeeks?: number | null;
   avatarUrl?: string | null;
   imageBase64?: string;
   imageMimeType?: string;
@@ -89,6 +93,8 @@ export interface UserInput {
   weight: number;
   height: number;
   avatarUrl?: string | null;
+  targetWeight?: number | null;
+  targetWeeks?: number | null;
 }
 export const saveUser = (input: UserInput) =>
   req<UserDTO>("/api/users", { method: "POST", body: JSON.stringify(input) });
@@ -208,3 +214,59 @@ export const equipSkin = (skinId: string) =>
     method: "POST",
     body: JSON.stringify({ skinId }),
   });
+
+export const buyTheme = (themeId: string) =>
+  req<ShopResponse>("/api/shop/theme/buy", {
+    method: "POST",
+    body: JSON.stringify({ themeId }),
+  });
+
+export const equipTheme = (themeId: string) =>
+  req<UserDTO>("/api/shop/theme/equip", {
+    method: "POST",
+    body: JSON.stringify({ themeId }),
+  });
+
+// --- Forecast ---
+export const getForecast = () => req<ForecastResponse>("/api/stats/forecast");
+
+// --- Notifications ---
+export interface NotificationsResponse {
+  items: NotificationDTO[];
+  unreadCount: number;
+}
+
+export const getNotifications = () =>
+  req<NotificationsResponse>("/api/notifications");
+
+export const markNotificationsRead = (payload: { all?: boolean; ids?: string[] }) =>
+  req<{ ok: true }>("/api/notifications", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+// --- Push ---
+export interface PushSubscribeInput {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  userAgent?: string;
+}
+
+export const pushSubscribe = (input: PushSubscribeInput) =>
+  req<{ ok: true }>("/api/push/subscribe", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const pushUnsubscribe = (endpoint?: string) =>
+  req<{ ok: true }>("/api/push/subscribe", {
+    method: "DELETE",
+    body: JSON.stringify({ endpoint }),
+  });
+
+export const getPushStatus = () =>
+  req<{
+    publicKey: string | null;
+    subscribed: boolean;
+    remindersEnabled: boolean;
+  }>("/api/push/subscribe");

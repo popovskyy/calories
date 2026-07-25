@@ -14,12 +14,17 @@ function createClient() {
 function resolveClient(): PrismaClient {
   const existing = globalForPrisma.prisma;
   const ex = existing as
-    | { skinDef?: { findMany?: unknown }; weeklyQuest?: { findMany?: unknown } }
+    | {
+        skinDef?: { findMany?: unknown };
+        weeklyQuest?: { findMany?: unknown };
+        notification?: { findMany?: unknown };
+      }
     | undefined;
   if (
     existing &&
     typeof ex?.skinDef?.findMany === "function" &&
-    typeof ex?.weeklyQuest?.findMany === "function"
+    typeof ex?.weeklyQuest?.findMany === "function" &&
+    typeof ex?.notification?.findMany === "function"
   ) {
     return existing;
   }

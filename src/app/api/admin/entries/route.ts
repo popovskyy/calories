@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
+import { humanDate } from "@/lib/date";
+import { notifyUser } from "@/lib/push";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function clip(s: string, n = 40): string {
+  const t = s.trim();
+  return t.length <= n ? t : `${t.slice(0, n - 1)}…`;
+}
 
 /** GET /api/admin/entries — останні прийоми + активності для модерації */
 export async function GET(req: NextRequest) {
@@ -120,6 +127,13 @@ export async function PATCH(req: NextRequest) {
         where: { id: d.id },
         data: { status: "cancelled" },
       });
+      void notifyUser(existing.userId, {
+        kind: "entry_cancelled",
+        title: "Раціон не підтверджено",
+        body: `Адмін скасував запис «${clip(existing.description)}» (${existing.calories} ккал) за ${humanDate(existing.date)}. Загляньте в журнал.`,
+        url: `/log?date=${existing.date}`,
+        dedupeKey: null,
+      }).catch(console.error);
       return NextResponse.json(row);
     }
     if (d.action === "approve") {
@@ -129,6 +143,10 @@ export async function PATCH(req: NextRequest) {
       });
       return NextResponse.json(row);
     }
+    const nextDesc = d.description ?? existing.description;
+    const nextCal = d.calories ?? existing.calories;
+    const changed =
+      nextDesc !== existing.description || nextCal !== existing.calories;
     const row = await prisma.mealLog.update({
       where: { id: d.id },
       data: {
@@ -140,6 +158,15 @@ export async function PATCH(req: NextRequest) {
         status: "approved",
       },
     });
+    if (changed) {
+      void notifyUser(existing.userId, {
+        kind: "entry_updated",
+        title: "Запис відкориговано",
+        body: `Адмін уточнив «${clip(nextDesc)}»: тепер ${nextCal} ккал замість ${existing.calories}. Підсумок дня оновлено.`,
+        url: `/log?date=${existing.date}`,
+        dedupeKey: null,
+      }).catch(console.error);
+    }
     return NextResponse.json(row);
   }
 
@@ -152,6 +179,13 @@ export async function PATCH(req: NextRequest) {
       where: { id: d.id },
       data: { status: "cancelled" },
     });
+    void notifyUser(existing.userId, {
+      kind: "entry_cancelled",
+      title: "Тренування не зараховано",
+      body: `Адмін скасував активність «${clip(existing.description)}» (−${existing.caloriesBurned} ккал) за ${humanDate(existing.date)}. Норму дня перераховано.`,
+      url: `/log?date=${existing.date}`,
+      dedupeKey: null,
+    }).catch(console.error);
     return NextResponse.json(row);
   }
   if (d.action === "approve") {
@@ -161,6 +195,10 @@ export async function PATCH(req: NextRequest) {
     });
     return NextResponse.json(row);
   }
+  const nextDesc = d.description ?? existing.description;
+  const nextCal = d.calories ?? existing.caloriesBurned;
+  const changed =
+    nextDesc !== existing.description || nextCal !== existing.caloriesBurned;
   const row = await prisma.activityLog.update({
     where: { id: d.id },
     data: {
@@ -170,5 +208,14 @@ export async function PATCH(req: NextRequest) {
       status: "approved",
     },
   });
+  if (changed) {
+    void notifyUser(existing.userId, {
+      kind: "entry_updated",
+      title: "Активність відкориговано",
+      body: `Адмін уточнив «${clip(nextDesc)}»: тепер −${nextCal} ккал замість −${existing.caloriesBurned}.`,
+      url: `/log?date=${existing.date}`,
+      dedupeKey: null,
+    }).catch(console.error);
+  }
   return NextResponse.json(row);
 }

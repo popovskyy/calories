@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-/** Registers the service worker once on the client (required for installable PWA). */
+/** Реєструє service worker один раз на клієнті (потрібно для PWA + Web Push). */
 export function PwaRegister() {
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -11,7 +11,8 @@ export function PwaRegister() {
 
     const register = async () => {
       try {
-        await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        reg.update();
       } catch {
         // Silent — PWA install still works on iOS without SW
       }

@@ -5,8 +5,7 @@ import { Fab } from "@/components/Fab";
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppFrame>
-      {/* pb-28: останню картку не має перекривати ні кнопка «+», ні бейдж монет */}
-      <main className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-28 pt-4">
+      <main className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+120px)] pt-4">
         {children}
       </main>
       <Fab />

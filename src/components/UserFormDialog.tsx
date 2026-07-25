@@ -33,6 +33,8 @@ interface FormState {
   goal: Goal;
   weight: string;
   height: string;
+  targetWeight: string;
+  targetWeeks: string;
 }
 
 const currentYear = new Date().getFullYear();
@@ -45,6 +47,8 @@ const empty: FormState = {
   goal: "maintain",
   weight: "70",
   height: "175",
+  targetWeight: "",
+  targetWeeks: "",
 };
 
 const segmentBtn = (active: boolean) =>
@@ -93,6 +97,8 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       goal: user.goal,
       weight: String(user.weight),
       height: String(user.height),
+      targetWeight: user.targetWeight != null ? String(user.targetWeight) : "",
+      targetWeeks: user.targetWeeks != null ? String(user.targetWeeks) : "",
     });
     setAvatarUrl(user.avatarUrl ?? null);
     setAvatarDirty(false);
@@ -179,6 +185,8 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         weight,
         height,
         ...(avatarDirty ? { avatarUrl } : {}),
+        targetWeight: form.targetWeight ? parseFloat(form.targetWeight) : null,
+        targetWeeks: form.targetWeeks ? parseInt(form.targetWeeks, 10) : null,
       });
       toast.success("Профіль оновлено");
       onOpenChange(false);
@@ -341,6 +349,27 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               value={form.height}
               onChange={set("height")}
               inputMode="decimal"
+            />
+          </Field>
+        </div>
+
+        <div className="flex gap-3">
+          <Field label="Ціль, кг" hint="Порожньо — ціль не відстежується">
+            <input
+              className={inputClass}
+              value={form.targetWeight}
+              onChange={set("targetWeight")}
+              inputMode="decimal"
+              placeholder="Напр. 70"
+            />
+          </Field>
+          <Field label="Тижнів" hint="Скільки тижнів на ціль">
+            <input
+              className={inputClass}
+              value={form.targetWeeks}
+              onChange={set("targetWeeks")}
+              inputMode="numeric"
+              placeholder="Напр. 12"
             />
           </Field>
         </div>

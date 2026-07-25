@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/admin/login",
   "/api/admin/login",
   "/api/skins/catalog",
+  "/api/cron",
 ];
 
 export async function middleware(req: NextRequest) {

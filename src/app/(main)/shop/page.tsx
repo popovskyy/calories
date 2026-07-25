@@ -7,34 +7,49 @@ import { PresetMascot } from "@/components/avatars/PresetMascot";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { Modal } from "@/components/ui/Dialog";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useBuySkin, useCurrentUser, useEquipSkin, useShop } from "@/hooks/useQueries";
+import {
+  useBuySkin,
+  useBuyTheme,
+  useCurrentUser,
+  useEquipSkin,
+  useEquipTheme,
+  useShop,
+} from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { RARITY } from "@/lib/avatar-presets";
-import type { ShopSkin } from "@/lib/types";
+import type { ShopSkin, ShopTheme } from "@/lib/types";
 import { cn } from "@/lib/cn";
+
+type ConfirmItem =
+  | { kind: "skin"; item: ShopSkin }
+  | { kind: "theme"; item: ShopTheme };
 
 export default function ShopPage() {
   const mounted = useMounted();
   const { user } = useCurrentUser();
   const shop = useShop();
-  const buy = useBuySkin();
-  const equip = useEquipSkin();
-  const [confirm, setConfirm] = useState<ShopSkin | null>(null);
+  const buySkin = useBuySkin();
+  const equipSkin = useEquipSkin();
+  const buyTheme = useBuyTheme();
+  const equipTheme = useEquipTheme();
+  const [confirm, setConfirm] = useState<ConfirmItem | null>(null);
 
-  // Баланс з /me — source of truth (адмінські нарахування теж)
   const coins = user?.coins ?? shop.data?.coins ?? 0;
   const skins = shop.data?.skins ?? [];
+  const themes = shop.data?.themes ?? [];
   const premium = skins.filter((s) => s.tier === "premium");
   const free = skins.filter((s) => s.tier === "free");
+  const freeThemes = themes.filter((t) => t.tier === "free");
+  const premiumThemes = themes.filter((t) => t.tier === "premium");
 
-  const onEquip = (s: ShopSkin) =>
-    equip.mutate(s.id, {
+  const onEquipSkin = (s: ShopSkin) =>
+    equipSkin.mutate(s.id, {
       onSuccess: () => toast.success(`Вдягнено: ${s.nameUk}`),
       onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
     });
 
-  const onBuy = (s: ShopSkin) =>
-    buy.mutate(s.id, {
+  const onBuySkin = (s: ShopSkin) =>
+    buySkin.mutate(s.id, {
       onSuccess: () => {
         setConfirm(null);
         toast.success(`Куплено: ${s.nameUk}!`);
@@ -42,13 +57,30 @@ export default function ShopPage() {
       onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка купівлі"),
     });
 
+  const onEquipTheme = (t: ShopTheme) =>
+    equipTheme.mutate(t.id, {
+      onSuccess: () => toast.success(`Тему змінено: ${t.nameUk}`),
+      onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
+    });
+
+  const onBuyTheme = (t: ShopTheme) =>
+    buyTheme.mutate(t.id, {
+      onSuccess: () => {
+        setConfirm(null);
+        toast.success(`Куплено тему: ${t.nameUk}!`);
+      },
+      onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка купівлі"),
+    });
+
+  const isPending = buySkin.isPending || buyTheme.isPending;
+
   return (
     <>
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-[24px] font-semibold text-[var(--color-text)]">Магазин</h1>
           <p className="mt-0.5 text-[14px] text-[var(--color-muted3)]">
-            Заробляй монети за звички — відкривай скіни
+            Заробляй монети за звички — відкривай скіни та теми
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-pill)] border border-[color-mix(in_srgb,#FFC800_45%,transparent)] bg-[color-mix(in_srgb,#FFC800_12%,transparent)] px-3 py-2">
@@ -76,82 +108,196 @@ export default function ShopPage() {
             Спробувати знову
           </button>
         </div>
-      ) : skins.length === 0 ? (
-        <p className="py-10 text-center text-[15px] text-[var(--color-muted3)]">
-          Каталог порожній — загляни пізніше
-        </p>
       ) : (
         <>
+          {/* Теми */}
+          {themes.length > 0 ? (
+            <section className="flex flex-col gap-2">
+              <span className="lbl">Теми оформлення</span>
+              <div className="grid grid-cols-2 gap-3">
+                {[...freeThemes, ...premiumThemes].map((t) => (
+                  <ThemeCard
+                    key={t.id}
+                    theme={t}
+                    coins={coins}
+                    onEquip={onEquipTheme}
+                    onBuy={(th) => setConfirm({ kind: "theme", item: th })}
+                    equipping={equipTheme.isPending && equipTheme.variables === t.id}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <SkinSection
             title="Преміум"
             skins={premium}
             coins={coins}
-            onEquip={onEquip}
-            onBuy={(s) => setConfirm(s)}
-            equipping={equip.isPending ? equip.variables : null}
+            onEquip={onEquipSkin}
+            onBuy={(s) => setConfirm({ kind: "skin", item: s })}
+            equipping={equipSkin.isPending ? equipSkin.variables : null}
           />
           <SkinSection
             title="Безкоштовні"
             skins={free}
             coins={coins}
-            onEquip={onEquip}
+            onEquip={onEquipSkin}
             onBuy={() => {}}
-            equipping={equip.isPending ? equip.variables : null}
+            equipping={equipSkin.isPending ? equipSkin.variables : null}
           />
         </>
       )}
 
+      {/* Confirm modal */}
       <Modal
         open={!!confirm}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title="Купити скін?"
+        title={confirm?.kind === "theme" ? "Купити тему?" : "Купити скін?"}
       >
-        {confirm ? (
+        {confirm?.kind === "theme" ? (
           <div className="flex flex-col items-center gap-3">
-            <SkinGlow rarity={confirm.rarity}>
-              <PresetMascot
-                id={confirm.id}
-                size={72}
-                animated
-                artKind={confirm.artKind as "file" | "inline" | "builtin" | undefined}
-                nameUk={confirm.nameUk}
-              />
-            </SkinGlow>
+            <div
+              className="h-16 w-16 rounded-[var(--radius-md)] border-2 border-[var(--color-divider)]"
+              style={{ background: confirm.item.swatch }}
+            />
             <div className="text-center">
               <div className="text-[17px] font-semibold text-[var(--color-text)]">
-                {confirm.nameUk}
-              </div>
-              <div
-                className="text-[13px]"
-                style={{ color: (RARITY[confirm.rarity] ?? RARITY.common).color }}
-              >
-                {(RARITY[confirm.rarity] ?? RARITY.common).label}
+                {confirm.item.nameUk}
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-[15px]">
               <span className="text-[var(--color-muted3)]">Ціна:</span>
               <CoinIcon size={16} />
               <span className="font-semibold tabular-nums text-[var(--color-text)]">
-                {confirm.price}
+                {confirm.item.price}
               </span>
               <span className="text-[var(--color-muted3)]">· у тебе {coins}</span>
             </div>
-            {coins < confirm.price ? (
+            {coins < confirm.item.price ? (
               <p className="text-[13px] text-[var(--color-red)]">
-                Не вистачає {confirm.price - coins} монет
+                Не вистачає {confirm.item.price - coins} монет
               </p>
             ) : null}
             <button
               className="btn btn-primary btn-block"
-              disabled={coins < confirm.price || buy.isPending}
-              onClick={() => onBuy(confirm)}
+              disabled={coins < confirm.item.price || isPending}
+              onClick={() => onBuyTheme(confirm.item)}
             >
-              {buy.isPending ? "Купуємо…" : `Купити за ${confirm.price}`}
+              {isPending ? "Купуємо…" : `Купити за ${confirm.item.price}`}
+            </button>
+          </div>
+        ) : confirm?.kind === "skin" ? (
+          <div className="flex flex-col items-center gap-3">
+            <SkinGlow rarity={confirm.item.rarity}>
+              <PresetMascot
+                id={confirm.item.id}
+                size={72}
+                animated
+                artKind={confirm.item.artKind as "file" | "inline" | "builtin" | undefined}
+                nameUk={confirm.item.nameUk}
+              />
+            </SkinGlow>
+            <div className="text-center">
+              <div className="text-[17px] font-semibold text-[var(--color-text)]">
+                {confirm.item.nameUk}
+              </div>
+              <div
+                className="text-[13px]"
+                style={{ color: (RARITY[confirm.item.rarity] ?? RARITY.common).color }}
+              >
+                {(RARITY[confirm.item.rarity] ?? RARITY.common).label}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-[15px]">
+              <span className="text-[var(--color-muted3)]">Ціна:</span>
+              <CoinIcon size={16} />
+              <span className="font-semibold tabular-nums text-[var(--color-text)]">
+                {confirm.item.price}
+              </span>
+              <span className="text-[var(--color-muted3)]">· у тебе {coins}</span>
+            </div>
+            {coins < confirm.item.price ? (
+              <p className="text-[13px] text-[var(--color-red)]">
+                Не вистачає {confirm.item.price - coins} монет
+              </p>
+            ) : null}
+            <button
+              className="btn btn-primary btn-block"
+              disabled={coins < confirm.item.price || isPending}
+              onClick={() => onBuySkin(confirm.item)}
+            >
+              {isPending ? "Купуємо…" : `Купити за ${confirm.item.price}`}
             </button>
           </div>
         ) : null}
       </Modal>
     </>
+  );
+}
+
+function ThemeCard({
+  theme,
+  coins,
+  onEquip,
+  onBuy,
+  equipping,
+}: {
+  theme: ShopTheme;
+  coins: number;
+  onEquip: (t: ShopTheme) => void;
+  onBuy: (t: ShopTheme) => void;
+  equipping: boolean;
+}) {
+  const locked = theme.tier === "premium" && !theme.owned;
+
+  return (
+    <div
+      className="mcard relative flex flex-col items-center gap-2 p-3"
+      style={{ boxShadow: `inset 0 0 0 1.5px ${theme.swatch}55, 0 0 10px ${theme.swatch}22` }}
+    >
+      <div className="relative flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)]"
+        style={{ background: theme.swatch }}
+      >
+        {locked ? (
+          <Lock size={18} className="text-white" />
+        ) : theme.equipped ? (
+          <Check size={18} className="text-white" />
+        ) : (
+          <span className="text-[10px] font-bold text-white">Aa</span>
+        )}
+      </div>
+
+      <div className="text-center">
+        <div className="text-[13px] font-semibold text-[var(--color-text)]">{theme.nameUk}</div>
+        <div className="text-[11px]" style={{ color: theme.swatch }}>
+          {theme.tier === "free" ? "Безкоштовна" : "Преміум"}
+        </div>
+      </div>
+
+      {theme.equipped ? (
+        <div className="flex items-center gap-1 text-[13px] font-semibold text-[var(--color-accent)]">
+          <Check size={14} /> Активна
+        </div>
+      ) : theme.owned ? (
+        <button
+          className="btn btn-ghost w-full py-2 text-[13px]"
+          disabled={equipping}
+          onClick={() => onEquip(theme)}
+        >
+          {equipping ? "…" : "Активувати"}
+        </button>
+      ) : (
+        <button
+          className={cn(
+            "btn btn-primary flex w-full items-center justify-center gap-1 py-2 text-[13px]",
+            coins < theme.price && "opacity-60",
+          )}
+          onClick={() => onBuy(theme)}
+        >
+          <CoinIcon size={14} /> {theme.price}
+        </button>
+      )}
+    </div>
   );
 }
 

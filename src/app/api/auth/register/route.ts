@@ -6,9 +6,11 @@ import {
   setSessionCookie,
 } from "@/lib/auth";
 import { calcTargetCalories } from "@/lib/calories";
+import { todayYMD } from "@/lib/date";
 import { generateMascotAvatar } from "@/lib/gemini-avatar";
 import { prisma } from "@/lib/prisma";
 import { assertAvatarAllowed } from "@/lib/skin-catalog";
+import { setThemeCookie } from "@/lib/theme-cookie";
 import { toUserDTO } from "@/lib/user-dto";
 
 export const runtime = "nodejs";
@@ -36,6 +38,8 @@ const registerSchema = z.object({
   goal: z.enum(["maintain", "deficit"]),
   weight: z.number().positive(),
   height: z.number().positive(),
+  targetWeight: z.number().positive().nullable().optional(),
+  targetWeeks: z.number().int().min(1).max(104).nullable().optional(),
   avatarUrl: z.string().max(2_500_000).nullable().optional(),
   // фото для генерації аватара під час реєстрації (ще немає сесії)
   imageBase64: z.string().optional(),
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { username, password, avatarUrl, imageBase64, imageMimeType, ...profile } =
+  const { username, password, avatarUrl, imageBase64, imageMimeType, targetWeight, targetWeeks, ...profile } =
     parsed.data;
   const login = username.toLowerCase();
 
@@ -97,6 +101,7 @@ export async function POST(req: NextRequest) {
   });
 
   const passwordHash = await hashPassword(password);
+  const today = todayYMD();
   const user = await prisma.user.create({
     data: {
       username: login,
@@ -111,6 +116,14 @@ export async function POST(req: NextRequest) {
       height: profile.height,
       targetCalories,
       avatarUrl: finalAvatar,
+      targetWeight: targetWeight ?? null,
+      targetWeeks: targetWeeks ?? null,
+      startWeight: profile.weight,
+      startWeightDate: today,
+    },
+    include: {
+      skins: { select: { skinId: true } },
+      themes: { select: { themeId: true } },
     },
   });
 
@@ -119,6 +132,7 @@ export async function POST(req: NextRequest) {
     username: user.username,
   });
   await setSessionCookie(token);
+  await setThemeCookie(user.theme ?? "nocturne");
 
   return NextResponse.json(
     { ...toUserDTO(user), avatarWarning },

@@ -41,7 +41,10 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.update({
     where: { id: userId },
     data: { avatarUrl: toPresetUrl(skin.id) },
-    include: { skins: { select: { skinId: true } } },
+    include: {
+      skins: { select: { skinId: true } },
+      themes: { select: { themeId: true } },
+    },
   });
 
   return NextResponse.json(toUserDTO(user));

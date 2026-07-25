@@ -1,4 +1,4 @@
-/** Розрахунок денної норми: Mifflin–St Jeor BMR (вік, кг, см, стать) — без множника «скільки разів на тиждень». */
+/** Розрахунок денної норми: Mifflin–St Jeor BMR × побутовий рух (± дефіцит). */
 
 export type Sex = "male" | "female";
 /** @deprecated Залишено для сумісності БД; у формулі більше не використовується. */
@@ -17,6 +17,13 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   active: 1.725,
   very_active: 1.9,
 };
+
+/** Побутовий рух (не тренування) — база підтримки ваги. */
+export const MAINTENANCE_ACTIVITY_FACTOR = 1.2;
+/** Дефіцит −15% від TDEE. */
+export const DEFICIT_FACTOR = 0.85;
+/** Орієнтовно ккал на 1 кг маси тіла. */
+export const KCAL_PER_KG = 7700;
 
 export const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
   sedentary: "Майже без руху",
@@ -61,7 +68,7 @@ export interface CalorieInput {
 export interface CalorieBreakdown {
   age: number;
   bmr: number;
-  /** = BMR (активність додається окремими записами в журналі). */
+  /** BMR × MAINTENANCE_ACTIVITY_FACTOR (побутовий рух). */
   tdee: number;
   targetCalories: number;
 }
@@ -89,9 +96,9 @@ export function calcBmr(input: {
   return input.sex === "male" ? base + 5 : base - 161;
 }
 
-/** @deprecated Множник активності більше не входить у денну норму. */
+/** TDEE = BMR × побутовий рух. Тренування додаються окремими ActivityLog. */
 export function calcTdee(bmr: number, _activityLevel?: ActivityLevel): number {
-  return bmr;
+  return Math.round(bmr * MAINTENANCE_ACTIVITY_FACTOR);
 }
 
 export function deficitFloor(sex: Sex): number {
@@ -99,21 +106,25 @@ export function deficitFloor(sex: Sex): number {
 }
 
 /**
- * Ціль = BMR (підтримка) або BMR×0.85 (дефіцит, з підлогою).
+ * Ціль = TDEE (підтримка) або TDEE×0.85 (дефіцит, з підлогою).
  * Тренування враховуються окремими ActivityLog, не множником.
  */
 export function calcTargetCalories(input: CalorieInput): CalorieBreakdown {
   const age = ageFromBirth(input.birthYear, input.birthMonth, input.now);
-  const bmr = calcBmr({
-    weightKg: input.weightKg,
-    heightCm: input.heightCm,
-    age,
-    sex: input.sex,
-  });
-  const base = Math.round(bmr);
+  const bmr = Math.round(
+    calcBmr({
+      weightKg: input.weightKg,
+      heightCm: input.heightCm,
+      age,
+      sex: input.sex,
+    }),
+  );
+  const tdee = calcTdee(bmr);
 
   let target =
-    input.goal === "maintain" ? base : Math.round(base * 0.85);
+    input.goal === "maintain"
+      ? tdee
+      : Math.round(tdee * DEFICIT_FACTOR);
 
   if (input.goal === "deficit") {
     target = Math.max(target, deficitFloor(input.sex));
@@ -121,10 +132,40 @@ export function calcTargetCalories(input: CalorieInput): CalorieBreakdown {
 
   return {
     age,
-    bmr: base,
-    tdee: base,
+    bmr,
+    tdee,
     targetCalories: target,
   };
+}
+
+/** База підтримки ваги (BMR × 1.2) — для прогнозу й норм БЖВ. */
+export function calcMaintenanceCalories(input: {
+  birthYear: number;
+  birthMonth: number;
+  sex: Sex;
+  weightKg: number;
+  heightCm: number;
+  now?: Date;
+}): number {
+  const age = ageFromBirth(input.birthYear, input.birthMonth, input.now);
+  const bmr = calcBmr({
+    weightKg: input.weightKg,
+    heightCm: input.heightCm,
+    age,
+    sex: input.sex,
+  });
+  return calcTdee(bmr);
+}
+
+/** Норми макросів від ваги: білки 1.8 г/кг, жири 0.9 г/кг, вуглеводи — решта. */
+export function calcMacroTargets(targetCalories: number, weightKg: number) {
+  const protein = Math.round(1.8 * weightKg);
+  const fats = Math.round(0.9 * weightKg);
+  const carbs = Math.max(
+    0,
+    Math.round((targetCalories - protein * 4 - fats * 9) / 4),
+  );
+  return { protein, fats, carbs };
 }
 
 export function isActivityLevel(v: string): v is ActivityLevel {

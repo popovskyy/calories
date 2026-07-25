@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { PRESET_PREFIX } from "@/lib/avatar-presets";
 import { ensureSkinCatalog, listSkins } from "@/lib/skin-catalog";
-import type { ShopResponse, ShopSkin } from "@/lib/types";
+import { THEMES } from "@/lib/theme-catalog";
+import type { ShopResponse, ShopSkin, ShopTheme } from "@/lib/types";
 
-/** Каталог скінів для користувача: баланс + owned/equipped. */
+/** Каталог скінів та тем для користувача: баланс + owned/equipped. */
 export async function buildShop(userId: string): Promise<ShopResponse | null> {
   await ensureSkinCatalog();
 
@@ -12,15 +13,19 @@ export async function buildShop(userId: string): Promise<ShopResponse | null> {
     select: {
       coins: true,
       avatarUrl: true,
+      theme: true,
       skins: { select: { skinId: true } },
+      themes: { select: { themeId: true } },
     },
   });
   if (!user) return null;
 
-  const owned = new Set(user.skins.map((s) => s.skinId));
-  const equippedId = user.avatarUrl?.startsWith(PRESET_PREFIX)
+  const ownedSkins = new Set(user.skins.map((s) => s.skinId));
+  const ownedThemes = new Set(user.themes.map((t) => t.themeId));
+  const equippedSkinId = user.avatarUrl?.startsWith(PRESET_PREFIX)
     ? user.avatarUrl.slice(PRESET_PREFIX.length)
     : null;
+  const equippedThemeId = user.theme ?? "nocturne";
 
   const catalog = await listSkins({ enabledOnly: true });
   const skins: ShopSkin[] = catalog.map((p) => ({
@@ -30,13 +35,25 @@ export async function buildShop(userId: string): Promise<ShopResponse | null> {
     price: p.price,
     rarity: p.rarity,
     artKind: p.artKind,
-    owned: p.tier === "free" || owned.has(p.id),
-    equipped: equippedId === p.id,
+    owned: p.tier === "free" || ownedSkins.has(p.id),
+    equipped: equippedSkinId === p.id,
+  }));
+
+  const themes: ShopTheme[] = THEMES.map((t) => ({
+    id: t.id,
+    nameUk: t.nameUk,
+    tier: t.tier,
+    price: t.price,
+    swatch: t.swatch,
+    owned: t.tier === "free" || ownedThemes.has(t.id),
+    equipped: equippedThemeId === t.id,
   }));
 
   return {
     coins: user.coins,
     skins,
-    ownedSkinIds: [...owned],
+    ownedSkinIds: [...ownedSkins],
+    themes,
+    ownedThemeIds: [...ownedThemes],
   };
 }

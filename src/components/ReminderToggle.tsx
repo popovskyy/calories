@@ -1,135 +1,194 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
 
-const STORAGE_KEY = "calories-reminder-enabled";
-const HOUR = 20;
-const LAST_SHOWN_KEY = "calories-reminder-last";
-
-function ymdLocal(d = new Date()) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const buffer = new ArrayBuffer(rawData.length);
+  const arr = new Uint8Array(buffer);
+  for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+  return arr;
 }
 
-function msUntilNextHour(hour: number) {
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(hour, 0, 0, 0);
-  if (next.getTime() <= now.getTime()) {
-    next.setDate(next.getDate() + 1);
-  }
-  return next.getTime() - now.getTime();
+function isIos(): boolean {
+  return /iP(hone|ad|od)/.test(navigator.userAgent);
 }
 
-async function fireReminder() {
-  if (typeof Notification === "undefined") return;
-  if (Notification.permission !== "granted") return;
-  const today = ymdLocal();
-  if (localStorage.getItem(LAST_SHOWN_KEY) === today) return;
-  localStorage.setItem(LAST_SHOWN_KEY, today);
-  try {
-    const reg = await navigator.serviceWorker?.getRegistration();
-    if (reg?.showNotification) {
-      await reg.showNotification("Калорії", {
-        body: "Не забудь записати їжу за сьогодні",
-        icon: "/icons/icon-192.png",
-        tag: "calories-evening",
-      });
-    } else {
-      new Notification("Калорії", {
-        body: "Не забудь записати їжу за сьогодні",
-        icon: "/icons/icon-192.png",
-        tag: "calories-evening",
-      });
-    }
-  } catch {
-    /* ignore */
-  }
+function isStandalone(): boolean {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    ("standalone" in navigator &&
+      Boolean((navigator as Navigator & { standalone?: boolean }).standalone))
+  );
 }
 
-/** Планує локальне нагадування о 20:00 (поки апка/PWA відкрита). */
-export function ReminderScheduler() {
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (localStorage.getItem(STORAGE_KEY) !== "1") return;
-    if (typeof Notification === "undefined") return;
-    if (Notification.permission !== "granted") return;
-
-    const now = new Date();
-    if (now.getHours() >= HOUR) {
-      void fireReminder();
-    }
-
-    const delay = msUntilNextHour(HOUR);
-    const id = window.setTimeout(() => {
-      void fireReminder();
-    }, delay);
-
-    return () => window.clearTimeout(id);
-  }, []);
-
-  return null;
+function subscribeNowhere() {
+  return () => {};
 }
 
+/** Перемикач Web Push нагадувань (о 20:00 Kyiv). */
 export function ReminderToggle() {
+  const mounted = useSyncExternalStore(subscribeNowhere, () => true, () => false);
   const [enabled, setEnabled] = useState(false);
-  const [supported, setSupported] = useState(true);
+  const [publicKey, setPublicKey] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const supported =
+    mounted &&
+    "Notification" in window &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window;
+  const iosBlocked = mounted && isIos() && !isStandalone();
 
   useEffect(() => {
-    setSupported(typeof Notification !== "undefined");
-    setEnabled(localStorage.getItem(STORAGE_KEY) === "1");
-  }, []);
+    if (!mounted) return;
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/push/subscribe", {
+          credentials: "same-origin",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          publicKey: string | null;
+          subscribed: boolean;
+          remindersEnabled: boolean;
+        };
+        if (data.publicKey) setPublicKey(data.publicKey);
+        setEnabled(data.subscribed && data.remindersEnabled);
+
+        if (
+          supported &&
+          typeof Notification !== "undefined" &&
+          Notification.permission === "granted" &&
+          !data.subscribed &&
+          data.publicKey
+        ) {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(
+              data.publicKey,
+            ) as BufferSource,
+          });
+          const json = sub.toJSON();
+          const post = await fetch("/api/push/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({
+              endpoint: json.endpoint,
+              keys: {
+                p256dh: json.keys?.p256dh ?? "",
+                auth: json.keys?.auth ?? "",
+              },
+              userAgent: navigator.userAgent,
+            }),
+          });
+          if (post.ok) setEnabled(true);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [mounted, supported]);
 
   const toggle = useCallback(async () => {
+    if (iosBlocked) {
+      toast.message('Додайте застосунок на екран «Додому»');
+      return;
+    }
     if (!supported) {
-      toast.error("Сповіщення не підтримуються в цьому браузері");
+      toast.error("Push-сповіщення не підтримуються в цьому браузері");
       return;
     }
+    setBusy(true);
+    try {
+      if (enabled) {
+        await fetch("/api/push/subscribe", {
+          method: "DELETE",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        setEnabled(false);
+        toast.message("Нагадування вимкнено");
+        return;
+      }
 
-    if (enabled) {
-      localStorage.setItem(STORAGE_KEY, "0");
-      setEnabled(false);
-      toast.message("Нагадування вимкнено");
-      return;
+      // Дозвіл ПЕРШИМ рядком обробника — до будь-якого await (Safari/iOS)
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        toast.error("Дозвольте сповіщення в налаштуваннях браузера");
+        return;
+      }
+
+      const key = publicKey || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+      if (!key) {
+        toast.error("VAPID-ключ не налаштовано");
+        return;
+      }
+
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
+      });
+      const json = sub.toJSON();
+
+      const res = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          endpoint: json.endpoint,
+          keys: {
+            p256dh: json.keys?.p256dh ?? "",
+            auth: json.keys?.auth ?? "",
+          },
+          userAgent: navigator.userAgent,
+        }),
+      });
+
+      if (!res.ok) {
+        toast.error("Не вдалося зберегти підписку");
+        return;
+      }
+
+      setEnabled(true);
+      toast.success("Push-нагадування увімкнено");
+    } finally {
+      setBusy(false);
     }
+  }, [enabled, supported, iosBlocked, publicKey]);
 
-    let perm = Notification.permission;
-    if (perm === "default") {
-      perm = await Notification.requestPermission();
-    }
-    if (perm !== "granted") {
-      toast.error("Дозвольте сповіщення в налаштуваннях браузера");
-      return;
-    }
-
-    localStorage.setItem(STORAGE_KEY, "1");
-    setEnabled(true);
-    toast.success(`Нагадування о ${HOUR}:00 увімкнено`);
-  }, [enabled, supported]);
-
-  if (!supported) return null;
+  if (!mounted) return null;
+  if (!supported && !iosBlocked) return null;
 
   return (
     <button
       type="button"
       onClick={() => void toggle()}
-      className="mcard flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
+      disabled={busy || iosBlocked}
+      className="mcard flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)] disabled:opacity-60"
     >
       <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-tile)] text-[var(--color-accent)]">
         {enabled ? <Bell size={18} /> : <BellOff size={18} />}
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[16px] font-semibold text-[var(--color-text)]">
-          Нагадування о {HOUR}:00
+          Нагадування о 20:00
         </div>
         <div className="text-[13px] text-[var(--color-muted3)]">
-          {enabled
-            ? "Увімкнено · працює, коли апка відкрита"
-            : "Локальне сповіщення записати їжу"}
+          {iosBlocked
+            ? "Додайте застосунок на екран «Додому»"
+            : enabled
+              ? "Push-сповіщення увімкнено"
+              : "Отримувати нагадування записати їжу"}
         </div>
       </div>
       <span
@@ -139,7 +198,7 @@ export function ReminderToggle() {
             : "text-[13px] text-[var(--color-muted3)]"
         }
       >
-        {enabled ? "ON" : "OFF"}
+        {busy ? "…" : enabled ? "ON" : "OFF"}
       </span>
     </button>
   );

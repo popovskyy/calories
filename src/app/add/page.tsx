@@ -3,13 +3,21 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Camera, Upload, Sparkles, X, Keyboard } from "lucide-react";
+import {
+  ChevronLeft,
+  Camera,
+  Upload,
+  Sparkles,
+  X,
+  UtensilsCrossed,
+  Dumbbell,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppFrame } from "@/components/AppFrame";
 import { AiResultCard } from "@/components/AiResultCard";
 import { SaveCelebrate } from "@/components/SaveCelebrate";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Field, inputClass } from "@/components/ui/Field";
+import { inputClass } from "@/components/ui/Field";
 import {
   useAnalyzeMeal,
   useCurrentUser,
@@ -21,7 +29,6 @@ import { useMounted } from "@/hooks/useMounted";
 import { useAppStore } from "@/store/useAppStore";
 import { humanDateFull } from "@/lib/date";
 import { compressImageToJpeg } from "@/lib/image-compress";
-import { cn } from "@/lib/cn";
 import type { AnalyzeResult, RecentMealDTO } from "@/lib/types";
 
 interface ImageState {
@@ -29,8 +36,6 @@ interface ImageState {
   mime: string;
   preview: string;
 }
-
-type Mode = "ai" | "manual";
 
 export default function AddFoodPage() {
   const mounted = useMounted();
@@ -40,14 +45,9 @@ export default function AddFoodPage() {
   const recent = useRecentMeals(10);
   const dash = useDashboard();
 
-  const [mode, setMode] = useState<Mode>("ai");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<ImageState | null>(null);
   const [result, setResult] = useState<AnalyzeResult | null>(null);
-  const [calories, setCalories] = useState("");
-  const [protein, setProtein] = useState("");
-  const [fats, setFats] = useState("");
-  const [carbs, setCarbs] = useState("");
   const [celebrate, setCelebrate] = useState(false);
   const [celebrateInTarget, setCelebrateInTarget] = useState(false);
 
@@ -75,10 +75,6 @@ export default function AddFoodPage() {
 
   const applyRecent = (m: RecentMealDTO) => {
     setDescription(m.description);
-    setCalories(String(m.calories));
-    setProtein(String(m.protein));
-    setFats(String(m.fats));
-    setCarbs(String(m.carbs));
     setResult({
       calories: m.calories,
       protein: m.protein,
@@ -86,7 +82,6 @@ export default function AddFoodPage() {
       carbs: m.carbs,
       parsedItems: [],
     });
-    setMode("manual");
     setImage(null);
     toast.message("Макроси підставлено — можна зберегти або підправити");
   };
@@ -112,17 +107,10 @@ export default function AddFoodPage() {
         imageMimeType: image?.mime,
       },
       {
-        onSuccess: (r) => {
-          setResult(r);
-          setCalories(String(r.calories));
-          setProtein(String(r.protein));
-          setFats(String(r.fats));
-          setCarbs(String(r.carbs));
-        },
+        onSuccess: (r) => setResult(r),
         onError: (err) => {
           const msg = err instanceof Error ? err.message : "Помилка аналізу";
-          toast.error(`${msg} Спробуйте режим «Вручну».`, { duration: 6000 });
-          setMode("manual");
+          toast.error(msg, { duration: 6000 });
         },
       },
     );
@@ -166,18 +154,6 @@ export default function AddFoodPage() {
     persist(result);
   };
 
-  const runSaveManual = () => {
-    const cal = parseInt(calories, 10);
-    const p = parseInt(protein, 10);
-    const f = parseInt(fats, 10);
-    const c = parseInt(carbs, 10);
-    if (!description.trim()) return toast.error("Вкажіть опис");
-    if (![cal, p, f, c].every((n) => Number.isFinite(n) && n >= 0)) {
-      return toast.error("Калорії та макроси — цілі числа ≥ 0");
-    }
-    persist({ calories: cal, protein: p, fats: f, carbs: c });
-  };
-
   if (mounted && !user) {
     return (
       <AppFrame>
@@ -201,13 +177,13 @@ export default function AddFoodPage() {
         className="flex items-center gap-3 px-[18px] pb-2"
         style={{ paddingTop: "18px" }}
       >
-        <button
-          onClick={() => router.back()}
+        <Link
+          href="/"
           aria-label="Назад"
           className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-surface)] text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
         >
           <ChevronLeft size={18} />
-        </button>
+        </Link>
         <div className="min-w-0 flex-1">
           <h1 className="text-[22px] font-semibold text-[var(--color-text)]">
             Новий прийом їжі
@@ -220,43 +196,17 @@ export default function AddFoodPage() {
         </div>
       </header>
 
-      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-24 pt-4">
+      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-28 pt-4">
         <div className="flex gap-2">
-          <span className="flex flex-1 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] px-3 py-2.5 text-[14px] font-semibold text-[#f5f4ff]">
-            Їжа
+          <span className="flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-3 py-2.5 text-[14px] font-semibold text-[#f5f4ff]">
+            <UtensilsCrossed size={16} /> Їжа
           </span>
-          <Link
-            href="/add/activity"
-            className="flex flex-1 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-2.5 text-[14px] font-semibold text-[var(--color-muted2)]"
-          >
-            Рух
-          </Link>
-        </div>
-
-        <div className="flex gap-2">
           <button
             type="button"
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2.5 text-[14px] font-semibold transition-colors",
-              mode === "ai"
-                ? "bg-[var(--color-accent)] text-[#f5f4ff]"
-                : "bg-[var(--color-tile)] text-[var(--color-muted2)]",
-            )}
-            onClick={() => setMode("ai")}
+            onClick={() => router.replace("/add/activity")}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-2.5 text-[14px] font-semibold text-[var(--color-muted2)]"
           >
-            <Sparkles size={16} /> ШІ
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2.5 text-[14px] font-semibold transition-colors",
-              mode === "manual"
-                ? "bg-[var(--color-accent)] text-[#f5f4ff]"
-                : "bg-[var(--color-tile)] text-[var(--color-muted2)]",
-            )}
-            onClick={() => setMode("manual")}
-          >
-            <Keyboard size={16} /> Вручну
+            <Dumbbell size={16} /> Рух
           </button>
         </div>
 
@@ -293,145 +243,93 @@ export default function AddFoodPage() {
           />
         </label>
 
-        {mode === "ai" ? (
-          <>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => cameraRef.current?.click()}
-                className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
-              >
-                <Camera size={18} /> Фото
-              </button>
-              <button
-                type="button"
-                onClick={() => uploadRef.current?.click()}
-                className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
-              >
-                <Upload size={18} /> Файл
-              </button>
-              <input
-                ref={cameraRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                hidden
-                onChange={(e) => void onFile(e)}
-              />
-              <input
-                ref={uploadRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => void onFile(e)}
-              />
-            </div>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => cameraRef.current?.click()}
+            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
+          >
+            <Camera size={18} /> Фото
+          </button>
+          <button
+            type="button"
+            onClick={() => uploadRef.current?.click()}
+            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
+          >
+            <Upload size={18} /> Файл
+          </button>
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            onChange={(e) => void onFile(e)}
+          />
+          <input
+            ref={uploadRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => void onFile(e)}
+          />
+        </div>
 
-            {image ? (
-              <div className="relative overflow-hidden rounded-[var(--radius-md)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={image.preview}
-                  alt="Фото страви"
-                  className="max-h-52 w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setImage(null)}
-                  aria-label="Прибрати фото"
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-[var(--radius-pill)] bg-black/60 text-white"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            ) : null}
+        {image ? (
+          <div className="relative overflow-hidden rounded-[var(--radius-md)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={image.preview}
+              alt="Фото страви"
+              className="max-h-52 w-full object-cover"
+            />
+            <button
+              type="button"
+              onClick={() => setImage(null)}
+              aria-label="Прибрати фото"
+              className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-[var(--radius-pill)] bg-black/60 text-white"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        ) : null}
 
-            {analyze.isPending ? (
-              <ResultSkeleton />
-            ) : result ? (
-              <AiResultCard result={result} source={image ? "фото" : "опису"} />
-            ) : null}
-          </>
-        ) : (
-          <>
-            <Field label="Калорії">
-              <input
-                className={inputClass}
-                inputMode="numeric"
-                value={calories}
-                onChange={(e) => setCalories(e.target.value.replace(/[^\d]/g, ""))}
-              />
-            </Field>
-            <div className="grid grid-cols-3 gap-2">
-              <Field label="Білки">
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  value={protein}
-                  onChange={(e) => setProtein(e.target.value.replace(/[^\d]/g, ""))}
-                />
-              </Field>
-              <Field label="Жири">
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  value={fats}
-                  onChange={(e) => setFats(e.target.value.replace(/[^\d]/g, ""))}
-                />
-              </Field>
-              <Field label="Вуглеводи">
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  value={carbs}
-                  onChange={(e) => setCarbs(e.target.value.replace(/[^\d]/g, ""))}
-                />
-              </Field>
-            </div>
-          </>
-        )}
+        {analyze.isPending ? (
+          <ResultSkeleton />
+        ) : result ? (
+          <AiResultCard result={result} source={image ? "фото" : "опису"} />
+        ) : null}
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-3.5 pt-3.5">
-        {mode === "ai" ? (
-          result ? (
-            <>
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                onClick={runSaveFromAi}
-                disabled={save.isPending}
-              >
-                {save.isPending ? "Збереження…" : "Зберегти в журнал"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-block"
-                onClick={runAnalyze}
-                disabled={analyze.isPending}
-              >
-                Перерахувати
-              </button>
-            </>
-          ) : (
+      <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-3.5">
+        {result ? (
+          <>
             <button
               type="button"
               className="btn btn-primary btn-block"
-              onClick={runAnalyze}
-              disabled={!canAnalyze}
+              onClick={runSaveFromAi}
+              disabled={save.isPending}
             >
-              <Sparkles size={18} />
-              {analyze.isPending ? "Аналізуємо…" : "Розрахувати"}
+              {save.isPending ? "Збереження…" : "Зберегти в журнал"}
             </button>
-          )
+            <button
+              type="button"
+              className="btn btn-ghost btn-block"
+              onClick={runAnalyze}
+              disabled={analyze.isPending}
+            >
+              Перерахувати
+            </button>
+          </>
         ) : (
           <button
             type="button"
             className="btn btn-primary btn-block"
-            onClick={runSaveManual}
-            disabled={save.isPending}
+            onClick={runAnalyze}
+            disabled={!canAnalyze}
           >
-            {save.isPending ? "Збереження…" : "Зберегти в журнал"}
+            <Sparkles size={18} />
+            {analyze.isPending ? "Аналізуємо…" : "Розрахувати"}
           </button>
         )}
       </div>
@@ -442,7 +340,7 @@ export default function AddFoodPage() {
         onDone={() => {
           setCelebrate(false);
           toast.success("Додано в журнал");
-          router.push("/log");
+          router.replace("/log");
         }}
       />
     </AppFrame>

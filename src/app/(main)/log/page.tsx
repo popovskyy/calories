@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Dumbbell, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { DateSelector } from "@/components/DateSelector";
 import { ProgressBar } from "@/components/ProgressBar";
 import { MealCard } from "@/components/MealCard";
 import { EditMealDialog } from "@/components/EditMealDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
@@ -23,16 +25,30 @@ import { shiftYMD } from "@/lib/date";
 import type { MealDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
-export default function LogPage() {
+type ConfirmState =
+  | { kind: "meal"; id: string; label: string }
+  | { kind: "activity"; id: string; label: string }
+  | null;
+
+function LogPageInner() {
   const mounted = useMounted();
   const { user, isLoading } = useCurrentUser();
   const selectedDate = useAppStore((s) => s.selectedDate);
   const setSelectedDate = useAppStore((s) => s.setSelectedDate);
+  const searchParams = useSearchParams();
   const meals = useMeals(selectedDate);
   const activities = useActivities(selectedDate);
   const del = useDeleteMeal(selectedDate);
   const delAct = useDeleteActivity(selectedDate);
   const [editMeal, setEditMeal] = useState<MealDTO | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
+
+  useEffect(() => {
+    const d = searchParams.get("date");
+    if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      setSelectedDate(d);
+    }
+  }, [searchParams, setSelectedDate]);
 
   if (!mounted || isLoading || !user) return <LogSkeleton />;
 
@@ -49,10 +65,22 @@ export default function LogPage() {
   const pct = target > 0 ? net / target : 0;
   const over = net > target;
 
-  const onDelete = (id: string) =>
-    del.mutate(id, {
-      onError: (e) => toast.error(e instanceof Error ? e.message : "Не вдалося видалити"),
-    });
+  const onConfirmDelete = () => {
+    if (!confirm) return;
+    if (confirm.kind === "meal") {
+      del.mutate(confirm.id, {
+        onSuccess: () => setConfirm(null),
+        onError: (e) =>
+          toast.error(e instanceof Error ? e.message : "Не вдалося видалити"),
+      });
+    } else {
+      delAct.mutate(confirm.id, {
+        onSuccess: () => setConfirm(null),
+        onError: (e) =>
+          toast.error(e instanceof Error ? e.message : "Помилка"),
+      });
+    }
+  };
 
   return (
     <>
@@ -129,9 +157,10 @@ export default function LogPage() {
                         className="text-[13px] text-[var(--color-muted3)]"
                         disabled={delAct.isPending}
                         onClick={() =>
-                          delAct.mutate(a.id, {
-                            onError: (e) =>
-                              toast.error(e instanceof Error ? e.message : "Помилка"),
+                          setConfirm({
+                            kind: "activity",
+                            id: a.id,
+                            label: `«${a.description}» — −${a.caloriesBurned} ккал. Дію не можна скасувати.`,
                           })
                         }
                       >
@@ -154,7 +183,16 @@ export default function LogPage() {
                     meal={m}
                     index={i}
                     onEdit={m.status === "cancelled" ? undefined : setEditMeal}
-                    onDelete={m.status === "cancelled" ? undefined : onDelete}
+                    onDelete={
+                      m.status === "cancelled"
+                        ? undefined
+                        : (id) =>
+                            setConfirm({
+                              kind: "meal",
+                              id,
+                              label: `«${m.description}» — ${m.calories} ккал. Дію не можна скасувати.`,
+                            })
+                    }
                     deleting={del.isPending && del.variables === m.id}
                   />
                 ))}
@@ -172,7 +210,27 @@ export default function LogPage() {
         meal={editMeal}
         listDate={selectedDate}
       />
+
+      <ConfirmDialog
+        open={!!confirm}
+        onOpenChange={(open) => {
+          if (!open) setConfirm(null);
+        }}
+        title="Видалити запис?"
+        description={confirm?.label}
+        danger
+        pending={del.isPending || delAct.isPending}
+        onConfirm={onConfirmDelete}
+      />
     </>
+  );
+}
+
+export default function LogPage() {
+  return (
+    <Suspense fallback={<LogSkeleton />}>
+      <LogPageInner />
+    </Suspense>
   );
 }
 

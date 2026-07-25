@@ -6,6 +6,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { setThemeCookie } from "@/lib/theme-cookie";
 import { toUserDTO } from "@/lib/user-dto";
 
 export const runtime = "nodejs";
@@ -29,7 +30,10 @@ export async function POST(req: NextRequest) {
   const login = parsed.data.username.trim().toLowerCase();
   const user = await prisma.user.findUnique({
     where: { username: login },
-    include: { skins: { select: { skinId: true } } },
+    include: {
+      skins: { select: { skinId: true } },
+      themes: { select: { themeId: true } },
+    },
   });
   if (!user) {
     return NextResponse.json(
@@ -51,6 +55,7 @@ export async function POST(req: NextRequest) {
     username: user.username,
   });
   await setSessionCookie(token);
+  await setThemeCookie(user.theme ?? "nocturne");
 
   return NextResponse.json(toUserDTO(user));
 }

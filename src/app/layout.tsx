@@ -1,13 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/PwaRegister";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme-script";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "600"],
+});
+
+const pressStart = Press_Start_2P({
+  variable: "--font-pixel",
+  subsets: ["latin", "cyrillic"],
+  weight: "400",
+  preload: false,
 });
 
 const APPLE_TOUCH_SIZES = [57, 60, 72, 76, 114, 120, 144, 152, 167, 180] as const;
@@ -63,8 +71,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  // viewportFit лишаємо дефолтним ("auto"): iOS сам відсуває вебв'ю
-  // з-під чубчика/home indicator, а env(safe-area-inset-*) = 0
 };
 
 export default function RootLayout({
@@ -73,7 +79,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uk" className={inter.variable}>
+    <html
+      lang="uk"
+      className={`${inter.variable} ${pressStart.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body>
         <Providers>{children}</Providers>
         <PwaRegister />

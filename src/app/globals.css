@@ -57,6 +57,78 @@
 }
 
 /* ============================================================
+   Minecraft theme override
+   ============================================================ */
+html[data-theme="minecraft"] {
+  --color-bg: #17130f;
+  --color-surface: #2b2620;
+  --color-tile: #1f1b16;
+  --color-text: #f0e6d3;
+  --color-muted: #c8b89a;
+  --color-muted2: #a89070;
+  --color-muted3: #7f7f7f;
+  --color-accent: #5b8731;
+  --color-accent-100: #d4edaa;
+  --color-accent-200: #b8d980;
+  --color-accent-300: #9cc760;
+  --color-accent-400: #7cb342;
+  --color-accent-500: #5b8731;
+  --color-accent-600: #3d5c1f;
+  --color-accent-800: #2a3f14;
+  --color-green: #7cb342;
+  --color-green-600: #5b8731;
+  --color-red: #d94a38;
+  --color-red-600: #b03828;
+  --color-track: #3a2e20;
+  --color-macro-protein: #7cb342;
+  --color-macro-fats: #fcdc5f;
+  --color-macro-carbs: #8b5a2b;
+  --color-divider: color-mix(in srgb, #f0e6d3 14%, transparent);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-pill: 0px;
+  --shadow-card: 2px 2px 0 #000, inset 1px 1px 0 rgba(255,255,255,0.12);
+  --shadow-card-lg: 3px 3px 0 #000, inset 1px 1px 0 rgba(255,255,255,0.12);
+  --shadow-fab: 3px 3px 0 rgba(0,0,0,0.6);
+}
+
+html[data-theme="minecraft"] body {
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+}
+
+html[data-theme="minecraft"] h1,
+html[data-theme="minecraft"] .lbl {
+  font-family: var(--font-pixel), monospace;
+  font-size: 0.82em;
+  letter-spacing: 0.04em;
+}
+
+html[data-theme="minecraft"] .page-chrome {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--color-bg);
+}
+
+html[data-theme="minecraft"] .app-frame::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    #5b8731 0px 8px,
+    #7cb342 8px 16px,
+    #3d5c1f 16px 24px,
+    #7cb342 24px 32px
+  );
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* ============================================================
    Base
    ============================================================ */
 html {
@@ -288,6 +360,26 @@ body {
   border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
   border-top-color: currentColor;
   animation: spin 0.7s linear infinite;
+}
+
+@keyframes flame-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(-1deg);
+    filter: drop-shadow(
+      0 0 3px color-mix(in srgb, var(--color-accent) 55%, transparent)
+    );
+  }
+  50% {
+    transform: scale(1.14) rotate(1.5deg);
+    filter: drop-shadow(
+      0 0 9px color-mix(in srgb, var(--color-accent) 85%, transparent)
+    );
+  }
+}
+.flame-anim {
+  animation: flame-pulse 1.6s ease-in-out infinite;
+  transform-origin: 50% 85%;
 }
 
 /* Icon base (Lucide handles most, but keep for inline SVG parity) */

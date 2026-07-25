@@ -3,8 +3,10 @@
 import { useEffect } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 
-const R = 86;
+const R = 108;
 const C = 2 * Math.PI * R;
+const SIZE = 248;
+const CX = SIZE / 2;
 
 interface ProgressRingProps {
   consumed: number;
@@ -36,32 +38,34 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
     };
   }, [progress, consumed, offset, count]);
 
-  /*
-   * Головна цифра — найважливіше число на екрані, тож вона має домінувати.
-   * Отвір кільця ≈ 156px (R 86 − половина обводки 8), тримаємось у 140px:
-   * розмір падає лише тоді, коли цифр справді забагато.
-   */
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize =
-    digits >= 5 ? "text-[34px]" : digits >= 4 ? "text-[44px]" : "text-[52px]";
+    digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[56px]" : "text-[64px]";
 
   return (
-    <div className="relative my-1.5 h-[200px] w-[200px] shrink-0 overflow-hidden">
+    <div className="relative my-1.5 h-[248px] w-[248px] shrink-0 overflow-hidden">
       <svg
-        width="200"
-        height="200"
-        viewBox="0 0 200 200"
+        width={SIZE}
+        height={SIZE}
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="block"
         style={{ transform: "rotate(-90deg)" }}
       >
-        <circle cx="100" cy="100" r={R} fill="none" stroke="#2b2d3a" strokeWidth="16" />
+        <circle
+          cx={CX}
+          cy={CX}
+          r={R}
+          fill="none"
+          stroke="var(--color-track)"
+          strokeWidth="20"
+        />
         <motion.circle
-          cx="100"
-          cy="100"
+          cx={CX}
+          cy={CX}
           r={R}
           fill="none"
           stroke="url(#ring-grad)"
-          strokeWidth="16"
+          strokeWidth="20"
           strokeLinecap="round"
           strokeDasharray={C}
           style={{ strokeDashoffset: offset }}
@@ -74,19 +78,18 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
         </defs>
       </svg>
 
-      {/* Текст лише всередині «дірки» кільця (~156px), без вилазу */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="flex w-[140px] flex-col items-center justify-center overflow-hidden text-center">
+        <div className="flex w-[176px] flex-col items-center justify-center overflow-hidden text-center">
           <motion.div
             className={`${numSize} font-semibold leading-[0.95] tracking-[-0.02em] text-[var(--color-text)]`}
           >
             {rounded}
           </motion.div>
-          <div className="mt-1 max-w-full truncate text-[12px] leading-tight text-[var(--color-muted3)]">
+          <div className="mt-1 max-w-full truncate text-[14px] leading-tight text-[var(--color-muted3)]">
             із {target.toLocaleString("uk-UA")} ккал
           </div>
           <div
-            className="mt-1 max-w-full truncate text-[11px] font-semibold leading-tight"
+            className="mt-1 max-w-full truncate text-[15px] font-semibold leading-tight"
             style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
           >
             {over

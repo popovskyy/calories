@@ -64,6 +64,8 @@ export function AuthForm() {
   const [goal, setGoal] = useState<Goal>("maintain");
   const [weight, setWeight] = useState("70");
   const [height, setHeight] = useState("175");
+  const [targetWeight, setTargetWeight] = useState("");
+  const [targetWeeks, setTargetWeeks] = useState("");
   const [photo, setPhoto] = useState<{ base64: string; mime: string } | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [avatarPreset, setAvatarPreset] = useState<string>(toPresetUrl("kiwi"));
@@ -131,6 +133,8 @@ export function AuthForm() {
         goal,
         weight: parseFloat(weight),
         height: parseFloat(height),
+        targetWeight: targetWeight ? parseFloat(targetWeight) : null,
+        targetWeeks: targetWeeks ? parseInt(targetWeeks, 10) : null,
         avatarUrl: avatarPreset,
         imageBase64: photo?.base64,
         imageMimeType: photo?.mime,
@@ -317,6 +321,30 @@ export function AuthForm() {
               <input className={inputClass} value={height} onChange={(e) => setHeight(e.target.value)} inputMode="decimal" />
             </Field>
           </div>
+
+          <div className="flex gap-3">
+            <Field label="Цільова вага, кг">
+              <input
+                className={inputClass}
+                value={targetWeight}
+                onChange={(e) => setTargetWeight(e.target.value)}
+                inputMode="decimal"
+                placeholder="опц."
+              />
+            </Field>
+            <Field label="Строк, тижнів">
+              <input
+                className={inputClass}
+                value={targetWeeks}
+                onChange={(e) => setTargetWeeks(e.target.value)}
+                inputMode="numeric"
+                placeholder="опц."
+              />
+            </Field>
+          </div>
+          <p className="text-[12px] text-[var(--color-muted3)]">
+            Порожньо — ціль не відстежується
+          </p>
 
           <div className="flex flex-col gap-1.5">
             <span className="lbl">Мета</span>

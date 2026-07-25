@@ -13,25 +13,34 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  username       String    @unique
-  passwordHash   String
-  name           String
-  targetCalories Int // денна норма (обчислюється з формули, зберігається)
-  birthYear      Int       @default(1995)
-  birthMonth     Int       @default(1) // 1–12
-  sex            String    @default("male") // male | female
-  activityLevel  String    @default("moderate") // sedentary…very_active
-  goal           String    @default("maintain") // maintain | deficit
-  weight         Float     @default(70)
-  height         Float     @default(175)
-  avatarUrl      String? // data:image/png;base64,… (мультяшний аватар від Gemini)
-  coins          Int       @default(0) // внутрішня валюта за звички
-  createdAt      DateTime  @default(now())
-  meals          MealLog[]
-  activities     ActivityLog[]
-  skins          UserSkin[]
-  claims         RewardClaim[]
+  id               String             @id @default(cuid())
+  username         String             @unique
+  passwordHash     String
+  name             String
+  targetCalories   Int // денна норма (обчислюється з формули, зберігається)
+  birthYear        Int                @default(1995)
+  birthMonth       Int                @default(1) // 1–12
+  sex              String             @default("male") // male | female
+  activityLevel    String             @default("moderate") // sedentary…very_active
+  goal             String             @default("maintain") // maintain | deficit
+  weight           Float              @default(70)
+  height           Float              @default(175)
+  avatarUrl        String? // data:image/png;base64,… (мультяшний аватар від Gemini)
+  coins            Int                @default(0) // внутрішня валюта за звички
+  theme            String             @default("nocturne")
+  targetWeight     Float?
+  targetWeeks      Int?
+  startWeight      Float?
+  startWeightDate  String? // YYYY-MM-DD
+  remindersEnabled Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  meals            MealLog[]
+  activities       ActivityLog[]
+  skins            UserSkin[]
+  themes           UserTheme[]
+  claims           RewardClaim[]
+  pushSubs         PushSubscription[]
+  notifications    Notification[]
 }
 
 /** Тижневі квести (Пн–Нд, Kyiv). Адмін може правити або додавати свої. */
@@ -83,6 +92,17 @@ model UserSkin {
   @@unique([userId, skinId])
 }
 
+// Куплені теми оформлення
+model UserTheme {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  themeId   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, themeId])
+}
+
 // Ідемпотентність нагород: кожен унікальний ключ нараховується лише раз
 model RewardClaim {
   id        String   @id @default(cuid())
@@ -116,16 +136,45 @@ model MealLog {
 
 /** Тренування / активність — ШІ оцінює спалені ккал. */
 model ActivityLog {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date            String // YYYY-MM-DD
-  description     String
-  caloriesBurned  Int
-  durationMin     Int? // хвилини, якщо відомо
-  status          String   @default("approved") // approved | cancelled
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date           String // YYYY-MM-DD
+  description    String
+  caloriesBurned Int
+  durationMin    Int? // хвилини, якщо відомо
+  status         String   @default("approved") // approved | cancelled
+  createdAt      DateTime @default(now())
 
   @@index([userId, date])
   @@index([status, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String // reminder | entry_cancelled | entry_updated | system
+  title     String
+  body      String
+  url       String?
+  dedupeKey String? // "reminder:2026-07-25"; null = дублікати дозволені
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, read, createdAt])
 }

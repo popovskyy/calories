@@ -10,7 +10,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "recalc": "tsx scripts/recalc-targets.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -36,6 +37,7 @@
     "sharp": "^0.35.3",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
+    "web-push": "^3.6.7",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
@@ -45,6 +47,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",

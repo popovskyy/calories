@@ -9,22 +9,27 @@ import {
   analyzeMeal,
   analyzeActivityApi,
   buySkin,
+  buyTheme,
   changePassword,
   deleteActivity,
   deleteMeal,
   equipSkin,
+  equipTheme,
   generateAvatar,
   getActivities,
   getArena,
   getDashboard,
+  getForecast,
   getMe,
   getMeals,
+  getNotifications,
   getQuests,
   getRecentMeals,
   getShop,
   getStreak,
   login,
   logout,
+  markNotificationsRead,
   register,
   saveActivity,
   saveMeal,
@@ -40,7 +45,8 @@ import {
   type UpdateMealInput,
   type UserInput,
 } from "@/lib/api";
-import type { ActivityDTO, MealDTO } from "@/lib/types";
+import type { MealDTO } from "@/lib/types";
+import type { NotificationsResponse } from "@/lib/api";
 
 export function useMe() {
   return useQuery({
@@ -103,6 +109,7 @@ export function useSaveUser() {
       qc.setQueryData(["me"], user);
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
+      qc.invalidateQueries({ queryKey: ["forecast"] });
     },
   });
 }
@@ -146,6 +153,7 @@ export function useSaveMeal() {
       qc.invalidateQueries({ queryKey: ["me"] }); // баланс монет
       qc.invalidateQueries({ queryKey: ["shop"] });
       qc.invalidateQueries({ queryKey: ["quests"] });
+      qc.invalidateQueries({ queryKey: ["forecast"] });
     },
   });
 }
@@ -192,6 +200,7 @@ export function useDeleteMeal(date: string) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
       qc.invalidateQueries({ queryKey: ["streak"] });
+      qc.invalidateQueries({ queryKey: ["forecast"] });
     },
   });
 }
@@ -209,6 +218,7 @@ export function useUpdateMeal(listDate: string) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
       qc.invalidateQueries({ queryKey: ["streak"] });
+      qc.invalidateQueries({ queryKey: ["forecast"] });
     },
   });
 }
@@ -237,6 +247,7 @@ export function useSaveActivity() {
       qc.invalidateQueries({ queryKey: ["me"] });
       qc.invalidateQueries({ queryKey: ["shop"] });
       qc.invalidateQueries({ queryKey: ["quests"] });
+      qc.invalidateQueries({ queryKey: ["forecast"] });
     },
   });
 }
@@ -249,6 +260,7 @@ export function useDeleteActivity(date: string) {
       qc.invalidateQueries({ queryKey: ["activities", date] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
+      qc.invalidateQueries({ queryKey: ["forecast"] });
     },
   });
 }
@@ -299,6 +311,77 @@ export function useEquipSkin() {
       qc.setQueryData(["me"], user);
       qc.invalidateQueries({ queryKey: ["shop"] }); // прапорці equipped
       qc.invalidateQueries({ queryKey: ["arena"] }); // аватар в арені
+    },
+  });
+}
+
+// --- Forecast ---
+export function useForecast() {
+  return useQuery({
+    queryKey: ["forecast"],
+    queryFn: getForecast,
+    staleTime: 60_000,
+  });
+}
+
+// --- Notifications ---
+export function useNotifications() {
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => getNotifications(),
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
+}
+
+export function useMarkNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { all?: boolean; ids?: string[] }) =>
+      markNotificationsRead(payload),
+    onMutate: async (payload) => {
+      await qc.cancelQueries({ queryKey: ["notifications"] });
+      const prev = qc.getQueryData<NotificationsResponse>(["notifications"]);
+      qc.setQueryData<NotificationsResponse>(["notifications"], (old) => {
+        if (!old) return old;
+        const items = old.items.map((n) =>
+          payload.all || payload.ids?.includes(n.id) ? { ...n, read: true } : n,
+        );
+        return { items, unreadCount: 0 };
+      });
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["notifications"], ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+// --- Theme shop ---
+export function useBuyTheme() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (themeId: string) => buyTheme(themeId),
+    onSuccess: (shop) => {
+      qc.setQueryData(["shop"], shop);
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}
+
+export function useEquipTheme() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (themeId: string) => equipTheme(themeId),
+    onSuccess: (user) => {
+      qc.setQueryData(["me"], user);
+      qc.invalidateQueries({ queryKey: ["shop"] });
+      // Миттєво застосовуємо тему
+      document.documentElement.dataset.theme = user.theme;
     },
   });
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { Flame } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { CoinsPill } from "@/components/CoinsPill";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useCurrentUser, useStreak } from "@/hooks/useQueries";
 
 export function DashboardHeader() {
@@ -33,14 +33,15 @@ export function DashboardHeader() {
             className="flex items-center gap-1 rounded-[var(--radius-pill)] border border-[var(--color-divider)] bg-[var(--color-tile)] px-2.5 py-1.5"
             title="Дні підряд із записом їжі"
           >
-            <Flame size={16} className="text-[var(--color-accent)]" />
+            <Flame size={22} className="flame-anim text-[var(--color-accent)]" />
             <span className="text-[14px] font-semibold tabular-nums text-[var(--color-text)]">
               {days}
             </span>
           </div>
         ) : null}
 
-        <CoinsPill />
+        <NotificationBell />
+        <CoinsPill size="lg" />
       </div>
     </div>
   );

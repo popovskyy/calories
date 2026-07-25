@@ -25,6 +25,15 @@ export interface UserDTO {
   coins: number;
   /** Куплені преміум skinId */
   ownedSkinIds: string[];
+  /** Активна тема оформлення */
+  theme: string;
+  /** Куплені преміум themeId */
+  ownedThemeIds: string[];
+  targetWeight: number | null;
+  targetWeeks: number | null;
+  startWeight: number | null;
+  startWeightDate: string | null;
+  remindersEnabled: boolean;
 }
 
 /** Нарахована нагорода (для тостів) */
@@ -46,10 +55,47 @@ export interface ShopSkin {
   equipped: boolean;
 }
 
+export interface ShopTheme {
+  id: string;
+  nameUk: string;
+  tier: "free" | "premium";
+  price: number;
+  swatch: string;
+  owned: boolean;
+  equipped: boolean;
+}
+
 export interface ShopResponse {
   coins: number;
   skins: ShopSkin[];
   ownedSkinIds: string[];
+  themes: ShopTheme[];
+  ownedThemeIds: string[];
+}
+
+export interface NotificationDTO {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  url: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface ForecastResponse {
+  configured: boolean;
+  startWeight: number | null;
+  currentWeight: number | null;
+  targetWeight: number | null;
+  expectedWeight: number | null;
+  deltaActual: number | null;
+  plannedWeightToday: number | null;
+  targetDate: string | null;
+  daysLeft: number | null;
+  loggedDays: number;
+  totalDays: number;
+  scheduleStatus: "ahead" | "on" | "behind" | "unknown";
 }
 
 export interface ArenaEntry {
