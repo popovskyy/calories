@@ -58,6 +58,7 @@ export const DEFAULT_SKINS: AvatarPreset[] = [
   { id: "tyson", nameUk: "Mike Tyson", bg: "#495057", tier: "premium", price: 550, rarity: "legendary", artKind: "file", sortOrder: 345 },
   { id: "deer", nameUk: "99 ночей в лесу", bg: "#3D2B1F", tier: "premium", price: 350, rarity: "epic", artKind: "file", sortOrder: 350 },
   { id: "potter", nameUk: "Harry Potter", bg: "#1A1A40", tier: "premium", price: 400, rarity: "epic", artKind: "file", sortOrder: 360 },
+  { id: "fish", nameUk: "Рибка Барсік", bg: "#0E4C63", tier: "premium", price: 350, rarity: "legendary", artKind: "file", sortOrder: 370 },
 ];
 
 /** Синхронний фолбек (реєстрація / SSR до ensure). */
