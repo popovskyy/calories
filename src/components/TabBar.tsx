@@ -18,11 +18,19 @@ export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <div className="relative z-30 shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] pb-0.5">
-      <div className="absolute bottom-[calc(100%+8px)] right-3 z-10">
-        <CoinsPill size="sm" />
+    /*
+     * pb: ~20px «повітря» під іконками + safe-area, щоб на телефонах з
+     * home indicator меню не притискалося до самого краю екрана.
+     */
+    <div className="relative z-30 shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] pb-[calc(env(safe-area-inset-bottom,0px)+16px)]">
+      {/*
+       * Бейдж монет — зліва, значно вище панелі: правий нижній кут повністю
+       * віддано плаваючій кнопці «+» (вона займає ~68px від right-4).
+       */}
+      <div className="absolute bottom-[calc(100%+16px)] left-3 z-10">
+        <CoinsPill size="xs" />
       </div>
-      <nav className="flex px-1 pb-0.5 pt-1">
+      <nav className="flex px-1 pt-1">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);

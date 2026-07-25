@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Save, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { AdminEditor } from "@/components/admin/AdminEditor";
 import { PresetMascot } from "@/components/avatars/PresetMascot";
 import { Field, inputClass } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { AvatarPreset, Rarity, SkinArtKind, SkinTier } from "@/lib/avatar-presets";
 import { RARITY } from "@/lib/avatar-presets";
 import { cn } from "@/lib/cn";
@@ -69,6 +71,12 @@ export function AdminSkinsPanel() {
     setCreating(true);
     setSelected(null);
     setDraft(emptyNew());
+  };
+
+  const closeForm = () => {
+    setCreating(false);
+    setSelected(null);
+    setDraft({});
   };
 
   const onSvgFile = async (file: File | null) => {
@@ -168,18 +176,23 @@ export function AdminSkinsPanel() {
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
-      <div className="overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="min-w-0 overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-divider)] px-3 py-2.5">
           <span className="text-[13px] text-[var(--color-muted3)]">
-            {skins.length} скінів · ціна і легендарність редагуються справа
+            {skins.length} скінів · ціна і рідкість редагуються в редакторі
           </span>
-          <button type="button" className="btn btn-primary py-1.5 text-[13px]" onClick={startCreate}>
-            <Plus size={14} /> Новий скін
+          <button type="button" className="btn btn-primary btn-sm" onClick={startCreate}>
+            <Plus size={15} /> Новий скін
           </button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto">
-          <table className="w-full text-left text-[14px]">
+        {/*
+          Було max-h-[70vh] + overflow-y-auto — вкладена скрол-пастка:
+          список мав власний скрол усередині сторінки, яка сама не скролилась,
+          тож нижні скіни було не дістати. Тепер скролить сторінка.
+        */}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] text-left text-[14px]">
             <thead className="sticky top-0 bg-[var(--color-surface)] text-[12px] uppercase text-[var(--color-muted3)]">
               <tr>
                 <th className="px-3 py-2">Скін</th>
@@ -237,11 +250,12 @@ export function AdminSkinsPanel() {
                       <td className="px-3 py-2">
                         <button
                           type="button"
-                          className="rounded p-1.5 text-[var(--color-muted3)] hover:text-[var(--color-red)]"
+                          className="icon-btn hover:text-[var(--color-red)]"
                           onClick={() => void remove(s.id)}
-                          aria-label="Вимкнути"
+                          aria-label={`Вимкнути скін ${s.nameUk}`}
+                          title="Вимкнути в магазині"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={15} />
                         </button>
                       </td>
                     </tr>
@@ -251,11 +265,15 @@ export function AdminSkinsPanel() {
         </div>
       </div>
 
-      <aside className="mcard h-fit p-4">
+      <AdminEditor
+        open={creating || selected ? (selected?.id ?? "new") : null}
+        title={creating ? "Новий скін" : selected ? "Редагування скіна" : undefined}
+        onClose={creating || selected ? closeForm : undefined}
+      >
         {!creating && !selected ? (
           <div className="flex flex-col gap-3">
             <p className="text-[15px] text-[var(--color-muted3)]">
-              Оберіть скін, щоб змінити ціну / легендарність, або створіть новий з SVG.
+              Обери скін, щоб змінити ціну / рідкість, або створи новий з SVG.
             </p>
             <button type="button" className="btn btn-primary btn-block" onClick={startCreate}>
               <Plus size={16} /> Додати новий скін
@@ -269,10 +287,6 @@ export function AdminSkinsPanel() {
               void save();
             }}
           >
-            <div className="text-[13px] font-semibold text-[var(--color-text)]">
-              {creating ? "Новий скін" : "Редагування"}
-            </div>
-
             {draft.id ? (
               <div className="flex justify-center">
                 <PresetMascot
@@ -434,12 +448,26 @@ export function AdminSkinsPanel() {
               ) : null}
             </div>
 
-            <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
-              <Save size={16} /> {saving ? "…" : creating ? "Створити скін" : "Зберегти ціну / рідкість"}
-            </button>
+            <div className="flex flex-col gap-2 pt-1">
+              <SubmitButton
+                loading={saving}
+                loadingText={creating ? "Створення…" : "Збереження…"}
+                icon={<Save size={16} />}
+              >
+                {creating ? "Створити скін" : "Зберегти ціну / рідкість"}
+              </SubmitButton>
+              <button
+                type="button"
+                className="btn btn-ghost btn-block"
+                disabled={saving}
+                onClick={closeForm}
+              >
+                Скасувати
+              </button>
+            </div>
           </form>
         )}
-      </aside>
+      </AdminEditor>
     </div>
   );
 }

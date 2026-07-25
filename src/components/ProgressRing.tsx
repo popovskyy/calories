@@ -36,9 +36,14 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
     };
   }, [progress, consumed, offset, count]);
 
+  /*
+   * Головна цифра — найважливіше число на екрані, тож вона має домінувати.
+   * Отвір кільця ≈ 156px (R 86 − половина обводки 8), тримаємось у 140px:
+   * розмір падає лише тоді, коли цифр справді забагато.
+   */
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize =
-    digits >= 5 ? "text-[28px]" : digits >= 4 ? "text-[34px]" : "text-[38px]";
+    digits >= 5 ? "text-[34px]" : digits >= 4 ? "text-[44px]" : "text-[52px]";
 
   return (
     <div className="relative my-1.5 h-[200px] w-[200px] shrink-0 overflow-hidden">
@@ -69,11 +74,11 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
         </defs>
       </svg>
 
-      {/* Текст лише всередині «дірки» кільця (~128px), без вилазу */}
+      {/* Текст лише всередині «дірки» кільця (~156px), без вилазу */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="flex w-[112px] flex-col items-center justify-center overflow-hidden text-center">
+        <div className="flex w-[140px] flex-col items-center justify-center overflow-hidden text-center">
           <motion.div
-            className={`${numSize} font-semibold leading-none tracking-tight text-[var(--color-text)]`}
+            className={`${numSize} font-semibold leading-[0.95] tracking-[-0.02em] text-[var(--color-text)]`}
           >
             {rounded}
           </motion.div>

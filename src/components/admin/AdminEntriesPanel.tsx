@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Pencil, Ban, RefreshCw } from "lucide-react";
+import { Check, Pencil, Ban, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { Field, inputClass } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -76,8 +76,14 @@ export function AdminEntriesPanel() {
         <p className="text-[14px] text-[var(--color-muted3)]">
           Записи за замовчуванням схвалені. Можна скасувати або підправити ккал.
         </p>
-        <button type="button" className="btn btn-ghost py-1.5" onClick={() => void load()}>
-          <RefreshCw size={14} />
+        <button
+          type="button"
+          className="icon-btn shrink-0"
+          aria-label="Оновити список"
+          disabled={loading}
+          onClick={() => void load()}
+        >
+          <RefreshCw size={15} className={cn(loading && "animate-spin")} />
         </button>
       </div>
 
@@ -86,6 +92,10 @@ export function AdminEntriesPanel() {
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-16 w-full rounded-[var(--radius-lg)]" />
           ))}
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="mcard p-6 text-center text-[15px] text-[var(--color-muted3)]">
+          Записів ще немає.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -112,7 +122,7 @@ export function AdminEntriesPanel() {
                   {e.status === "cancelled" ? (
                     <button
                       type="button"
-                      className="btn btn-ghost py-1.5 text-[12px]"
+                      className="btn btn-ghost btn-sm"
                       disabled={busy}
                       onClick={() =>
                         void patch({ kind: e.kind, id: e.id, action: "approve" })
@@ -123,7 +133,7 @@ export function AdminEntriesPanel() {
                   ) : (
                     <button
                       type="button"
-                      className="btn btn-ghost py-1.5 text-[12px]"
+                      className="btn btn-ghost btn-sm"
                       disabled={busy}
                       onClick={() =>
                         void patch({ kind: e.kind, id: e.id, action: "cancel" })
@@ -134,14 +144,16 @@ export function AdminEntriesPanel() {
                   )}
                   <button
                     type="button"
-                    className="btn btn-ghost py-1.5 text-[12px]"
+                    className="icon-btn"
+                    aria-label="Редагувати запис"
+                    title="Редагувати"
                     onClick={() => {
                       setEdit(e);
                       setCal(String(e.calories));
                       setDesc(e.description);
                     }}
                   >
-                    <Pencil size={14} />
+                    <Pencil size={15} />
                   </button>
                 </div>
               </div>
@@ -168,6 +180,7 @@ export function AdminEntriesPanel() {
                       type="button"
                       className="btn btn-primary flex-1"
                       disabled={busy}
+                      aria-busy={busy || undefined}
                       onClick={() =>
                         void patch({
                           kind: e.kind,
@@ -178,14 +191,17 @@ export function AdminEntriesPanel() {
                         })
                       }
                     >
-                      Зберегти правку
+                      {busy ? <span className="spinner" aria-hidden /> : null}
+                      {busy ? "Збереження…" : "Зберегти правку"}
                     </button>
                     <button
                       type="button"
                       className="btn btn-ghost"
+                      aria-label="Скасувати правку"
+                      disabled={busy}
                       onClick={() => setEdit(null)}
                     >
-                      ✕
+                      <X size={16} />
                     </button>
                   </div>
                 </div>

@@ -1,29 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
+import { prismaError, validationError } from "@/lib/admin-validation";
 import { prisma } from "@/lib/prisma";
+import { questPatchSchema } from "@/lib/quest-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const kinds = [
-  "in_target_days",
-  "log_days",
-  "activity_days",
-  "dual_days",
-  "no_blowout",
-  "weekend_clean",
-] as const;
+/** GET /api/admin/quests/:id */
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
 
-const patchSchema = z.object({
-  titleUk: z.string().trim().min(1).max(80).optional(),
-  description: z.string().trim().min(1).max(280).optional(),
-  kind: z.enum(kinds).optional(),
-  target: z.number().int().min(1).max(7).optional(),
-  rewardCoins: z.number().int().min(0).max(5000).optional(),
-  sortOrder: z.number().int().min(0).max(1000).optional(),
-  active: z.boolean().optional(),
-});
+  const { id } = await params;
+  try {
+    const row = await prisma.weeklyQuest.findUnique({ where: { id } });
+    if (!row) {
+      return NextResponse.json({ error: "Квест не знайдено" }, { status: 404 });
+    }
+    return NextResponse.json(row);
+  } catch (err) {
+    return prismaError(err);
+  }
+}
 
 /** PATCH /api/admin/quests/:id */
 export async function PATCH(
@@ -35,13 +37,8 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json().catch(() => null);
-  const parsed = patchSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Невалідні дані" },
-      { status: 400 },
-    );
-  }
+  const parsed = questPatchSchema.safeParse(body);
+  if (!parsed.success) return validationError(parsed.error);
 
   try {
     const row = await prisma.weeklyQuest.update({
@@ -49,27 +46,38 @@ export async function PATCH(
       data: parsed.data,
     });
     return NextResponse.json(row);
-  } catch {
-    return NextResponse.json({ error: "Квест не знайдено" }, { status: 404 });
+  } catch (err) {
+    return prismaError(err, { notFound: "Квест не знайдено" });
   }
 }
 
-/** DELETE /api/admin/quests/:id — вимкнути */
+/**
+ * DELETE /api/admin/quests/:id
+ * За замовчуванням — м'яке вимкнення (active:false): нагороди вже видані за
+ * кодом квесту, тож рядок лишається як історія тижня.
+ * ?hard=1 — повне видалення рядка.
+ */
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
+  const hard = new URL(req.url).searchParams.get("hard") === "1";
+
   try {
+    if (hard) {
+      const row = await prisma.weeklyQuest.delete({ where: { id } });
+      return NextResponse.json({ ...row, deleted: true });
+    }
     const row = await prisma.weeklyQuest.update({
       where: { id },
       data: { active: false },
     });
     return NextResponse.json(row);
-  } catch {
-    return NextResponse.json({ error: "Квест не знайдено" }, { status: 404 });
+  } catch (err) {
+    return prismaError(err, { notFound: "Квест не знайдено" });
   }
 }

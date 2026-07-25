@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Field, inputClass } from "@/components/ui/Field";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -33,36 +34,44 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-4 px-5 py-10">
-      <div>
-        <h1 className="text-[26px] font-semibold text-[var(--color-text)]">Адмінка</h1>
-        <p className="mt-1 text-[15px] text-[var(--color-muted3)]">
-          Керування користувачами БД
-        </p>
+    // page-scroll: body тут fixed+overflow:hidden, тож на низькому екрані
+    // (або з відкритою клавіатурою) форма інакше обрізається без скролу.
+    <div className="page-scroll no-scrollbar">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-4 px-5 py-10 pb-24">
+        <div>
+          <h1 className="text-[26px] font-semibold tracking-tight text-[var(--color-text)]">
+            Адмінка
+          </h1>
+          <p className="mt-1 text-[15px] text-[var(--color-muted3)]">
+            Керування користувачами БД
+          </p>
+        </div>
+        <form onSubmit={submit} className="flex flex-col gap-3">
+          <Field label="Логін">
+            <input
+              className={inputClass}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+          </Field>
+          <Field label="Пароль">
+            <input
+              className={inputClass}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              autoFocus
+            />
+          </Field>
+          <SubmitButton loading={busy} loadingText="Вхід…">
+            Увійти
+          </SubmitButton>
+        </form>
       </div>
-      <form onSubmit={submit} className="flex flex-col gap-3">
-        <Field label="Логін">
-          <input
-            className={inputClass}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-          />
-        </Field>
-        <Field label="Пароль">
-          <input
-            className={inputClass}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            autoFocus
-          />
-        </Field>
-        <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
-          {busy ? "Вхід…" : "Увійти"}
-        </button>
-      </form>
     </div>
   );
 }

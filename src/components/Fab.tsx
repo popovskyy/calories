@@ -15,7 +15,8 @@ export function Fab({ href = "/add" }: { href?: string }) {
     <Link
       href={href}
       aria-label="Додати прийом їжі"
-      className="absolute bottom-[60px] right-4 z-20"
+      // Піднято над таб-баром: він став вищим (+~20px відступу знизу)
+      className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+78px)] right-4 z-20"
     >
       <motion.span
         initial={{ scale: 0, opacity: 0 }}

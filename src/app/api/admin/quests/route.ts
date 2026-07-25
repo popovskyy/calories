@@ -1,33 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
+import { prismaError, validationError } from "@/lib/admin-validation";
 import { prisma } from "@/lib/prisma";
+import { questCreateSchema } from "@/lib/quest-schema";
 import { ensureWeekQuests, QUEST_POOL } from "@/lib/quests";
 import { weekStartYMD } from "@/lib/date";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const kinds = [
-  "in_target_days",
-  "log_days",
-  "activity_days",
-  "dual_days",
-  "no_blowout",
-  "weekend_clean",
-] as const;
-
-const createSchema = z.object({
-  weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  code: z.string().min(2).max(40).regex(/^[a-z0-9_]+$/),
-  titleUk: z.string().trim().min(1).max(80),
-  description: z.string().trim().min(1).max(280),
-  kind: z.enum(kinds),
-  target: z.number().int().min(1).max(7),
-  rewardCoins: z.number().int().min(0).max(5000),
-  sortOrder: z.number().int().min(0).max(1000).optional(),
-  active: z.boolean().optional(),
-});
 
 /** GET /api/admin/quests?week=YYYY-MM-DD */
 export async function GET(req: Request) {
@@ -36,12 +16,20 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const weekStart = url.searchParams.get("week") || weekStartYMD();
-  await ensureWeekQuests(weekStart);
-  const quests = await prisma.weeklyQuest.findMany({
-    where: { weekStart },
-    orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
-  });
-  return NextResponse.json({ weekStart, quests, pool: QUEST_POOL });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+    return NextResponse.json({ error: "Невалідний тиждень" }, { status: 400 });
+  }
+
+  try {
+    await ensureWeekQuests(weekStart);
+    const quests = await prisma.weeklyQuest.findMany({
+      where: { weekStart },
+      orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
+    });
+    return NextResponse.json({ weekStart, quests, pool: QUEST_POOL });
+  } catch (err) {
+    return prismaError(err);
+  }
 }
 
 /** POST /api/admin/quests — додати квест на тиждень */
@@ -50,13 +38,9 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   const body = await req.json().catch(() => null);
-  const parsed = createSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Невалідні дані" },
-      { status: 400 },
-    );
-  }
+  const parsed = questCreateSchema.safeParse(body);
+  if (!parsed.success) return validationError(parsed.error);
+
   const d = parsed.data;
   const weekStart = d.weekStart ?? weekStartYMD();
   try {
@@ -74,7 +58,9 @@ export async function POST(req: NextRequest) {
       },
     });
     return NextResponse.json(row, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Такий code уже є на цей тиждень" }, { status: 409 });
+  } catch (err) {
+    return prismaError(err, {
+      unique: `Квест з кодом «${d.code}» уже є на цьому тижні`,
+    });
   }
 }

@@ -117,6 +117,40 @@ body {
   touch-action: pan-y;
 }
 
+/*
+ * body — position:fixed + overflow:hidden (мобільний шел), тож скрол документа
+ * не працює в принципі. Будь-який екран ПОЗА .app-frame (адмінка, логін)
+ * зобов'язаний мати власний скрол-контейнер, інакше контент нижче першого
+ * екрана недосяжний. Це і є .page-scroll.
+ */
+.page-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+/* Липка шапка над .page-scroll: матеріал, крізь який видно контент (не глухий бар) */
+.page-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .page-chrome {
+    background: var(--color-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 /* ============================================================
    Component primitives (mirror the design HTML classes)
    ============================================================ */
@@ -194,6 +228,66 @@ body {
 }
 .btn-ghost:not(:disabled):hover {
   background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+/* Компактна кнопка, що все одно лишається придатною для пальця (44px ціль) */
+.btn-sm {
+  font-size: 14px;
+  padding: 8px 12px;
+  min-height: 40px;
+}
+/* Реакція на натиск, а не на відпускання — інтерфейс має відповідати миттєво */
+.btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+.btn {
+  transition:
+    filter 0.18s ease,
+    opacity 0.18s ease,
+    background 0.18s ease,
+    transform 0.12s ease-out;
+}
+
+/* Квадратна іконкова кнопка з повноцінною тач-ціллю */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  color: var(--color-muted3);
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    transform 0.12s ease-out;
+}
+.icon-btn:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text);
+}
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+/* Видимий фокус — його не було ніде; клавіатурна навігація була сліпою */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent-300);
+  outline-offset: 2px;
+}
+
+/* Спінер для станів збереження */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  animation: spin 0.7s linear infinite;
 }
 
 /* Icon base (Lucide handles most, but keep for inline SVG parity) */

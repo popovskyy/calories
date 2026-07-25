@@ -114,7 +114,7 @@ export default function AddActivityPage() {
         </div>
       </header>
 
-      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] py-4">
+      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-24 pt-4">
         <div className="flex gap-2">
           <Link
             href="/add"
