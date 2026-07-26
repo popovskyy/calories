@@ -162,7 +162,7 @@ export default function AddActivityPage() {
         </AnimatePresence>
 
         {result ? (
-          <div className="mcard flex flex-col gap-3 p-4">
+          <div className="mcard flex shrink-0 flex-col gap-3 p-4">
             <Field label="Спалено, ккал">
               <input
                 className={inputClass}

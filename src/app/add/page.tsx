@@ -278,7 +278,7 @@ export default function AddFoodPage() {
 
         {/* Під час аналізу фото вже показує сканер — тут воно було б удруге */}
         {image && !analyze.isPending ? (
-          <div className="relative overflow-hidden rounded-[var(--radius-md)]">
+          <div className="relative shrink-0 overflow-hidden rounded-[var(--radius-md)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={image.preview}

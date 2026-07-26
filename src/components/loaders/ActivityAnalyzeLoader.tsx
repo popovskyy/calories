@@ -32,7 +32,7 @@ export function ActivityAnalyzeLoader() {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97, filter: "blur(4px)" }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-4"
+      className="shrink-0 overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-4"
       style={{ border: "1px solid var(--color-accent-800)" }}
     >
       <div className="flex items-center gap-2">

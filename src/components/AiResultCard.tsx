@@ -20,7 +20,7 @@ export function AiResultCard({ result, source = "опису" }: { result: Analyz
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-[18px]"
+      className="shrink-0 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-[18px]"
       style={{ border: "1px solid var(--color-accent-800)" }}
     >
       <div className="flex items-center justify-between">
