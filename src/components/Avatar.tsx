@@ -10,6 +10,8 @@ export function Avatar({
   size = 32,
   className,
   animated = true,
+  stage = 1,
+  frame,
 }: {
   name: string;
   avatarUrl?: string | null;
@@ -17,6 +19,10 @@ export function Avatar({
   className?: string;
   /** Idle-анімація для пресетів (вимкнути в дрібних списках) */
   animated?: boolean;
+  /** Стадія еволюції маскота 1–4 */
+  stage?: number;
+  /** Куплена рамка аватара */
+  frame?: string | null;
 }) {
   const initial = (name.trim()[0] ?? "?").toUpperCase();
   const presetId = parsePresetId(avatarUrl);
@@ -26,8 +32,10 @@ export function Avatar({
       <PresetMascot
         id={presetId}
         size={size}
-        animated={animated && size >= 40}
+        animated={animated && size >= 36}
         className={className}
+        stage={stage}
+        frame={frame}
       />
     );
   }
@@ -52,15 +60,10 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-[var(--radius-pill)] font-semibold text-[#f5f4ff]",
+        "avatar-fallback flex shrink-0 items-center justify-center rounded-[var(--radius-pill)] font-semibold",
         className,
       )}
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.44,
-        background: "linear-gradient(135deg,#5d5294,#968ae0)",
-      }}
+      style={{ width: size, height: size, fontSize: size * 0.44 }}
     >
       {initial}
     </div>

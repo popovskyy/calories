@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { GOAL_LABELS, isGoal } from "@/lib/calories";
+import { getCosmetic } from "@/lib/cosmetics";
+import { computeEvolutionStage } from "@/lib/economy";
 import type { ArenaEntry } from "@/lib/types";
 
 export type RankedEntry = Omit<ArenaEntry, "isMe">;
@@ -17,6 +19,10 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
       avatarUrl: true,
       goal: true,
       targetCalories: true,
+      title: true,
+      frame: true,
+      maxStreak: true,
+      totalInTargetDays: true,
       meals: {
         where: { date, status: { not: "cancelled" } },
         select: { calories: true },
@@ -49,6 +55,10 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
       absError: Math.abs(difference),
       hasLog,
       hasMeal,
+      // Статусні речі: у грі на кілька друзів саме вони — головна нагорода.
+      title: u.title ? (getCosmetic("title", u.title)?.nameUk ?? null) : null,
+      frame: u.frame,
+      stage: computeEvolutionStage(u.totalInTargetDays, u.maxStreak),
     };
   });
 

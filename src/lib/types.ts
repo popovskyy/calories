@@ -29,6 +29,15 @@ export interface UserDTO {
   theme: string;
   /** Куплені преміум themeId */
   ownedThemeIds: string[];
+  /** Вдягнений фінішер — анімація закриття дня */
+  finisher: string;
+  /** Титул під ніком в арені (null = без титулу) */
+  title: string | null;
+  /** Рамка аватара */
+  frame: string | null;
+  soundpack: string;
+  /** Рекорд серії — від нього залежить стадія маскота */
+  maxStreak: number;
   targetWeight: number | null;
   targetWeeks: number | null;
   startWeight: number | null;
@@ -65,12 +74,144 @@ export interface ShopTheme {
   equipped: boolean;
 }
 
+/** Витратний предмет у магазині + скільки його вже в інвентарі. */
+export interface ShopItem {
+  id: string;
+  nameUk: string;
+  description: string;
+  price: number;
+  icon: string;
+  qty: number;
+  maxStack: number | null;
+  passive: boolean;
+  /** Досягнуто стелі інвентаря — купувати більше не можна. */
+  full: boolean;
+}
+
+/** Косметика нового типу (фінішер / титул / рамка / саундпак). */
+export interface ShopCosmetic {
+  id: string;
+  kind: "finisher" | "title" | "frame" | "soundpack";
+  nameUk: string;
+  description: string;
+  price: number;
+  swatch: string;
+  owned: boolean;
+  equipped: boolean;
+  /** Не продається — здобувається досягненням. */
+  earnedOnly: boolean;
+  /** Умова відкриття для заблокованої картки. */
+  hint: string | null;
+}
+
+/** Слот ротаційного прилавка. */
+export interface ShopStallSlot {
+  kind: string;
+  refId: string;
+  cosmeticKind?: string;
+  nameUk: string;
+  description: string;
+  price: number;
+  oldPrice: number | null;
+  icon: string;
+  swatch: string | null;
+}
+
 export interface ShopResponse {
   coins: number;
   skins: ShopSkin[];
   ownedSkinIds: string[];
   themes: ShopTheme[];
   ownedThemeIds: string[];
+  items: ShopItem[];
+  cosmetics: ShopCosmetic[];
+  stall: ShopStallSlot[];
+  /** ISO-час наступного оновлення прилавка (понеділок 00:00 Kyiv). */
+  stallResetsAt: string;
+  /** Стадія еволюції вдягненого маскота, 1–4. */
+  evolutionStage: number;
+  maxStreak: number;
+  inTargetDays: number;
+}
+
+/** Одна операція в гаманці. */
+export interface CoinTxnDTO {
+  id: string;
+  delta: number;
+  kind: string;
+  label: string;
+  createdAt: string;
+}
+
+export interface DailyCardDTO {
+  code: string;
+  titleUk: string;
+  description: string;
+  icon: string;
+  slot: number;
+  progress: number;
+  target: number;
+  done: boolean;
+  claimed: boolean;
+  rewardCoins: number;
+}
+
+export interface DailyCardsResponse {
+  date: string;
+  cards: DailyCardDTO[];
+  granted: GrantedReward[];
+}
+
+export interface EpicNodeDTO {
+  at: number;
+  nameUk: string;
+  loreUk: string;
+  coins: number;
+  reached: boolean;
+  claimed: boolean;
+}
+
+export interface EpicStatusDTO {
+  epicId: string;
+  nameUk: string;
+  tagline: string;
+  icon: string;
+  unit: string;
+  total: number;
+  progress: number;
+  remaining: number;
+  active: boolean;
+  background: boolean;
+  started: boolean;
+  completed: boolean;
+  nodes: EpicNodeDTO[];
+}
+
+export interface EpicsResponse {
+  epics: EpicStatusDTO[];
+  granted: GrantedReward[];
+}
+
+export interface DuelDTO {
+  id: string;
+  weekStart: string;
+  status: string;
+  stake: number;
+  challengerId: string;
+  opponentId: string;
+  challengerName: string;
+  opponentName: string;
+  challengerScore: number;
+  opponentScore: number;
+  winnerId: string | null;
+  isMine: boolean;
+  awaitingMe: boolean;
+}
+
+export interface DuelsResponse {
+  duels: DuelDTO[];
+  /** Кого можна викликати (усі, крім себе). */
+  rivals: { id: string; name: string }[];
 }
 
 export interface NotificationDTO {
@@ -116,6 +257,11 @@ export interface ArenaEntry {
   /** Чи є хоч один запис їжі — лише такі дні беруть участь у призах арени. */
   hasMeal: boolean;
   isMe: boolean;
+  /** Готова назва титулу для показу під ніком. */
+  title: string | null;
+  frame: string | null;
+  /** Стадія еволюції маскота 1–4. */
+  stage: number;
 }
 
 export interface ArenaResponse {
@@ -140,6 +286,8 @@ export interface QuestStatusDTO {
   progress: number;
   done: boolean;
   claimed: boolean;
+  /** Квест замінено ре-ролом. */
+  rerolled: boolean;
 }
 
 export interface QuestsResponse {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { ThemeSync } from "@/components/ThemeSync";
+import { hydrateSoundPreference } from "@/store/useAppStore";
 
 /** Екрани без сесії користувача — там /api/auth/me лише дав би зайвий 401. */
 function isSignedOutRoute(pathname: string): boolean {
@@ -25,6 +26,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       }),
   );
+
+  // localStorage читаємо після монтування — інакше перший рендер на сервері
+  // й на клієнті розійшлися б
+  useEffect(hydrateSoundPreference, []);
 
   return (
     <QueryClientProvider client={queryClient}>

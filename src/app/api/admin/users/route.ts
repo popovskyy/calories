@@ -120,6 +120,21 @@ export async function PATCH(req: NextRequest) {
     },
   });
 
+  // Ручна правка балансу теж має лишати слід у гаманці, інакше історія
+  // розійдеться з поточними монетами і зневіриться сама ідея реєстру.
+  if (rest.coins !== undefined && rest.coins !== existing.coins) {
+    const delta = rest.coins - existing.coins;
+    await prisma.coinTxn.create({
+      data: {
+        userId: id,
+        delta,
+        kind: "admin",
+        refKey: null,
+        label: delta > 0 ? "Нарахування адміністратора" : "Коригування адміністратора",
+      },
+    });
+  }
+
   if (rest.coins !== undefined && rest.coins > existing.coins) {
     const delta = rest.coins - existing.coins;
     void notifyUser(id, {

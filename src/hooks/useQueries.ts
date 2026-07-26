@@ -8,17 +8,24 @@ import {
 import {
   analyzeMeal,
   analyzeActivityApi,
+  buyCosmetic,
+  buyItem,
   buySkin,
   buyTheme,
+  challengeDuel,
   changePassword,
   deleteActivity,
   deleteMeal,
+  equipCosmetic,
   equipSkin,
   equipTheme,
   generateAvatar,
   getActivities,
   getArena,
+  getDailyCards,
   getDashboard,
+  getDuels,
+  getEpics,
   getForecast,
   getMe,
   getMeals,
@@ -27,16 +34,22 @@ import {
   getRecentMeals,
   getShop,
   getStreak,
+  getWallet,
   login,
   logout,
   markNotificationsRead,
   register,
+  rerollQuest,
+  respondDuel,
   saveActivity,
   saveMeal,
   saveUser,
+  startEpicApi,
   updateMeal,
+  consumeItem,
   type AnalyzeInput,
   type ChangePasswordInput,
+  type CosmeticKind,
   type GenerateAvatarInput,
   type LoginInput,
   type RegisterInput,
@@ -45,8 +58,18 @@ import {
   type UpdateMealInput,
   type UserInput,
 } from "@/lib/api";
-import type { MealDTO } from "@/lib/types";
+import type { ActivityDTO, MealDTO } from "@/lib/types";
 import type { NotificationsResponse } from "@/lib/api";
+import { useAppStore } from "@/store/useAppStore";
+
+/**
+ * Зводить курок ритуалу «підкидання дровини». Викликається з мутацій поза
+ * React-рендером, тому беремо стан напряму зі стора, а не через хук.
+ */
+function armRecalc(delta: number) {
+  if (!delta) return;
+  useAppStore.getState().armRecalc(delta);
+}
 
 export function useMe() {
   return useQuery({
@@ -144,7 +167,9 @@ export function useSaveMeal() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: SaveMealInput) => saveMeal(input),
-    onSuccess: (_data, vars) => {
+    onSuccess: (data, vars) => {
+      // беремо збережене значення, а не вхідне: калорії міг порахувати ШІ
+      armRecalc(data.calories);
       qc.invalidateQueries({ queryKey: ["meals", vars.date] });
       qc.invalidateQueries({ queryKey: ["meals", "recent"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
@@ -154,6 +179,9 @@ export function useSaveMeal() {
       qc.invalidateQueries({ queryKey: ["shop"] });
       qc.invalidateQueries({ queryKey: ["quests"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
+      qc.invalidateQueries({ queryKey: ["daily-cards"] });
+      qc.invalidateQueries({ queryKey: ["epics"] });
+      qc.invalidateQueries({ queryKey: ["wallet"] });
     },
   });
 }
@@ -194,6 +222,10 @@ export function useDeleteMeal(date: string) {
     onError: (_err, _id, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
+    onSuccess: (_data, id, ctx) => {
+      const removed = ctx?.prev?.find((m) => m.id === id);
+      armRecalc(-(removed?.calories ?? 0));
+    },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
       qc.invalidateQueries({ queryKey: ["meals", "recent"] });
@@ -210,6 +242,12 @@ export function useUpdateMeal(listDate: string) {
   return useMutation({
     mutationFn: (input: UpdateMealInput) => updateMeal(input),
     onSuccess: (updated, vars) => {
+      // кеш ще тримає доредакційний запис — інвалідація нижче
+      const before = qc
+        .getQueryData<MealDTO[]>(["meals", listDate])
+        ?.find((m) => m.id === updated.id);
+      if (before) armRecalc(updated.calories - before.calories);
+
       const dates = new Set([listDate, updated.date, vars.date].filter(Boolean) as string[]);
       for (const d of dates) {
         qc.invalidateQueries({ queryKey: ["meals", d] });
@@ -240,7 +278,9 @@ export function useSaveActivity() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: SaveActivityInput) => saveActivity(input),
-    onSuccess: (_data, vars) => {
+    onSuccess: (data, vars) => {
+      // активність зменшує денний баланс — дровина летить «у мінус»
+      armRecalc(-data.caloriesBurned);
       qc.invalidateQueries({ queryKey: ["activities", vars.date] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
@@ -256,7 +296,11 @@ export function useDeleteActivity(date: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteActivity(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
+      const removed = qc
+        .getQueryData<ActivityDTO[]>(["activities", date])
+        ?.find((a) => a.id === id);
+      armRecalc(removed?.caloriesBurned ?? 0);
       qc.invalidateQueries({ queryKey: ["activities", date] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
@@ -383,5 +427,143 @@ export function useEquipTheme() {
       // Миттєво застосовуємо тему
       document.documentElement.dataset.theme = user.theme;
     },
+  });
+}
+
+// --- Картки дня ---
+export function useDailyCards() {
+  return useQuery({
+    queryKey: ["daily-cards"],
+    queryFn: () => getDailyCards(),
+    staleTime: 30_000,
+    refetchOnMount: "always",
+  });
+}
+
+// --- Спорядження ---
+export function useBuyItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, fromStall }: { itemId: string; fromStall?: boolean }) =>
+      buyItem(itemId, fromStall ?? false),
+    onSuccess: (shop) => {
+      qc.setQueryData(["shop"], shop);
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+    },
+  });
+}
+
+export function useUseItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, meta }: { itemId: string; meta?: string }) =>
+      consumeItem(itemId, meta),
+    onSuccess: (res) => {
+      qc.setQueryData(["shop"], res.shop);
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+      // Ре-рол міняє склад карток і квестів, тож їх треба перечитати.
+      qc.invalidateQueries({ queryKey: ["daily-cards"] });
+      qc.invalidateQueries({ queryKey: ["quests"] });
+      qc.invalidateQueries({ queryKey: ["streak"] });
+    },
+  });
+}
+
+// --- Косметика ---
+export function useBuyCosmetic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ kind, id }: { kind: CosmeticKind; id: string }) =>
+      buyCosmetic(kind, id),
+    onSuccess: (shop) => {
+      qc.setQueryData(["shop"], shop);
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+    },
+  });
+}
+
+export function useEquipCosmetic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ kind, id }: { kind: CosmeticKind; id: string | null }) =>
+      equipCosmetic(kind, id),
+    onSuccess: (shop) => {
+      qc.setQueryData(["shop"], shop);
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["arena"] }); // титул і рамка видно іншим
+    },
+  });
+}
+
+// --- Хроніки ---
+export function useEpics() {
+  return useQuery({
+    queryKey: ["epics"],
+    queryFn: getEpics,
+    staleTime: 60_000,
+  });
+}
+
+export function useStartEpic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (epicId: string) => startEpicApi(epicId),
+    onSuccess: (data) => {
+      qc.setQueryData(["epics"], data);
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}
+
+// --- Дуелі ---
+export function useDuels() {
+  return useQuery({
+    queryKey: ["duels"],
+    queryFn: getDuels,
+    staleTime: 30_000,
+  });
+}
+
+export function useChallengeDuel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (opponentId: string) => challengeDuel(opponentId),
+    onSuccess: (data) => qc.setQueryData(["duels"], data),
+  });
+}
+
+export function useRespondDuel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ duelId, accept }: { duelId: string; accept: boolean }) =>
+      respondDuel(duelId, accept),
+    onSuccess: (data) => {
+      qc.setQueryData(["duels"], data);
+      qc.invalidateQueries({ queryKey: ["me"] }); // ставка списана
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+    },
+  });
+}
+
+export function useRerollQuest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => rerollQuest(code),
+    onSuccess: (data) => {
+      qc.setQueryData(["quests"], data);
+      qc.invalidateQueries({ queryKey: ["shop"] }); // витрачений предмет
+    },
+  });
+}
+
+// --- Гаманець ---
+export function useWallet() {
+  return useQuery({
+    queryKey: ["wallet"],
+    queryFn: () => getWallet(),
+    staleTime: 15_000,
   });
 }

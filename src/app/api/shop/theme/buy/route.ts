@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildShop } from "@/lib/shop";
 import { getTheme, isThemeId } from "@/lib/theme-catalog";
+import { spendInTx } from "@/lib/reward-grant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,11 +42,15 @@ export async function POST(req: NextRequest) {
         throw Object.assign(new Error("OWNED"), { code: "OWNED" });
       }
 
-      const paid = await tx.user.updateMany({
-        where: { id: userId, coins: { gte: theme.price } },
-        data: { coins: { decrement: theme.price } },
-      });
-      if (paid.count === 0) {
+      const paid = await spendInTx(
+        tx,
+        userId,
+        theme.price,
+        "theme",
+        theme.id,
+        `Купівля теми: ${theme.nameUk}`,
+      );
+      if (!paid) {
         throw Object.assign(new Error("BROKE"), { code: "BROKE" });
       }
 

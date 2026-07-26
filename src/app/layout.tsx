@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Press_Start_2P } from "next/font/google";
+import { Inter, Handjet, Nunito, Russo_One } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/PwaRegister";
@@ -11,10 +11,27 @@ const inter = Inter({
   weight: ["400", "500", "600"],
 });
 
-const pressStart = Press_Start_2P({
-  variable: "--font-pixel",
+/*
+ * Шрифти ігрових тем. preload:false — їх тягне лише той, у кого відповідна тема
+ * активна: @font-face оголошений завжди, але браузер качає файл, тільки коли
+ * CSS теми реально задіє родину.
+ */
+const russoOne = Russo_One({
+  variable: "--font-russo",
   subsets: ["latin", "cyrillic"],
   weight: "400",
+  preload: false,
+});
+
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin", "cyrillic"],
+  preload: false,
+});
+
+const handjet = Handjet({
+  variable: "--font-handjet",
+  subsets: ["latin", "cyrillic"],
   preload: false,
 });
 
@@ -81,7 +98,7 @@ export default function RootLayout({
   return (
     <html
       lang="uk"
-      className={`${inter.variable} ${pressStart.variable}`}
+      className={`${inter.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable}`}
       suppressHydrationWarning
     >
       <head>

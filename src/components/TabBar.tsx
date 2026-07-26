@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, ClipboardList, Trophy, User } from "lucide-react";
-import { cn } from "@/lib/cn";
 
 const TABS = [
   { href: "/", label: "Огляд", icon: House },
@@ -12,28 +11,29 @@ const TABS = [
   { href: "/profile", label: "Профіль", icon: User },
 ] as const;
 
+/**
+ * Один markup — три вигляди: плоскі таби (Nocturne), pill (Forest),
+ * хотбар-слоти (Minecraft). Різницю робить CSS за data-theme, тому список
+ * табів і роути лишаються спільними.
+ */
 export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <div className="relative z-30 shrink-0 border-t border-[var(--color-divider)] bg-[var(--color-bg)] pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">
-      <nav className="flex px-1 pt-2.5">
+    <div className="nav-bar">
+      <nav className="nav-list">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+            href === "/"
+              ? // Хроніки відкриваються з Огляду — таб лишається активним
+                pathname === "/" || pathname.startsWith("/epics")
+              : // Магазин відкривається лише з Профілю — таб лишається активним
+                pathname.startsWith(href) ||
+                (href === "/profile" && pathname.startsWith("/shop"));
           return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex flex-1 flex-col items-center gap-0.5 py-1 transition-colors",
-                active ? "text-[var(--color-accent)]" : "text-[var(--color-muted2)]",
-              )}
-            >
+            <Link key={href} href={href} data-active={active} className="nav-tab">
               <Icon size={20} strokeWidth={active ? 2.1 : 1.8} />
-              <span className={cn("text-[11px]", active && "font-semibold")}>
-                {label}
-              </span>
+              <span className="nav-tab-label">{label}</span>
             </Link>
           );
         })}

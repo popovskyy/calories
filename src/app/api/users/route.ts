@@ -130,5 +130,14 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Історія ваги: одна точка на день, останнє значення перемагає.
+  // Без неї ваговий епік і виявлення плато не мають на що спертись,
+  // а прогноз бачить лише одне поточне число.
+  await prisma.weightLog.upsert({
+    where: { userId_date: { userId: auth.session.userId, date: todayYMD() } },
+    create: { userId: auth.session.userId, date: todayYMD(), weight: fields.weight },
+    update: { weight: fields.weight },
+  });
+
   return NextResponse.json(toUserDTO(user));
 }

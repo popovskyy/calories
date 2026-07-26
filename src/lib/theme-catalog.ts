@@ -20,11 +20,20 @@ export const THEMES: ThemeDef[] = [
     swatch: "#9184d9",
   },
   {
+    // 300 ≈ тиждень гри для дисциплінованого гравця — тема має бути метою,
+    // а не випадковою покупкою на другий день.
     id: "minecraft",
     nameUk: "Minecraft",
     tier: "premium",
     price: 300,
-    swatch: "#5B8731",
+    swatch: "#5b9c3a",
+  },
+  {
+    id: "forest",
+    nameUk: "99 ночей у лісі",
+    tier: "premium",
+    price: 500,
+    swatch: "#ff8a3d",
   },
 ];
 

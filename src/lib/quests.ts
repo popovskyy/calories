@@ -7,12 +7,12 @@ import {
   weekStartYMD,
 } from "@/lib/date";
 import { dayNetCalories } from "@/lib/day-totals";
+import { calcMacroTargets } from "@/lib/calories";
 import { grant, type GrantedReward } from "@/lib/reward-grant";
+import { BLOWOUT_OVER, QUEST_TARGET_TOLERANCE } from "@/lib/economy";
+import { QUEST_REROLL_ITEM_ID } from "@/lib/items";
 
-/** Жорстка зона «в цілі» для квестів і денної нагороди. */
-export const QUEST_TARGET_TOLERANCE = 0.05;
-/** «Вибух» калорій — день зіпсував дисципліну. */
-export const BLOWOUT_OVER = 0.15;
+export { BLOWOUT_OVER, QUEST_TARGET_TOLERANCE };
 
 /** Єдине джерело правди «день у цілі»: і для квестів, і для денної монети. */
 export function isInTarget(net: number, targetCalories: number): boolean {
@@ -26,7 +26,11 @@ export type QuestKind =
   | "activity_days"
   | "dual_days"
   | "no_blowout"
-  | "weekend_clean";
+  | "weekend_clean"
+  | "week_balance"
+  | "activity_minutes"
+  | "burn_total"
+  | "protein_days";
 
 export interface QuestTemplate {
   code: string;
@@ -38,7 +42,13 @@ export interface QuestTemplate {
   sortOrder: number;
 }
 
-/** Пул цікавих квестів — щотижня беремо 3 за ротацією. */
+/**
+ * Пул квестів тижня — щотижня беремо 3 за ротацією.
+ *
+ * Ціни зведені в діапазон 60–200 (було 70–320): разом із новими джерелами
+ * доходу старі 320 за один квест ламали баланс і дозволяли викупити
+ * косметику швидше, ніж вона встигала стати бажаною.
+ */
 export const QUEST_POOL: QuestTemplate[] = [
   {
     code: "sniper_5",
@@ -55,7 +65,7 @@ export const QUEST_POOL: QuestTemplate[] = [
     description: "Усі 7 днів у межах ±5% — легендарний тиждень",
     kind: "in_target_days",
     target: 7,
-    rewardCoins: 320,
+    rewardCoins: 200,
     sortOrder: 20,
   },
   {
@@ -64,7 +74,7 @@ export const QUEST_POOL: QuestTemplate[] = [
     description: "Запиши їжу щонайменше 6 днів цього тижня",
     kind: "log_days",
     target: 6,
-    rewardCoins: 70,
+    rewardCoins: 60,
     sortOrder: 30,
   },
   {
@@ -82,16 +92,16 @@ export const QUEST_POOL: QuestTemplate[] = [
     description: "4 дні підряд або будь-які 4: і їжа, і активність",
     kind: "dual_days",
     target: 4,
-    rewardCoins: 130,
+    rewardCoins: 120,
     sortOrder: 50,
   },
   {
     code: "no_chaos",
-    titleUk: "Без хаосу",
+    titleUk: "Тримати оборону",
     description: "Жодного дня з перебором понад +15% від цілі (потрібні логи)",
     kind: "no_blowout",
     target: 5,
-    rewardCoins: 120,
+    rewardCoins: 110,
     sortOrder: 60,
   },
   {
@@ -111,6 +121,45 @@ export const QUEST_POOL: QuestTemplate[] = [
     target: 4,
     rewardCoins: 100,
     sortOrder: 15,
+  },
+  {
+    // Найважливіший новий тип: важлива СУМА за тиждень, а не кожен день окремо.
+    // Дозволяє свідомо «витратити» суботу й компенсувати в неділю — саме те,
+    // що рятує гравців, для яких щоденний ±5% нездоланний.
+    code: "week_balance",
+    titleUk: "Тижневий баланс",
+    description: "Сума за тиждень не вища за суму норм. Один день можна витратити",
+    kind: "week_balance",
+    target: 6,
+    rewardCoins: 160,
+    sortOrder: 25,
+  },
+  {
+    code: "marathon_150",
+    titleUk: "Марафонець",
+    description: "150 хвилин руху за тиждень",
+    kind: "activity_minutes",
+    target: 150,
+    rewardCoins: 140,
+    sortOrder: 45,
+  },
+  {
+    code: "furnace_2500",
+    titleUk: "Піч",
+    description: "Спалити 2 500 ккал активністю за тиждень",
+    kind: "burn_total",
+    target: 2500,
+    rewardCoins: 150,
+    sortOrder: 47,
+  },
+  {
+    code: "protein_5",
+    titleUk: "Білковий тиждень",
+    description: "5 днів із виконаною нормою білка",
+    kind: "protein_days",
+    target: 5,
+    rewardCoins: 130,
+    sortOrder: 55,
   },
 ];
 
@@ -164,6 +213,14 @@ export interface DaySnap {
   inTarget: boolean;
   blowout: boolean;
   hasMeal: boolean;
+  /** Хвилини активності за день — для марафонних квестів. */
+  activityMinutes: number;
+  /** Спалено ккал за день. */
+  burned: number;
+  /** Норма білка виконана. */
+  proteinHit: boolean;
+  /** Норма калорій цього гравця — щоб рахувати тижневий баланс. */
+  targetCalories: number;
   /** День закритий — цифри вже не зміняться доїданням. */
   final: boolean;
 }
@@ -172,27 +229,52 @@ export interface DaySnap {
  * Квести, де важлива точність: нараховуємо лише за закритими днями.
  * Інакше можна «пройти крізь» ±5% зранку, зафіксувати прогрес і доїсти —
  * RewardClaim незворотний, тож нагороду вже не забрати назад.
+ *
+ * week_balance теж тут: сума за тиждень зростає з кожним прийомом їжі,
+ * тож «зарахувати» її можна було б зранку, поки бюджет ще не витрачено.
  */
 const FINAL_DAY_KINDS: ReadonlySet<QuestKind> = new Set<QuestKind>([
   "in_target_days",
   "no_blowout",
   "weekend_clean",
+  "week_balance",
 ]);
 
 async function weekSnapshots(
   userId: string,
   weekStart: string,
   targetCalories: number,
+  proteinTarget: number,
 ): Promise<DaySnap[]> {
   const today = todayYMD();
   const days = weekDays(weekStart).filter((d) => d <= today);
   const blow = targetCalories * (1 + BLOWOUT_OVER);
 
-  const totals = await Promise.all(days.map((d) => dayNetCalories(userId, d)));
+  const [totals, activities] = await Promise.all([
+    Promise.all(days.map((d) => dayNetCalories(userId, d))),
+    // Хвилини й ккал по днях одним запитом замість семи.
+    prisma.activityLog.groupBy({
+      by: ["date"],
+      where: {
+        userId,
+        date: { in: days },
+        status: { not: "cancelled" },
+      },
+      _sum: { durationMin: true, caloriesBurned: true },
+    }),
+  ]);
+
+  const byDate = new Map(
+    activities.map((a) => [
+      a.date,
+      { mins: a._sum.durationMin ?? 0, burned: a._sum.caloriesBurned ?? 0 },
+    ]),
+  );
 
   const snaps: DaySnap[] = [];
   for (const [i, date] of days.entries()) {
     const t = totals[i]!;
+    const act = byDate.get(date) ?? { mins: 0, burned: 0 };
     const hasMeal = t.mealCount > 0;
     const inTarget = hasMeal && isInTarget(t.net, targetCalories);
     const blowout = hasMeal && t.net > blow;
@@ -204,6 +286,10 @@ async function weekSnapshots(
       inTarget,
       blowout,
       hasMeal,
+      activityMinutes: act.mins,
+      burned: act.burned,
+      proteinHit: hasMeal && proteinTarget > 0 && t.protein >= proteinTarget,
+      targetCalories,
       final: date < today,
     });
   }
@@ -245,6 +331,27 @@ function progressFor(
       const n = snaps.filter((s) => (s.date === sat || s.date === sun) && s.inTarget).length;
       return { progress: n, done: n >= target };
     }
+    case "week_balance": {
+      // Сума net ≤ сума норм за залоговані дні. Гнучкість замість щоденної
+      // точності: перебір у суботу можна компенсувати в неділю.
+      const logged = snaps.filter((s) => s.hasMeal);
+      const net = logged.reduce((s, d) => s + d.net, 0);
+      const budget = logged.reduce((s, d) => s + d.targetCalories, 0);
+      const ok = logged.length >= target && budget > 0 && net <= budget;
+      return { progress: logged.length, done: ok };
+    }
+    case "activity_minutes": {
+      const mins = snaps.reduce((s, d) => s + d.activityMinutes, 0);
+      return { progress: mins, done: mins >= target };
+    }
+    case "burn_total": {
+      const burned = snaps.reduce((s, d) => s + d.burned, 0);
+      return { progress: burned, done: burned >= target };
+    }
+    case "protein_days": {
+      const n = snaps.filter((s) => s.proteinHit).length;
+      return { progress: n, done: n >= target };
+    }
     default:
       return { progress: 0, done: false };
   }
@@ -262,6 +369,96 @@ export interface QuestStatusDTO {
   progress: number;
   done: boolean;
   claimed: boolean;
+  /** Квест замінено ре-ролом — назад уже не повернути. */
+  rerolled: boolean;
+}
+
+/** Форма квеста, з якою працює listQuestStatus: рядок БД або підміна з пулу. */
+type QuestLike = {
+  id: string;
+  code: string;
+  titleUk: string;
+  description: string;
+  kind: string;
+  target: number;
+  rewardCoins: number;
+  sortOrder: number;
+  rerolled?: boolean;
+};
+
+/** meta ре-ролу: "<weekStart>:<oldCode>:<newCode>" */
+function parseRerollMeta(meta: string | null): { old: string; next: string } | null {
+  if (!meta) return null;
+  const parts = meta.split(":");
+  if (parts.length !== 3) return null;
+  return { old: parts[1]!, next: parts[2]! };
+}
+
+/** Підставляє персональні заміни гравця замість спільних квестів тижня. */
+async function applyRerolls(
+  userId: string,
+  weekStart: string,
+  rows: QuestLike[],
+): Promise<QuestLike[]> {
+  const uses = await prisma.itemUse.findMany({
+    where: { userId, itemId: QUEST_REROLL_ITEM_ID, meta: { startsWith: `${weekStart}:` } },
+    select: { meta: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (uses.length === 0) return rows;
+
+  const swaps = new Map<string, string>();
+  for (const u of uses) {
+    const p = parseRerollMeta(u.meta);
+    if (p) swaps.set(p.old, p.next);
+  }
+
+  return rows.map((q) => {
+    // Ланцюжок замін: квест могли перекотити двічі.
+    let code = q.code;
+    const seen = new Set<string>();
+    while (swaps.has(code) && !seen.has(code)) {
+      seen.add(code);
+      code = swaps.get(code)!;
+    }
+    if (code === q.code) return q;
+
+    const tpl = QUEST_POOL.find((t) => t.code === code);
+    if (!tpl) return q;
+    return {
+      id: q.id,
+      code: tpl.code,
+      titleUk: tpl.titleUk,
+      description: tpl.description,
+      kind: tpl.kind,
+      target: tpl.target,
+      rewardCoins: tpl.rewardCoins,
+      sortOrder: q.sortOrder,
+      rerolled: true,
+    };
+  });
+}
+
+/**
+ * Обирає заміну для квеста: будь-який шаблон із пулу, якого немає серед
+ * поточних. Детерміновано від (userId, weekStart, code), щоб повторний
+ * запит не давав інший результат.
+ */
+export function pickReplacementQuest(
+  userId: string,
+  weekStart: string,
+  oldCode: string,
+  activeCodes: string[],
+): QuestTemplate | null {
+  const pool = QUEST_POOL.filter((t) => !activeCodes.includes(t.code));
+  if (pool.length === 0) return null;
+
+  let h = 0x811c9dc5;
+  for (const ch of `${userId}|${weekStart}|${oldCode}`) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return pool[h % pool.length]!;
 }
 
 export async function listQuestStatus(
@@ -273,16 +470,21 @@ export async function listQuestStatus(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { targetCalories: true },
+    select: { targetCalories: true, weight: true },
   });
   const target = user?.targetCalories ?? 0;
+  const proteinTarget = user ? calcMacroTargets(target, user.weight).protein : 0;
 
-  const quests = await prisma.weeklyQuest.findMany({
+  const rows = await prisma.weeklyQuest.findMany({
     where: { weekStart: ws, active: true },
     orderBy: [{ sortOrder: "asc" }, { code: "asc" }],
   });
 
-  const snaps = await weekSnapshots(userId, ws, target);
+  // WeeklyQuest спільний для всіх (його редагує адмінка), тож персональна
+  // заміна живе окремо — у застосуваннях ре-ролу цього гравця.
+  const quests = await applyRerolls(userId, ws, rows);
+
+  const snaps = await weekSnapshots(userId, ws, target, proteinTarget);
   const finalSnaps = snaps.filter((s) => s.final);
   const granted: GrantedReward[] = [];
 
@@ -325,6 +527,7 @@ export async function listQuestStatus(
       progress: Math.min(progress, q.target),
       done,
       claimed,
+      rerolled: q.rerolled ?? false,
     });
   }
 

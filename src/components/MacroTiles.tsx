@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useThemeId } from "@/hooks/useThemeId";
 
 interface MacroTilesProps {
   protein: number;
@@ -17,6 +18,7 @@ const MACROS = [
 
 export function MacroTiles({ protein, fats, carbs, targets }: MacroTilesProps) {
   const values = { protein, fats, carbs };
+  const crumbs = useThemeId() === "minecraft";
   return (
     <div className="flex w-full gap-2.5">
       {MACROS.map((m) => {
@@ -40,17 +42,37 @@ export function MacroTiles({ protein, fats, carbs, targets }: MacroTilesProps) {
               {value}
               <span> г</span>
             </div>
-            <div className="h-1 overflow-hidden rounded-[var(--radius-pill)] bg-[var(--color-track)]">
-              <motion.div
-                className="h-full rounded-[var(--radius-pill)]"
-                style={{
-                  background: over ? "var(--color-red)" : m.color,
-                }}
-                initial={{ width: 0 }}
-                animate={{ width: `${ratio * 100}%` }}
-                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
+            {crumbs ? (
+              /* Minecraft: смужка розпадається на 5 «крихт» — інвентарний лічильник */
+              <div className="flex gap-0.5 py-0.5">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-2 flex-1"
+                    style={{
+                      background:
+                        i < Math.round(ratio * 5)
+                          ? over
+                            ? "var(--color-red)"
+                            : m.color
+                          : "#3d3d43",
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="h-1 overflow-hidden rounded-[var(--radius-pill)] bg-[var(--color-track)]">
+                <motion.div
+                  className="h-full rounded-[var(--radius-pill)]"
+                  style={{
+                    background: over ? "var(--color-red)" : m.color,
+                  }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${ratio * 100}%` }}
+                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
+            )}
             <div className="text-[11px] tabular-nums text-[var(--color-muted3)]">
               {target} г
             </div>

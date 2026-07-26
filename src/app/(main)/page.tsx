@@ -1,13 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { ProgressRing } from "@/components/ProgressRing";
+import { CalorieHero } from "@/components/hero/CalorieHero";
+import { DailyCardsRow } from "@/components/DailyCardsRow";
+import { EpicCard } from "@/components/EpicCard";
 import { MacroTiles } from "@/components/MacroTiles";
 import { WeeklyChart } from "@/components/WeeklyChart";
 import { WeeklyQuestsCard } from "@/components/WeeklyQuestsCard";
 import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useCurrentUser, useDashboard } from "@/hooks/useQueries";
+import { useCurrentUser, useDashboard, useEpics } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { calcMacroTargets } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
@@ -51,9 +54,13 @@ export default function DashboardPage() {
         </div>
 
         {dash.isLoading || !today ? (
-          <Skeleton className="my-1.5 h-[248px] w-[248px] rounded-full" />
+          user.theme === "nocturne" ? (
+            <Skeleton className="my-1.5 h-[248px] w-[248px] rounded-full" />
+          ) : (
+            <Skeleton className="my-1.5 h-[250px] w-full rounded-[var(--radius-lg)]" />
+          )
         ) : (
-          <ProgressRing consumed={today.totalCalories} target={user.targetCalories} />
+          <CalorieHero consumed={today.totalCalories} target={user.targetCalories} />
         )}
 
         {today ? (
@@ -72,11 +79,17 @@ export default function DashboardPage() {
         )}
       </section>
 
+      {/* Картки дня — щоденна дія має бути вище за тижневу */}
+      <DailyCardsRow />
+
       {/* Ціль по вазі */}
       <WeightGoalCard />
 
       {/* Квести тижня */}
       <WeeklyQuestsCard />
+
+      {/* Активна хроніка */}
+      <ActiveEpic />
 
       {/* Тижневий графік */}
       <section className="mcard p-[18px_18px_16px]">
@@ -93,6 +106,52 @@ export default function DashboardPage() {
         )}
       </section>
     </>
+  );
+}
+
+/**
+ * Активна хроніка на дашборді.
+ *
+ * Показуємо рівно одну — ту, що ближча до наступного вузла. Список із шести
+ * шкал на головній перетворив би довгу ціль на шум; одна шкала з підписом
+ * «12 км лишилось» тягне вперед.
+ */
+function ActiveEpic() {
+  const q = useEpics();
+  const epics = q.data?.epics ?? [];
+
+  const candidates = epics.filter((e) => e.started && !e.completed);
+  if (candidates.length === 0) {
+    return (
+      <section className="mcard flex items-center justify-between gap-3 p-[18px]">
+        <div className="min-w-0">
+          <span className="lbl">Хроніки</span>
+          <p className="mt-1 text-[13px] text-[var(--color-muted3)]">
+            Довгий похід на місяці. Обери свій шлях.
+          </p>
+        </div>
+        <Link href="/epics" className="btn btn-primary btn-sm shrink-0">
+          Обрати
+        </Link>
+      </section>
+    );
+  }
+
+  // Найближчий до завершення — саме там ефект градієнта цілі найсильніший.
+  const epic = candidates.reduce((best, e) =>
+    e.remaining < best.remaining ? e : best,
+  );
+
+  return (
+    <section className="mcard flex flex-col gap-3 p-[18px]">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="lbl">Хроніка</span>
+        <Link href="/epics" className="text-[13px] text-[var(--color-muted3)]">
+          усі →
+        </Link>
+      </div>
+      <EpicCard epic={epic} compact />
+    </section>
   );
 }
 

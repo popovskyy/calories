@@ -29,14 +29,10 @@ export function CoinsPill({
       href="/shop"
       title="Магазин"
       aria-label={`${coins} монет — магазин`}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-[var(--radius-pill)] border border-[color-mix(in_srgb,#FFC800_45%,transparent)] bg-[color-mix(in_srgb,#FFC800_12%,transparent)] transition-colors hover:bg-[color-mix(in_srgb,#FFC800_20%,transparent)]",
-        pad,
-        className,
-      )}
+      className={cn("coin-chip inline-flex items-center gap-1", pad, className)}
     >
       <CoinIcon size={icon} />
-      <span className={cn("font-semibold tabular-nums text-[var(--color-text)]", text)}>
+      <span className={cn("font-semibold tabular-nums", text)}>
         {coins.toLocaleString("uk-UA")}
       </span>
     </Link>

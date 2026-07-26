@@ -34,6 +34,14 @@ model User {
   startWeightDate  String? // YYYY-MM-DD
   remindersEnabled Boolean            @default(false)
   createdAt        DateTime           @default(now())
+  // Косметика, що вдягається (id з каталогів у lib/cosmetics.ts)
+  finisher         String             @default("confetti") // анімація закриття дня
+  title            String? // титул під ніком в арені
+  frame            String? // рамка аватара
+  soundpack        String             @default("default")
+  // Денормалізовані лічильники для еволюції маскота (дешевше, ніж рахувати щоразу)
+  maxStreak        Int                @default(0)
+  totalInTargetDays Int               @default(0)
   meals            MealLog[]
   activities       ActivityLog[]
   skins            UserSkin[]
@@ -41,6 +49,12 @@ model User {
   claims           RewardClaim[]
   pushSubs         PushSubscription[]
   notifications    Notification[]
+  txns             CoinTxn[]
+  items            UserItem[]
+  cosmetics        UserCosmetic[]
+  shields          StreakShield[]
+  weights          WeightLog[]
+  epics            UserEpic[]
 }
 
 /** Тижневі квести (Пн–Нд, Kyiv). Адмін може правити або додавати свої. */
@@ -50,7 +64,9 @@ model WeeklyQuest {
   code        String // sniper_5 | custom_…
   titleUk     String
   description String
-  kind        String // in_target_days | log_days | activity_days | dual_days | no_blowout | weekend_clean
+  // in_target_days | log_days | activity_days | dual_days | no_blowout
+  // | weekend_clean | week_balance | activity_minutes | burn_total | protein_days
+  kind        String
   target      Int // скільки днів / умов виконати
   rewardCoins Int
   sortOrder   Int      @default(0)
@@ -60,6 +76,107 @@ model WeeklyQuest {
 
   @@unique([weekStart, code])
   @@index([weekStart, active])
+}
+
+/**
+ * Інвентар витратного спорядження. Саме воно робить економіку нескінченною:
+ * косметика купується раз, а щит/ре-рол/подвоювач — знову і знову.
+ */
+model UserItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId    String // shield | quest_reroll | card_reroll | doubler | duel_coupon | box
+  qty       Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, itemId])
+}
+
+/** Факт застосування предмета — щоб діяли добові/тижневі ліміти. */
+model ItemUse {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  date      String // YYYY-MM-DD використання
+  meta      String? // код квесту для ре-ролу тощо
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+  @@index([userId, itemId, date])
+}
+
+/**
+ * Витрачений щит: день пропущено, але серія вціліла.
+ * computeStreak рахує такі дні як присутні.
+ */
+model StreakShield {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String // YYYY-MM-DD врятованого дня
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+/** Куплена косметика нових типів (фінішери, титули, рамки, звук). */
+model UserCosmetic {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       String // finisher | title | frame | soundpack
+  cosmeticId String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, kind, cosmeticId])
+}
+
+/** Історія ваги — для вагових квестів, епіків і точнішого прогнозу. */
+model WeightLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String // YYYY-MM-DD
+  weight    Float
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+/** Прогрес по епічному квесту (місяці, з проміжними вузлами). */
+model UserEpic {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  epicId       String
+  startedAt    DateTime  @default(now())
+  startDate    String // YYYY-MM-DD старту — від неї рахуємо прогрес
+  /** Кома-розділені індекси вже оплачених вузлів: "0,1" */
+  nodesClaimed String    @default("")
+  completedAt  DateTime?
+  active       Boolean   @default(true)
+
+  @@unique([userId, epicId])
+  @@index([userId, active])
+}
+
+/** Дуель тижня між двома гравцями: хто більше днів у ±5%. */
+model Duel {
+  id           String   @id @default(cuid())
+  challengerId String
+  opponentId   String
+  weekStart    String // YYYY-MM-DD понеділок
+  stake        Int
+  status       String   @default("pending") // pending | accepted | declined | settled
+  winnerId     String? // null при нічиї у зведеній дуелі
+  settledAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  @@unique([challengerId, opponentId, weekStart])
+  @@index([opponentId, status])
+  @@index([weekStart, status])
 }
 
 /**
@@ -108,11 +225,29 @@ model RewardClaim {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  key       String // daily_log:YMD | in_target:YMD | streak:N | arena:YMD
+  key       String // daily_log:YMD | in_target:YMD | streak:N | arena:YMD | dc:YMD:code
   coins     Int
   createdAt DateTime @default(now())
 
   @@unique([userId, key])
+}
+
+/**
+ * Повна історія руху монет — і нарахування, і витрати.
+ * RewardClaim лишається сторожем ідемпотентності (тільки прибуток),
+ * CoinTxn — читабельний гаманець, куди потрапляють і покупки.
+ */
+model CoinTxn {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Int // >0 нарахування, <0 витрата
+  kind      String // reward | quest | arena | streak | daily_card | skin | theme | item | box | duel
+  refKey    String? // ключ RewardClaim або id товару
+  label     String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model MealLog {

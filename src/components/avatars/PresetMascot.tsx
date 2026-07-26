@@ -215,6 +215,36 @@ function MascotArt({ id }: { id: string }) {
   }
 }
 
+/**
+ * Візуал стадій еволюції.
+ *
+ * Свідомо без нового арту: стадія — це шар світіння й контуру поверх наявного
+ * малюнка. Так будь-який скін, зокрема доданий адміном, отримує всі чотири
+ * стадії безкоштовно.
+ */
+const STAGE_GLOW: Record<number, string | undefined> = {
+  1: undefined,
+  2: "0 0 10px rgba(88,204,2,0.45)",
+  3: "0 0 16px rgba(28,176,246,0.55)",
+  4: "0 0 22px rgba(255,200,0,0.75)",
+};
+
+const STAGE_RING: Record<number, string | undefined> = {
+  1: undefined,
+  2: "1.5px solid rgba(88,204,2,0.7)",
+  3: "2px solid rgba(28,176,246,0.85)",
+  4: "2.5px solid #FFC800",
+};
+
+/** Рамки — окрема від еволюції косметика; кольори з lib/cosmetics.ts. */
+const FRAME_RING: Record<string, string> = {
+  silver: "2.5px solid #cfcfcf",
+  gold: "2.5px solid #FFD700",
+  epic: "2.5px solid #b5abfc",
+  traveler: "2.5px solid #4DABF7",
+  golden_sight: "2.5px solid #FF4B4B",
+};
+
 /** Анімований маскот з idle-підстрибуванням (Duolingo-відчуття). */
 export function PresetMascot({
   id,
@@ -224,6 +254,8 @@ export function PresetMascot({
   artKind,
   nameUk,
   bg,
+  stage = 1,
+  frame,
 }: {
   id: string;
   size?: number;
@@ -232,6 +264,10 @@ export function PresetMascot({
   artKind?: SkinArtKind;
   nameUk?: string;
   bg?: string;
+  /** Стадія еволюції 1–4 — аура й контур. */
+  stage?: number;
+  /** Куплена рамка аватара. Має пріоритет над контуром стадії. */
+  frame?: string | null;
 }) {
   const reduce = useReducedMotion();
   const preset = getPreset(id);
@@ -241,13 +277,19 @@ export function PresetMascot({
   const asset = mascotAssetPath(id, kind);
   const label = nameUk ?? preset?.nameUk ?? id;
 
+  const ring = (frame ? FRAME_RING[frame] : undefined) ?? STAGE_RING[stage];
+  const glow = STAGE_GLOW[stage];
+
   return (
     <motion.div
-      className={cn("shrink-0 overflow-hidden rounded-full", className)}
+      className={cn("relative shrink-0 overflow-hidden rounded-full", className)}
       style={{
         width: size,
         height: size,
         background: !asset ? bg ?? preset?.bg : undefined,
+        outline: ring,
+        outlineOffset: ring ? 1 : undefined,
+        boxShadow: glow,
       }}
       animate={idle ? { y: [0, -3, 0] } : undefined}
       transition={
@@ -273,6 +315,20 @@ export function PresetMascot({
       ) : (
         <MascotArt id={id} />
       )}
+
+      {/* Легенда мерехтить — саме це й помічають друзі в арені */}
+      {stage >= 4 && idle ? (
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 120%, rgba(255,200,0,0.45), transparent 62%)",
+          }}
+          animate={{ opacity: [0.35, 0.75, 0.35] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ) : null}
     </motion.div>
   );
 }

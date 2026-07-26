@@ -1,14 +1,27 @@
 "use client";
 
-import { Check, Lock } from "lucide-react";
+import { Check, Dices, Lock } from "lucide-react";
+import { toast } from "sonner";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useQuests } from "@/hooks/useQueries";
+import { useQuests, useRerollQuest, useShop } from "@/hooks/useQueries";
+import { QUEST_REROLL_ITEM_ID } from "@/lib/items";
 import { humanDate } from "@/lib/date";
 import { cn } from "@/lib/cn";
 
 export function WeeklyQuestsCard() {
   const q = useQuests();
+  const shop = useShop();
+  const reroll = useRerollQuest();
+
+  const rerollQty =
+    shop.data?.items.find((i) => i.id === QUEST_REROLL_ITEM_ID)?.qty ?? 0;
+
+  const onReroll = (code: string) =>
+    reroll.mutate(code, {
+      onSuccess: () => toast.success("Квест замінено"),
+      onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
+    });
 
   return (
     <section className="mcard flex flex-col gap-3 p-[18px]">
@@ -59,9 +72,23 @@ export function WeeklyQuestsCard() {
                       {quest.description}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1 text-[14px] font-semibold tabular-nums">
-                    <CoinIcon size={14} />
-                    {quest.rewardCoins}
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <div className="flex items-center gap-1 text-[14px] font-semibold tabular-nums">
+                      <CoinIcon size={14} />
+                      {quest.rewardCoins}
+                    </div>
+                    {/* Ре-рол лише для незавершених: міняти виконане немає сенсу */}
+                    {!quest.claimed && rerollQty > 0 ? (
+                      <button
+                        type="button"
+                        className="flex items-center gap-0.5 text-[11px] text-[var(--color-muted3)]"
+                        disabled={reroll.isPending}
+                        onClick={() => onReroll(quest.code)}
+                      >
+                        <Dices size={11} />
+                        міняти
+                      </button>
+                    ) : null}
                   </div>
                 </div>
                 <div className="mt-2 flex items-center gap-2">

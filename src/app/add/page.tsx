@@ -354,6 +354,7 @@ export default function AddFoodPage() {
       <SaveCelebrate
         open={celebrate}
         inTarget={celebrateInTarget}
+        finisher={user?.finisher}
         onDone={() => {
           setCelebrate(false);
           toast.success("Додано в журнал");

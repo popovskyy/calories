@@ -43,6 +43,32 @@
   /* Divider */
   --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
 
+  /*
+   * Рамки й фаски. Nocturne малює картки хайрлайн-тінню, тому ширина 0;
+   * ігрові теми вмикають реальний бордер (box-sizing:border-box, тож зовнішній
+   * розмір не змінюється — з'їдається лише внутрішній паддінг).
+   */
+  --color-border: #3f424d;
+  --color-border-strong: #595d6c;
+  --border-w: 0px;
+  --bevel-hi: transparent;
+  --bevel-lo: transparent;
+
+  /* Фон-картинки поверх суцільних кольорів (градієнти, скан-лінії) */
+  --app-bg-image: none;
+  --surface-image: none;
+
+  /* Монети */
+  --color-coin: #ffc800;
+  --color-coin-bg: color-mix(in srgb, #ffc800 12%, transparent);
+  --color-coin-border: color-mix(in srgb, #ffc800 45%, transparent);
+
+  /* Нижня навігація */
+  --color-nav-bg: #161826;
+  --color-nav-active-bg: transparent;
+  --color-nav-active-fg: #9184d9;
+  --color-nav-idle-fg: #9397ab;
+
   /* Radius */
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -56,56 +82,288 @@
 
   /* Font */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Ролі: display — заголовки, лейбли, числа; body — усе інше */
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ============================================================
-   Minecraft theme override
+   ТЕМА «99 ночей у лісі» (forest)
+   Значення з design_handoff_game_themes/README.md → «ТЕМА 1»
+   ============================================================ */
+html[data-theme="forest"] {
+  --color-bg: #08120e;
+  --app-bg-image: radial-gradient(120% 55% at 50% -6%, #1b3a2e 0%, #0d1c16 45%, #08120e 100%);
+  --color-surface: #14291f;
+  --surface-image: linear-gradient(#14291f, #0f2019);
+  --color-tile: #0f2119;
+
+  --color-text: #eaf5ef;
+  --color-muted: #8fb3a3;
+  --color-muted2: #7fae98;
+  --color-muted3: #6f9184;
+
+  --color-accent: #ff8a3d;
+  --color-accent-100: #fff3c4;
+  --color-accent-200: #ffd166;
+  --color-accent-300: #ffb347;
+  --color-accent-400: #ff8a3d;
+  --color-accent-500: #ff7a25;
+  --color-accent-600: #a8620f;
+  --color-accent-800: #3d2a10;
+
+  --color-green: #57d97e;
+  --color-green-600: #2c8c4c;
+  --color-red: #ff7a5e;
+  --color-red-600: #b8352a;
+
+  --color-track: #1c3a2c;
+  --color-macro-protein: #57d97e;
+  --color-macro-fats: #ffd166;
+  --color-macro-carbs: #7ec8ff;
+  --color-ring-from: #ffd166;
+  --color-ring-to: #ff8a3d;
+
+  --color-divider: #24473a;
+  --color-border: #24473a;
+  --color-border-strong: #2b5c47;
+  --border-w: 3px;
+
+  --color-coin: #ffd98a;
+  --color-coin-bg: #3d2a10;
+  --color-coin-border: #8a5a1c;
+
+  --color-nav-bg: #0c1c15;
+  --color-nav-active-bg: #1a3628;
+  --color-nav-active-fg: #ffb347;
+  --color-nav-idle-fg: #6f9184;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  /* Псевдо-3D: бордер + тінь-підошва. Прибрати підошву — тема розсиплеться. */
+  --shadow-card: 0 8px 0 #081711;
+  --shadow-card-lg: 0 8px 0 #081711;
+  --shadow-fab: 0 6px 0 #a8500c, 0 0 30px rgba(255, 138, 61, 0.5);
+
+  --font-display: var(--font-russo), sans-serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
+}
+
+html[data-theme="forest"] :is(.mcard, .tile) {
+  border: var(--border-w) solid var(--color-border);
+}
+html[data-theme="forest"] .mcard {
+  border-color: var(--color-border-strong);
+}
+
+html[data-theme="forest"] h1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+html[data-theme="forest"] .lbl {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--color-muted2);
+}
+html[data-theme="forest"] .tabular-nums {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+/* Чіпи й кнопки теж стоять на підошві */
+html[data-theme="forest"] .btn {
+  min-height: 48px;
+  font-weight: 800;
+}
+html[data-theme="forest"] .btn-primary {
+  background: linear-gradient(#ffb347, #ff7a25);
+  color: #3a1c05;
+  border: 3px solid #ffd9a8;
+  box-shadow: 0 5px 0 #a8500c;
+  font-weight: 900;
+}
+html[data-theme="forest"] .btn-primary:not(:disabled):active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #a8500c;
+}
+html[data-theme="forest"] .btn-ghost {
+  background: #123024;
+  border: 3px solid var(--color-border-strong);
+  box-shadow: 0 4px 0 #08170f;
+  color: var(--color-text);
+}
+html[data-theme="forest"] .btn-ghost:not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #08170f;
+}
+html[data-theme="forest"] .icon-btn {
+  background: #123024;
+  border: 3px solid var(--color-border-strong);
+  border-radius: 12px;
+  box-shadow: 0 4px 0 #08170f;
+  color: #9fd3bd;
+}
+html[data-theme="forest"] .tag {
+  font-weight: 900;
+}
+html[data-theme="forest"] .tag-accent {
+  background: var(--color-accent-300);
+  color: #3a1c05;
+  box-shadow: 0 3px 0 #a8620f;
+}
+
+/* ============================================================
+   ТЕМА Minecraft
+   Значення з design_handoff_game_themes/README.md → «ТЕМА 2»
    ============================================================ */
 html[data-theme="minecraft"] {
-  --color-bg: #17130f;
-  --color-surface: #2b2620;
-  --color-tile: #1f1b16;
-  --color-text: #f0e6d3;
-  --color-muted: #c8b89a;
-  --color-muted2: #a89070;
-  --color-muted3: #7f7f7f;
-  --color-accent: #5b8731;
-  --color-accent-100: #d4edaa;
-  --color-accent-200: #b8d980;
-  --color-accent-300: #9cc760;
-  --color-accent-400: #7cb342;
-  --color-accent-500: #5b8731;
-  --color-accent-600: #3d5c1f;
-  --color-accent-800: #2a3f14;
-  --color-green: #7cb342;
-  --color-green-600: #5b8731;
-  --color-red: #d94a38;
-  --color-red-600: #b03828;
-  --color-track: #3a2e20;
-  --color-macro-protein: #7cb342;
-  --color-macro-fats: #fcdc5f;
-  --color-macro-carbs: #8b5a2b;
-  --color-ring-from: #9cc760;
-  --color-ring-to: #3d5c1f;
-  --color-divider: color-mix(in srgb, #f0e6d3 14%, transparent);
+  --color-bg: #25252a;
+  --app-bg-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.014) 0 2px,
+    rgba(0, 0, 0, 0.03) 2px 4px
+  );
+  --color-surface: #313136;
+  --surface-image: none;
+  --color-tile: #26262b;
+
+  --color-text: #ffffff;
+  --color-muted: #c9c9d1;
+  --color-muted2: #a8a8b0;
+  --color-muted3: #8b8b94;
+
+  --color-accent: #5b9c3a;
+  --color-accent-100: #a6e07a;
+  --color-accent-200: #8fd15c;
+  --color-accent-300: #7cc24a;
+  --color-accent-400: #5b9c3a;
+  --color-accent-500: #4d8a30;
+  --color-accent-600: #33601f;
+  --color-accent-800: #2b3a22;
+
+  --color-green: #80ff20;
+  --color-green-600: #4fae0d;
+  --color-red: #d63b2f;
+  --color-red-600: #841f16;
+
+  --color-track: #16161a;
+  --color-macro-protein: #e04b3c;
+  --color-macro-fats: #fcdb05;
+  --color-macro-carbs: #4aa3f0;
+  --color-ring-from: #80ff20;
+  --color-ring-to: #4fae0d;
+
+  --color-divider: #3a3a41;
+  --color-border: #3a3a41;
+  --color-border-strong: #55555c;
+  --border-w: 4px;
+  --bevel-hi: #55555c;
+  --bevel-lo: #16161a;
+
+  --color-coin: #fcdb05;
+  --color-coin-bg: #3a3a41;
+  --color-coin-border: #55555c;
+
+  --color-nav-bg: #0e0e11;
+  --color-nav-active-bg: #4b4b52;
+  --color-nav-active-fg: #ffffff;
+  --color-nav-idle-fg: #8b8b94;
+
   --radius-sm: 0px;
   --radius-md: 0px;
   --radius-lg: 0px;
   --radius-pill: 0px;
-  --shadow-card: 2px 2px 0 #000, inset 1px 1px 0 rgba(255,255,255,0.12);
-  --shadow-card-lg: 3px 3px 0 #000, inset 1px 1px 0 rgba(255,255,255,0.12);
-  --shadow-fab: 3px 3px 0 rgba(0,0,0,0.6);
+
+  /* Тема тримається на фасках, а не на тінях — жодних blur-тіней */
+  --shadow-card: none;
+  --shadow-card-lg: none;
+  --shadow-fab: none;
+
+  --font-display: var(--font-handjet), monospace;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
 }
 
-html[data-theme="minecraft"] body {
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+/* 4-стороння фаска: світло зверху-зліва, тінь знизу-справа */
+html[data-theme="minecraft"] :is(.mcard, .tile, .btn, .icon-btn) {
+  border-style: solid;
+  border-width: var(--border-w);
+  border-top-color: var(--bevel-hi);
+  border-left-color: var(--bevel-hi);
+  border-bottom-color: var(--bevel-lo);
+  border-right-color: var(--bevel-lo);
+}
+html[data-theme="minecraft"] .tile {
+  --bevel-hi: #45454d;
+  --bevel-lo: #131316;
+}
+html[data-theme="minecraft"] .btn-primary {
+  --bevel-hi: #8fd15c;
+  --bevel-lo: #33601f;
+  background: var(--color-accent);
+  color: #fff;
+}
+html[data-theme="minecraft"] .btn-ghost {
+  --bevel-hi: #55555c;
+  --bevel-lo: #16161a;
+  background: #3a3a41;
+  color: var(--color-muted);
+}
+html[data-theme="minecraft"] .icon-btn {
+  --bevel-hi: #55555c;
+  --bevel-lo: #16161a;
+  background: #3a3a41;
+  color: var(--color-muted);
+}
+/* У грі все перемикається різко — жодних плавних переходів кольору */
+html[data-theme="minecraft"] * {
+  transition-property: transform, opacity;
 }
 
-html[data-theme="minecraft"] h1,
+html[data-theme="minecraft"] :is(h1, .lbl, .tabular-nums, .btn, .tag) {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #1d1d21;
+}
+/* Handjet вузький і низький за метрикою — кегль піднімаємо, нижче 14px не опускаємо */
+html[data-theme="minecraft"] h1 {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 3px 3px 0 #3a3a41;
+}
 html[data-theme="minecraft"] .lbl {
-  font-family: var(--font-pixel), monospace;
-  font-size: 0.82em;
+  font-size: 19px;
+  font-weight: 700;
   letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+html[data-theme="minecraft"] .tabular-nums {
+  font-size: 1.2em;
+  font-weight: 800;
+  line-height: 1;
+}
+html[data-theme="minecraft"] .btn {
+  min-height: 48px;
+  font-size: 21px;
+  font-weight: 700;
+}
+html[data-theme="minecraft"] .tag {
+  font-size: 17px;
+  font-weight: 700;
+}
+html[data-theme="minecraft"] .btn:not(:disabled):active {
+  transform: none;
+  border-top-color: var(--bevel-lo);
+  border-left-color: var(--bevel-lo);
+  border-bottom-color: var(--bevel-hi);
+  border-right-color: var(--bevel-hi);
 }
 
 html[data-theme="minecraft"] .page-chrome {
@@ -114,25 +372,102 @@ html[data-theme="minecraft"] .page-chrome {
   background: var(--color-bg);
 }
 
-html[data-theme="minecraft"] .app-frame::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: repeating-linear-gradient(
-    90deg,
-    #5b8731 0px 8px,
-    #7cb342 8px 16px,
-    #3d5c1f 16px 24px,
-    #7cb342 24px 32px
-  );
-  z-index: 50;
-  pointer-events: none;
+/* ============================================================
+   Нижня навігація. Один markup, три вигляди:
+   Nocturne — плоскі таби, Forest — pill, Minecraft — хотбар-слоти.
+   ============================================================ */
+.nav-bar {
+  position: relative;
+  z-index: 30;
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-nav-bg);
+  padding: 10px 4px calc(env(safe-area-inset-bottom, 0px) + 20px);
+}
+.nav-list {
+  display: flex;
+}
+.nav-tab {
+  flex: 1;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 0;
+  color: var(--color-nav-idle-fg);
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.nav-tab[data-active="true"] {
+  color: var(--color-nav-active-fg);
+  background: var(--color-nav-active-bg);
+}
+.nav-tab-label {
+  font-size: 11px;
+}
+.nav-tab[data-active="true"] .nav-tab-label {
+  font-weight: 600;
 }
 
-/* FAB — кнопка «+» */
+html[data-theme="forest"] .nav-bar {
+  border-top: 3px solid var(--color-border);
+  padding-left: 10px;
+  padding-right: 10px;
+}
+html[data-theme="forest"] .nav-list {
+  gap: 6px;
+}
+html[data-theme="forest"] .nav-tab {
+  border-radius: 999px;
+  padding: 8px 0;
+}
+html[data-theme="forest"] .nav-tab-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+html[data-theme="minecraft"] .nav-bar {
+  border-top: 4px solid #3a3a41;
+  padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
+}
+html[data-theme="minecraft"] .nav-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+html[data-theme="minecraft"] .nav-tab {
+  padding: 6px 0;
+  background: #2c2c31;
+  border: 4px solid;
+  border-top-color: #45454d;
+  border-left-color: #45454d;
+  border-bottom-color: #16161a;
+  border-right-color: #16161a;
+}
+html[data-theme="minecraft"] .nav-tab[data-active="true"] {
+  border-top-color: #7a7a84;
+  border-left-color: #7a7a84;
+  border-bottom-color: #232328;
+  border-right-color: #232328;
+}
+/* stroke-width і shape-rendering — презентаційні атрибути, CSS їх перекриває */
+html[data-theme="minecraft"] .nav-tab svg {
+  stroke-width: 2.6;
+  shape-rendering: crispEdges;
+}
+html[data-theme="minecraft"] .nav-tab-label {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   FAB — кнопка «+»
+   ============================================================ */
 .fab-wrap {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
 }
@@ -148,27 +483,51 @@ html[data-theme="minecraft"] .app-frame::before {
   height: 26px;
 }
 
+html[data-theme="forest"] .fab-wrap {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
+}
+html[data-theme="forest"] .fab-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 22px;
+  border: 3px solid #ffd9a8;
+  background: linear-gradient(#ffb347, #ff7a25);
+  color: #3a1c05;
+}
+/* Тактильний відгук іде першим — кнопка сідає на 4px, потім усе решта */
+html[data-theme="forest"] .fab-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #a8500c, 0 0 30px rgba(255, 138, 61, 0.5);
+}
+html[data-theme="forest"] .fab-btn-icon {
+  width: 30px;
+  height: 30px;
+}
+
 html[data-theme="minecraft"] .fab-wrap {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 108px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
 }
 html[data-theme="minecraft"] .fab-btn {
-  width: 44px;
-  height: 44px;
+  width: 60px;
+  height: 60px;
   border-radius: 0;
-  background: linear-gradient(180deg, #7cb342 0%, #5b8731 55%, #3d5c1f 100%);
-  box-shadow:
-    inset 2px 2px 0 rgba(255, 255, 255, 0.25),
-    inset -2px -2px 0 rgba(0, 0, 0, 0.45),
-    3px 3px 0 rgba(0, 0, 0, 0.55);
-}
-html[data-theme="minecraft"] .fab-btn-icon {
-  width: 22px;
-  height: 22px;
+  background: #5b9c3a;
+  border: 5px solid;
+  border-top-color: #8fd15c;
+  border-left-color: #8fd15c;
+  border-bottom-color: #33601f;
+  border-right-color: #33601f;
+  box-shadow: none;
 }
 html[data-theme="minecraft"] .fab-btn:active {
-  box-shadow:
-    inset -2px -2px 0 rgba(255, 255, 255, 0.2),
-    inset 2px 2px 0 rgba(0, 0, 0, 0.5);
+  border-top-color: #33601f;
+  border-left-color: #33601f;
+  border-bottom-color: #8fd15c;
+  border-right-color: #8fd15c;
+}
+html[data-theme="minecraft"] .fab-btn-icon {
+  width: 28px;
+  height: 28px;
 }
 
 /* ============================================================
@@ -193,9 +552,10 @@ body {
   height: 100%;
   height: 100dvh;
   max-height: -webkit-fill-available;
-  background: var(--color-bg);
+  background-color: var(--color-bg);
+  background-image: var(--app-bg-image);
   color: var(--color-text);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 17px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
@@ -217,7 +577,8 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  background: var(--color-bg);
+  background-color: var(--color-bg);
+  background-image: var(--app-bg-image);
   /* без safe-area-паддінгів: viewport-fit=auto, iOS інсетить вебв'ю сам */
 }
 
@@ -270,7 +631,9 @@ body {
    Component primitives (mirror the design HTML classes)
    ============================================================ */
 .mcard {
-  background: var(--color-surface);
+  position: relative;
+  background-color: var(--color-surface);
+  background-image: var(--surface-image);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
 }
@@ -280,7 +643,57 @@ body {
   border-radius: var(--radius-md);
 }
 
+/* Чіп балансу монет */
+.coin-chip {
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-coin-border);
+  background: var(--color-coin-bg);
+  color: var(--color-text);
+  transition: background 0.18s ease;
+}
+html[data-theme="forest"] .coin-chip {
+  border-width: 3px;
+  box-shadow: 0 4px 0 #1e1406;
+  color: var(--color-coin);
+  font-family: var(--font-display);
+}
+html[data-theme="minecraft"] .coin-chip {
+  border: 4px solid;
+  border-top-color: #55555c;
+  border-left-color: #55555c;
+  border-bottom-color: #16161a;
+  border-right-color: #16161a;
+  color: var(--color-coin);
+}
+
+/* Аватар-заглушка з ініціалом — кожна тема дає свою «плитку» */
+.avatar-fallback {
+  background: var(--avatar-bg, linear-gradient(135deg, #5d5294, #968ae0));
+  color: var(--avatar-ink, #f5f4ff);
+}
+html[data-theme="forest"] .avatar-fallback {
+  --avatar-bg: linear-gradient(#ffd166, #ff8a3d);
+  --avatar-ink: #3a1c05;
+  font-family: var(--font-display);
+}
+/* Minecraft: блок землі з фаскою замість кружечка */
+html[data-theme="minecraft"] .avatar-fallback {
+  --avatar-bg: #7b5433;
+  --avatar-ink: #ffe9c9;
+  font-family: var(--font-display);
+  border: 3px solid;
+  border-top-color: #a97a4c;
+  border-left-color: #a97a4c;
+  border-bottom-color: #4d3220;
+  border-right-color: #4d3220;
+}
+/* Маскоти лишаються круглими лише там, де тема це дозволяє */
+html[data-theme="minecraft"] .rounded-full {
+  border-radius: 0;
+}
+
 .lbl {
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.09em;
@@ -723,11 +1136,225 @@ body {
   animation: dd-out 0.12s ease forwards;
 }
 
+/* ============================================================
+   Forest — вогнище, олень, атмосфера
+   Тайминги й криві — з design_handoff_game_themes.
+   ============================================================ */
+@keyframes fireGlow {
+  0%,
+  100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+@keyframes flameBig {
+  0%,
+  100% { transform: scaleY(1) scaleX(1) translateY(0); opacity: 0.95; }
+  35% { transform: scaleY(1.16) scaleX(0.9) translateY(-5px); opacity: 1; }
+  65% { transform: scaleY(0.92) scaleX(1.08) translateY(2px); opacity: 0.9; }
+}
+@keyframes flameMid {
+  0%,
+  100% { transform: scaleY(1) translateX(0); }
+  30% { transform: scaleY(1.2) translateX(-3px); }
+  70% { transform: scaleY(0.9) translateX(4px); }
+}
+@keyframes flameTip {
+  0%,
+  100% { transform: translateY(0) scale(1); opacity: 0.9; }
+  50% { transform: translateY(-9px) scale(0.8); opacity: 0.45; }
+}
+@keyframes logToss {
+  0% { transform: translate(90px, -160px) rotate(-25deg); opacity: 0; }
+  12% { opacity: 1; }
+  70% { transform: translate(4px, 4px) rotate(14deg); opacity: 1; }
+  100% { transform: translate(4px, 4px) rotate(14deg); opacity: 0; }
+}
+@keyframes sparkBurst {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(var(--dx, 0px), -90px) scale(0.3); opacity: 0; }
+}
+@keyframes ember {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  15% { opacity: 0.95; }
+  100% { transform: translate(-14px, -120px) scale(0.4); opacity: 0; }
+}
+@keyframes fog {
+  0% { transform: translateX(-12%); }
+  50% { transform: translateX(12%); }
+  100% { transform: translateX(-12%); }
+}
+@keyframes blinkEyes {
+  0%,
+  92%,
+  100% { opacity: 0.85; }
+  95% { opacity: 0; }
+}
+@keyframes deerWalk {
+  0% { transform: translateX(-110px); opacity: 0; }
+  4% { opacity: 0.8; }
+  26% { opacity: 0.8; }
+  30% { transform: translateX(460px); opacity: 0; }
+  100% { transform: translateX(460px); opacity: 0; }
+}
+@keyframes deerCamp {
+  0% { transform: translateX(-70px) scaleX(1); opacity: 0; }
+  5% { transform: translateX(-46px) scaleX(1); opacity: 0.95; }
+  22% { transform: translateX(96px) scaleX(1); }
+  24%,
+  40% { transform: translateX(112px) scaleX(1); }
+  44%,
+  58% { transform: translateX(112px) scaleX(-1); }
+  80% { transform: translateX(-30px) scaleX(-1); opacity: 0.95; }
+  88% { transform: translateX(-70px) scaleX(-1); opacity: 0; }
+  100% { transform: translateX(-70px) scaleX(1); opacity: 0; }
+}
+@keyframes deerFlee {
+  0% { transform: translateX(112px) scaleX(1); opacity: 0.95; }
+  12% { transform: translateX(104px) scaleX(1); }
+  20% { transform: translateX(104px) scaleX(-1); }
+  100% { transform: translateX(-90px) scaleX(-1); opacity: 0; }
+}
+@keyframes deerStalk {
+  0%,
+  100% { transform: translateY(0) rotate(0deg); }
+  22% { transform: translateY(-3px) rotate(-1.5deg); }
+  60% { transform: translateY(1px) rotate(1.5deg); }
+}
+@keyframes headScan {
+  0%,
+  100% { transform: rotate(-4deg); }
+  18% { transform: rotate(5deg); }
+  46% { transform: rotate(-6deg); }
+  72% { transform: rotate(2deg); }
+}
+@keyframes legFwd {
+  0%,
+  100% { transform: rotate(-15deg); }
+  50% { transform: rotate(17deg); }
+}
+@keyframes legBack {
+  0%,
+  100% { transform: rotate(17deg); }
+  50% { transform: rotate(-15deg); }
+}
+@keyframes armSway {
+  0%,
+  100% { transform: rotate(7deg); }
+  50% { transform: rotate(-8deg); }
+}
+@keyframes eyeFlare {
+  0%,
+  100% { opacity: 1; }
+  47% { opacity: 1; }
+  50% { opacity: 0.15; }
+  53% { opacity: 1; }
+}
+
+/*
+ * Ритуал підкидання дровини — суцільно на CSS-таймлайні 2.6s, без станів у React.
+ * Тайминги ті самі, що в макеті: .56s дровина долітає, 1.7s вогонь осідає.
+ */
+@keyframes fireFlare {
+  0%,
+  21.5% {
+    transform: translateX(-50%) scale(1);
+    animation-timing-function: cubic-bezier(0.2, 1.5, 0.4, 1);
+  }
+  26%,
+  60% {
+    transform: translateX(-50%) scale(1.28);
+  }
+  65%,
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
+/* Компактний спалах у Журналі: розгорівся й згас */
+@keyframes emberFade {
+  0% { transform: scaleY(0.4); opacity: 0; }
+  25% { transform: scaleY(1.15); opacity: 1; }
+  60% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0.5); opacity: 0; }
+}
+/* Очі оленя червоніють рівно тоді, коли дровина вдаряє об вогнище */
+@keyframes eyeScare {
+  0%,
+  20% { fill: #ffe9a8; }
+  22%,
+  100% { fill: #ff2d1f; }
+}
+
+/* Анімовані SVG-групи оленя: без fill-box відсотковий transform-origin бреше */
+.deer-part {
+  transform-box: fill-box;
+}
+.deer-scared .deer-eye {
+  animation: eyeScare 2.6s linear forwards;
+}
+
+/* ============================================================
+   Minecraft — крипер, пікселний пил, факел
+   ============================================================ */
+@keyframes pixDust {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: translateY(-90px); opacity: 0; }
+}
+@keyframes mobHop {
+  0%,
+  100% { transform: translate(0, 0); }
+  25% { transform: translate(0, -9px); }
+  50% { transform: translate(0, 0); }
+}
+@keyframes mobWalk {
+  0% { transform: translateX(-80px); opacity: 0; }
+  8% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateX(460px); opacity: 0; }
+}
+@keyframes fuse {
+  0%,
+  86% { filter: none; }
+  90% { filter: brightness(2.4); }
+  94% { filter: none; }
+  98% { filter: brightness(2.4); }
+  100% { filter: none; }
+}
+@keyframes torch {
+  0%,
+  100% { opacity: 0.35; }
+  40% { opacity: 0.6; }
+  70% { opacity: 0.28; }
+}
+@keyframes xpFlash {
+  0%,
+  100% { filter: none; }
+  30% { filter: brightness(2.2); }
+  60% { filter: brightness(1.2); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /*
+   * Обнулена анімація лишає елемент у фінальному кадрі — для оленя й крипера
+   * це «пішов за кадр і зник». Прибираємо їх зовсім, а вогонь лишаємо
+   * статичним, але видимим: інакше герой Огляду став би порожнім.
+   */
+  .ambient-mob,
+  .pix-dust,
+  .fire-spark,
+  .toss-log {
+    display: none !important;
+  }
+  .fire-glow,
+  .flame {
+    animation: none !important;
+    opacity: 0.75 !important;
   }
 
   /*

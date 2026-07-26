@@ -1,10 +1,26 @@
 import { prisma } from "@/lib/prisma";
-import { currentMonthKey, kyivHourNow, shiftYMD, todayYMD } from "@/lib/date";
+import { kyivHourNow, shiftYMD, todayYMD } from "@/lib/date";
 import { dayNetCalories, type DayTotals } from "@/lib/day-totals";
-import { computeStreak } from "@/lib/streak";
+import {
+  computeStreak,
+  countInTargetDays,
+  settleShields,
+  syncStreakCounters,
+} from "@/lib/streak";
 import { computeRanking } from "@/lib/arena";
 import { isInTarget, settleRecentQuests } from "@/lib/quests";
+import { settleDailyCards } from "@/lib/daily-cards";
 import { grant, type GrantedReward } from "@/lib/reward-grant";
+import {
+  ARENA_MAX_ERROR,
+  ARENA_PRIZES,
+  ARENA_SETTLE_HOUR,
+  DAILY_LOG_COINS,
+  IN_TARGET_COINS,
+  SETTLE_LOOKBACK_DAYS,
+  STREAK_DIVIDEND_COINS,
+  STREAK_MILESTONES,
+} from "@/lib/economy";
 
 export type { GrantedReward };
 
@@ -14,20 +30,9 @@ export type { GrantedReward };
  * Ключове правило: точність (±5%) оцінюється ЛИШЕ за закритим днем.
  * Інакше можна було б «пройти крізь» ціль о 15:00, забрати монети,
  * а потім доїсти ще 1500 ккал — нагорода вже нарахована назавжди.
+ *
+ * Усі числа живуть у lib/economy.ts — балансувати треба в одному місці.
  */
-const STREAK_THRESHOLDS = [
-  { n: 3, coins: 15 },
-  { n: 7, coins: 35 },
-  { n: 14, coins: 70 },
-];
-const ARENA_PRIZES = [50, 30, 20];
-const DAILY_LOG_COINS = 5;
-const IN_TARGET_COINS = 15;
-const ARENA_SETTLE_HOUR = 4;
-/** Скільки закритих днів добиваємо назад (якщо юзер не заходив у застосунок). */
-const SETTLE_LOOKBACK_DAYS = 3;
-/** Приз арени лише тим, хто реально близько до своєї норми. */
-const ARENA_MAX_ERROR = 0.15;
 
 /** Дні, які вже не можуть змінитись «доїданням»: усе, крім сьогодні. */
 function closedDays(today: string, extra?: string): string[] {
@@ -61,6 +66,9 @@ export async function evaluateMealRewards(
   const out: GrantedReward[] = [];
   const today = todayYMD();
 
+  // Щит має спрацювати ДО того, як гравець побачить обнулений стрік.
+  await settleShields(userId);
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { targetCalories: true },
@@ -82,22 +90,57 @@ export async function evaluateMealRewards(
     await settleClosedDay(userId, d, pendingTotals[i]!, target, out);
   }
 
+  await settleStreakRewards(userId, out);
+
+  out.push(...(await settleDailyCards(userId)));
+  out.push(...(await settleRecentQuests(userId)));
+  return out;
+}
+
+/**
+ * Віхи стріку (одноразово за все життя) + повторюваний дивіденд за кожен
+ * повний тиждень серії.
+ *
+ * Ключ віхи навмисно без місяця: раніше `streak:14:2026-07` дозволяв щомісяця
+ * заново отримувати ті самі 70 монет, і при цьому серія на 200 днів не давала
+ * нічого понад 14-денну. Тепер віха платиться раз, зате великі числа реально
+ * дорогі, а безперервність підтримується дивідендом.
+ */
+async function settleStreakRewards(
+  userId: string,
+  out: GrantedReward[],
+): Promise<void> {
   const { streak } = await computeStreak(userId);
-  const month = currentMonthKey();
-  for (const t of STREAK_THRESHOLDS) {
-    if (streak >= t.n) {
-      await grant(
-        userId,
-        `streak:${t.n}:${month}`,
-        t.coins,
-        `Стрік ${t.n} днів`,
-        out,
-      );
+  if (streak <= 0) return;
+
+  for (const m of STREAK_MILESTONES) {
+    if (streak >= m.n) {
+      await grant(userId, `streak:${m.n}`, m.coins, `Віха: стрік ${m.n} днів`, out);
     }
   }
 
-  out.push(...(await settleRecentQuests(userId)));
-  return out;
+  // Дивіденд за кожен повний тиждень: ключ по номеру тижня, тож повторний
+  // виклик у межах того самого тижня серії нічого не додасть.
+  const weeks = Math.floor(streak / 7);
+  for (let w = 1; w <= weeks; w++) {
+    await grant(
+      userId,
+      `streak_div:${w}`,
+      STREAK_DIVIDEND_COINS,
+      `Дивіденд серії: ${w * 7} днів`,
+      out,
+    );
+  }
+
+  await syncStreakCounters(userId, streak);
+
+  // totalInTargetDays денормалізований заради арени (там і так важкий запит
+  // по всіх гравцях) — тримаємо його в синхроні з реєстром нагород.
+  const inTarget = await countInTargetDays(userId);
+  await prisma.user.updateMany({
+    where: { id: userId, totalInTargetDays: { not: inTarget } },
+    data: { totalInTargetDays: inTarget },
+  });
 }
 
 /**

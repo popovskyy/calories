@@ -7,6 +7,11 @@ import { PresetMascot } from "@/components/avatars/PresetMascot";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { Modal } from "@/components/ui/Dialog";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { StallSection } from "@/components/shop/StallSection";
+import { GearSection } from "@/components/shop/GearSection";
+import { CosmeticsSection } from "@/components/shop/CosmeticsSection";
+import { EvolutionSection } from "@/components/shop/EvolutionSection";
+import { WalletSection } from "@/components/shop/WalletSection";
 import {
   useBuySkin,
   useBuyTheme,
@@ -24,6 +29,16 @@ type ConfirmItem =
   | { kind: "skin"; item: ShopSkin }
   | { kind: "theme"; item: ShopTheme };
 
+type Tab = "stall" | "gear" | "look" | "evolution" | "wallet";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "stall", label: "Прилавок" },
+  { id: "gear", label: "Спорядження" },
+  { id: "look", label: "Вигляд" },
+  { id: "evolution", label: "Еволюція" },
+  { id: "wallet", label: "Гаманець" },
+];
+
 export default function ShopPage() {
   const mounted = useMounted();
   const { user } = useCurrentUser();
@@ -33,6 +48,7 @@ export default function ShopPage() {
   const buyTheme = useBuyTheme();
   const equipTheme = useEquipTheme();
   const [confirm, setConfirm] = useState<ConfirmItem | null>(null);
+  const [tab, setTab] = useState<Tab>("stall");
 
   const coins = user?.coins ?? shop.data?.coins ?? 0;
   const skins = shop.data?.skins ?? [];
@@ -78,9 +94,9 @@ export default function ShopPage() {
     <>
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="text-[24px] font-semibold text-[var(--color-text)]">Магазин</h1>
+          <h1 className="text-[24px] font-semibold text-[var(--color-text)]">Крамниця</h1>
           <p className="mt-0.5 text-[14px] text-[var(--color-muted3)]">
-            Заробляй монети за звички — відкривай скіни та теми
+            Монети за дисципліну — спорядження, вигляд і статус
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1 rounded-[var(--radius-pill)] border border-[color-mix(in_srgb,#FFC800_45%,transparent)] bg-[color-mix(in_srgb,#FFC800_12%,transparent)] px-2.5 py-1.5">
@@ -108,45 +124,76 @@ export default function ShopPage() {
             Спробувати знову
           </button>
         </div>
-      ) : (
+      ) : shop.data ? (
         <>
-          {/* Теми */}
-          {themes.length > 0 ? (
-            <section className="flex flex-col gap-2">
-              <span className="lbl">Теми оформлення</span>
-              <div className="grid grid-cols-2 gap-3">
-                {[...freeThemes, ...premiumThemes].map((t) => (
-                  <ThemeCard
-                    key={t.id}
-                    theme={t}
-                    coins={coins}
-                    onEquip={onEquipTheme}
-                    onBuy={(th) => setConfirm({ kind: "theme", item: th })}
-                    equipping={equipTheme.isPending && equipTheme.variables === t.id}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
+          {/* Вкладки: плаский список із десятків карток нечитабельний */}
+          <nav className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "shrink-0 rounded-[var(--radius-pill)] border px-3 py-1.5 text-[13px] font-semibold transition-colors",
+                  tab === t.id
+                    ? "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[var(--color-text)]"
+                    : "border-[var(--color-divider)] text-[var(--color-muted3)]",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
 
-          <SkinSection
-            title="Преміум"
-            skins={premium}
-            coins={coins}
-            onEquip={onEquipSkin}
-            onBuy={(s) => setConfirm({ kind: "skin", item: s })}
-            equipping={equipSkin.isPending ? equipSkin.variables : null}
-          />
-          <SkinSection
-            title="Безкоштовні"
-            skins={free}
-            coins={coins}
-            onEquip={onEquipSkin}
-            onBuy={() => {}}
-            equipping={equipSkin.isPending ? equipSkin.variables : null}
-          />
+          {tab === "stall" ? <StallSection shop={shop.data} /> : null}
+          {tab === "gear" ? <GearSection shop={shop.data} /> : null}
+          {tab === "evolution" ? (
+            <EvolutionSection shop={shop.data} user={user} />
+          ) : null}
+          {tab === "wallet" ? <WalletSection /> : null}
+
+          {tab === "look" ? (
+            <>
+              {themes.length > 0 ? (
+                <section className="flex flex-col gap-2">
+                  <span className="lbl">Теми оформлення</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[...freeThemes, ...premiumThemes].map((t) => (
+                      <ThemeCard
+                        key={t.id}
+                        theme={t}
+                        coins={coins}
+                        onEquip={onEquipTheme}
+                        onBuy={(th) => setConfirm({ kind: "theme", item: th })}
+                        equipping={equipTheme.isPending && equipTheme.variables === t.id}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              <SkinSection
+                title="Преміум"
+                skins={premium}
+                coins={coins}
+                onEquip={onEquipSkin}
+                onBuy={(s) => setConfirm({ kind: "skin", item: s })}
+                equipping={equipSkin.isPending ? equipSkin.variables : null}
+              />
+              <SkinSection
+                title="Безкоштовні"
+                skins={free}
+                coins={coins}
+                onEquip={onEquipSkin}
+                onBuy={() => {}}
+                equipping={equipSkin.isPending ? equipSkin.variables : null}
+              />
+
+              <CosmeticsSection shop={shop.data} />
+            </>
+          ) : null}
         </>
-      )}
+      ) : null}
 
       {/* Confirm modal */}
       <Modal

@@ -2,6 +2,7 @@
 
 import { Trophy } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { DuelCard } from "@/components/DuelCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useArena } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
@@ -61,6 +62,8 @@ export default function ArenaPage() {
         </div>
       )}
 
+      <DuelCard />
+
       <p className="text-[14px] leading-relaxed text-[var(--color-muted3)]">
         Рейтинг за |зʼїдене − ціль|: чим менше відхилення, тим вище. Голодування не
         дає переваги. Без записів за день — в кінці списку.
@@ -91,7 +94,13 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
         {entry.rank}
       </span>
       <div className="flex min-w-0 items-center gap-2.5">
-        <Avatar name={entry.name} avatarUrl={entry.avatarUrl} size={36} />
+        <Avatar
+          name={entry.name}
+          avatarUrl={entry.avatarUrl}
+          size={36}
+          stage={entry.stage}
+          frame={entry.frame}
+        />
         <div className="min-w-0">
           <div className="truncate text-[16px] font-semibold text-[var(--color-text)]">
             {entry.name}
@@ -101,6 +110,12 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
               </span>
             ) : null}
           </div>
+          {/* Титул стоїть над цифрами: у приватній грі статус важливіший за ккал */}
+          {entry.title ? (
+            <div className="truncate text-[12px] font-semibold text-[var(--color-accent)]">
+              {entry.title}
+            </div>
+          ) : null}
           <div className="truncate text-[13px] text-[var(--color-muted3)]">
             {entry.goalLabel} · {entry.todayCalories.toLocaleString("uk-UA")} /{" "}
             {entry.targetCalories.toLocaleString("uk-UA")} ккал

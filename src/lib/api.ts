@@ -3,7 +3,11 @@ import type {
   AnalyzeActivityResult,
   AnalyzeResult,
   ArenaResponse,
+  CoinTxnDTO,
+  DailyCardsResponse,
   DashboardResponse,
+  DuelsResponse,
+  EpicsResponse,
   ForecastResponse,
   GrantedReward,
   MealDTO,
@@ -226,6 +230,82 @@ export const equipTheme = (themeId: string) =>
     method: "POST",
     body: JSON.stringify({ themeId }),
   });
+
+// --- Спорядження ---
+export const buyItem = (itemId: string, fromStall = false) =>
+  req<ShopResponse>("/api/items/buy", {
+    method: "POST",
+    body: JSON.stringify({ itemId, fromStall }),
+  });
+
+export interface UseItemResult {
+  shop: ShopResponse;
+  granted: GrantedReward[];
+  /** Що випало зі скриньки (тільки для box). */
+  boxLabel: string | null;
+  used: string;
+}
+
+export const consumeItem = (itemId: string, meta?: string) =>
+  req<UseItemResult>("/api/items/use", {
+    method: "POST",
+    body: JSON.stringify({ itemId, meta }),
+  });
+
+export const rerollQuest = (code: string) =>
+  req<QuestsResponse>("/api/quests/reroll", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+
+// --- Косметика ---
+export type CosmeticKind = "finisher" | "title" | "frame" | "soundpack";
+
+export const buyCosmetic = (kind: CosmeticKind, cosmeticId: string) =>
+  req<ShopResponse>("/api/cosmetics/buy", {
+    method: "POST",
+    body: JSON.stringify({ kind, cosmeticId }),
+  });
+
+export const equipCosmetic = (kind: CosmeticKind, cosmeticId: string | null) =>
+  req<ShopResponse>("/api/cosmetics/equip", {
+    method: "POST",
+    body: JSON.stringify({ kind, cosmeticId }),
+  });
+
+// --- Картки дня ---
+export const getDailyCards = (date?: string) =>
+  req<DailyCardsResponse>(
+    `/api/daily-cards${date ? `?date=${encodeURIComponent(date)}` : ""}`,
+  );
+
+// --- Хроніки ---
+export const getEpics = () => req<EpicsResponse>("/api/epics");
+
+export const startEpicApi = (epicId: string) =>
+  req<EpicsResponse>("/api/epics", {
+    method: "POST",
+    body: JSON.stringify({ epicId }),
+  });
+
+// --- Дуелі ---
+export const getDuels = () => req<DuelsResponse>("/api/duels");
+
+export const challengeDuel = (opponentId: string) =>
+  req<DuelsResponse>("/api/duels", {
+    method: "POST",
+    body: JSON.stringify({ action: "challenge", opponentId }),
+  });
+
+export const respondDuel = (duelId: string, accept: boolean) =>
+  req<DuelsResponse>("/api/duels", {
+    method: "POST",
+    body: JSON.stringify({ action: accept ? "accept" : "decline", duelId }),
+  });
+
+// --- Гаманець ---
+export const getWallet = (limit = 60) =>
+  req<{ coins: number; txns: CoinTxnDTO[] }>(`/api/wallet?limit=${limit}`);
 
 // --- Forecast ---
 export const getForecast = () => req<ForecastResponse>("/api/stats/forecast");

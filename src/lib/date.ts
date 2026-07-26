@@ -45,6 +45,17 @@ export function kyivHourNow(): number {
   return partsInTz(new Date()).hour;
 }
 
+/** Година 0–23 у Kyiv для довільного моменту (createdAt записів — у UTC). */
+export function kyivHourOf(d: Date): number {
+  return partsInTz(d).hour;
+}
+
+/** Хвилини від опівночі за київським часом — для карток «до 12:00». */
+export function kyivMinutesOf(d: Date): number {
+  const { hour, minute } = partsInTz(d);
+  return hour * 60 + minute;
+}
+
 /** Дата зі зсувом на N днів від base (календарно). */
 export function shiftYMD(ymd: string, deltaDays: number): string {
   const d = fromYMD(ymd);
