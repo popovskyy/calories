@@ -12,7 +12,6 @@ export const SHIELD_ITEM_ID = "shield";
 export const QUEST_REROLL_ITEM_ID = "quest_reroll";
 export const CARD_REROLL_ITEM_ID = "card_reroll";
 export const DOUBLER_ITEM_ID = "doubler";
-export const DUEL_COUPON_ITEM_ID = "duel_coupon";
 export const BOX_ITEM_ID = "box";
 
 export interface ItemDef {
@@ -36,7 +35,8 @@ export const ITEMS: ItemDef[] = [
   {
     id: SHIELD_ITEM_ID,
     nameUk: "Щит стріку",
-    description: "Пропустив день — серія вціліла. Спрацьовує сам.",
+    description:
+      "Якщо пропустиш день — серія не обнулиться. Витрачається сам, нічого натискати не треба.",
     price: 60,
     icon: "🛡",
     // Ліміт 2 навмисний: із запасом у 10 щитів зникає сама напруга серії.
@@ -48,7 +48,8 @@ export const ITEMS: ItemDef[] = [
   {
     id: QUEST_REROLL_ITEM_ID,
     nameUk: "Ре-рол квесту",
-    description: "Замінити один квест тижня на інший з пулу.",
+    description:
+      "Не подобається квест тижня — заміни його на інший. Кнопка «міняти» зʼявиться біля квеста на Огляді.",
     price: 40,
     icon: "🎲",
     maxStack: 5,
@@ -59,7 +60,8 @@ export const ITEMS: ItemDef[] = [
   {
     id: CARD_REROLL_ITEM_ID,
     nameUk: "Ре-рол картки",
-    description: "Перетягнути одну картку дня.",
+    description:
+      "Міняє обидві картки дня на нові. Кнопка «Перетягнути» — у блоці «Картки дня».",
     price: 15,
     icon: "🃏",
     maxStack: 10,
@@ -70,7 +72,8 @@ export const ITEMS: ItemDef[] = [
   {
     id: DOUBLER_ITEM_ID,
     nameUk: "Подвоювач",
-    description: "×2 монети за всі нагороди сьогоднішньої доби.",
+    description:
+      "Усі монети, зароблені сьогодні, множаться на 2. Вмикай зранку — діє до півночі.",
     price: 80,
     icon: "⚡",
     maxStack: 5,
@@ -79,20 +82,10 @@ export const ITEMS: ItemDef[] = [
     passive: false,
   },
   {
-    id: DUEL_COUPON_ITEM_ID,
-    nameUk: "Купон на дуель",
-    description: "Кинути виклик другу поза розкладом.",
-    price: 30,
-    icon: "⚔️",
-    maxStack: 5,
-    usesPerDay: null,
-    usesPerWeek: null,
-    passive: false,
-  },
-  {
     id: BOX_ITEM_ID,
     nameUk: "Скринька мандрівника",
-    description: "Випадковий вміст: монети, спорядження, інколи — рідкість.",
+    description:
+      "Випадковий приз: 70–400 монет або предмет. У середньому віддає більше, ніж коштує.",
     price: 100,
     icon: "🎁",
     maxStack: 10,

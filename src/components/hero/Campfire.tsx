@@ -6,6 +6,7 @@ import { Deer } from "@/components/ambient/Deer";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { playLogToss } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
+import { useCurrentUser } from "@/hooks/useQueries";
 
 const FLAME_RADIUS = "50% 50% 46% 46% / 66% 66% 34% 34%";
 
@@ -24,6 +25,8 @@ export function Campfire({ consumed, target }: HeroProps) {
   const recalc = useAppStore((s) => s.recalc);
   const consumeRecalc = useAppStore((s) => s.consumeRecalc);
   const soundEnabled = useAppStore((s) => s.soundEnabled);
+  const { user } = useCurrentUser();
+  const pack = user?.soundpack ?? "default";
 
   /*
    * Стану ритуалу в React немає взагалі: увесь таймлайн (дровина .85s, спалах
@@ -44,10 +47,10 @@ export function Campfire({ consumed, target }: HeroProps) {
 
   useEffect(() => {
     if (!recalc) return;
-    playLogToss(soundEnabled);
+    playLogToss(soundEnabled, pack);
     const t = window.setTimeout(consumeRecalc, 2600);
     return () => window.clearTimeout(t);
-  }, [recalc, consumeRecalc, soundEnabled]);
+  }, [recalc, consumeRecalc, soundEnabled, pack]);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[52px]" : "text-[62px]";

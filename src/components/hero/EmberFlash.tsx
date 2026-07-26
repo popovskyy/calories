@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { playLogToss } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
+import { useCurrentUser } from "@/hooks/useQueries";
 import { useThemeId } from "@/hooks/useThemeId";
 
 /**
@@ -16,12 +17,14 @@ import { useThemeId } from "@/hooks/useThemeId";
 export function EmberFlash() {
   const recalc = useAppStore((s) => s.recalc);
   const soundEnabled = useAppStore((s) => s.soundEnabled);
+  const { user } = useCurrentUser();
+  const pack = user?.soundpack ?? "default";
   const forest = useThemeId() === "forest";
 
   useEffect(() => {
     if (!forest || !recalc) return;
-    playLogToss(soundEnabled);
-  }, [recalc, forest, soundEnabled]);
+    playLogToss(soundEnabled, pack);
+  }, [recalc, forest, soundEnabled, pack]);
 
   if (!forest || !recalc) return null;
 

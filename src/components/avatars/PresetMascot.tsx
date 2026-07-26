@@ -240,10 +240,37 @@ const STAGE_RING: Record<number, string | undefined> = {
 const FRAME_RING: Record<string, string> = {
   silver: "2.5px solid #cfcfcf",
   gold: "2.5px solid #FFD700",
-  epic: "2.5px solid #b5abfc",
   traveler: "2.5px solid #4DABF7",
   golden_sight: "2.5px solid #FF4B4B",
 };
+
+/**
+ * «Епічна» рамка — єдина анімована, тому й найдорожча.
+ *
+ * outline статичним кольором тут не обійтись: кільце малюється окремим шаром
+ * із conic-gradient, який обертається. Маска лишає видимим тільки обід,
+ * інакше градієнт залив би весь аватар.
+ */
+function EpicRing({ reduce }: { reduce: boolean }) {
+  return (
+    <motion.span
+      aria-hidden
+      className="pointer-events-none absolute rounded-full"
+      style={{
+        inset: -3,
+        padding: 3,
+        background:
+          "conic-gradient(from 0deg, #b5abfc, #1CB0F6, #FF86D0, #FFC800, #b5abfc)",
+        WebkitMask:
+          "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+        WebkitMaskComposite: "xor",
+        maskComposite: "exclude",
+      }}
+      animate={reduce ? undefined : { rotate: 360 }}
+      transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+    />
+  );
+}
 
 /** Анімований маскот з idle-підстрибуванням (Duolingo-відчуття). */
 export function PresetMascot({
@@ -282,7 +309,12 @@ export function PresetMascot({
 
   return (
     <motion.div
-      className={cn("relative shrink-0 overflow-hidden rounded-full", className)}
+      className={cn(
+        "relative shrink-0 rounded-full",
+        // overflow-hidden обрізав би кільце «Епічної», яке виступає за межі
+        frame === "epic" ? undefined : "overflow-hidden",
+        className,
+      )}
       style={{
         width: size,
         height: size,
@@ -310,11 +342,13 @@ export function PresetMascot({
           width={size}
           height={size}
           draggable={false}
-          className="h-full w-full object-cover"
+          className="h-full w-full rounded-full object-cover"
         />
       ) : (
         <MascotArt id={id} />
       )}
+
+      {frame === "epic" ? <EpicRing reduce={!!reduce} /> : null}
 
       {/* Легенда мерехтить — саме це й помічають друзі в арені */}
       {stage >= 4 && idle ? (

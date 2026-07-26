@@ -12,11 +12,27 @@ const GROUPS: { kind: CosmeticKind; title: string; hint: string }[] = [
   {
     kind: "finisher",
     title: "Фінішери",
-    hint: "Анімація, коли день закривається в ±5%",
+    hint:
+      "Святкування, яке зʼявляється на весь екран, коли ти закриваєш день у межах ±5% від норми. Активний лише один.",
   },
-  { kind: "title", title: "Титули", hint: "Рядок під ніком в арені" },
-  { kind: "frame", title: "Рамки", hint: "Обвідка аватара" },
-  { kind: "soundpack", title: "Звук", hint: "Як звучать перемоги" },
+  {
+    kind: "title",
+    title: "Титули",
+    hint:
+      "Невеликий підпис під твоїм ніком в Арені — його бачать усі гравці. Активний лише один.",
+  },
+  {
+    kind: "frame",
+    title: "Рамки",
+    hint:
+      "Кольорове кільце навколо твого аватара. Видно скрізь, де він показується: Огляд, Арена, Профіль.",
+  },
+  {
+    kind: "soundpack",
+    title: "Звук",
+    hint:
+      "Як звучить збереження їжі та закриття вдалого дня. Працює, якщо звук увімкнено в застосунку.",
+  },
 ];
 
 export function CosmeticsSection({ shop }: { shop: ShopResponse }) {
@@ -85,7 +101,7 @@ function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
         <div className="text-[13px] font-semibold text-[var(--color-text)]">
           {c.nameUk}
         </div>
-        <p className="mt-0.5 line-clamp-2 text-[11px] leading-tight text-[var(--color-muted3)]">
+        <p className="mt-0.5 text-[11px] leading-tight text-[var(--color-muted3)]">
           {c.description}
         </p>
       </div>

@@ -87,7 +87,7 @@ export function StallSection({ shop }: { shop: ShopResponse }) {
                 <div className="text-[13px] font-semibold text-[var(--color-text)]">
                   {slot.nameUk}
                 </div>
-                <p className="mt-0.5 line-clamp-2 text-[11px] leading-tight text-[var(--color-muted3)]">
+                <p className="mt-0.5 text-[11px] leading-tight text-[var(--color-muted3)]">
                   {slot.description}
                 </p>
               </div>

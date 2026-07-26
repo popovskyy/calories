@@ -41,8 +41,10 @@ export function GearSection({ shop }: { shop: ShopResponse }) {
   return (
     <section className="flex flex-col gap-2">
       <span className="lbl">Спорядження</span>
-      <p className="text-[12px] text-[var(--color-muted3)]">
-        Витратне. Саме сюди йдуть монети, коли вітрина вже викуплена.
+      <p className="text-[12px] leading-relaxed text-[var(--color-muted3)]">
+        Одноразові речі, які допомагають у грі: рятують серію, міняють
+        незручні завдання, подвоюють заробіток. Після використання зникають —
+        купувати можна скільки завгодно разів.
       </p>
 
       <ul className="flex flex-col gap-2">
