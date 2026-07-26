@@ -187,7 +187,7 @@ export function AuthForm() {
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
               autoFocus
-              placeholder="roman"
+              placeholder="ваш логін"
             />
           </Field>
           <Field label="Пароль">
@@ -212,7 +212,7 @@ export function AuthForm() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
-              placeholder="roman"
+              placeholder="ваш логін"
             />
           </Field>
           <Field label="Пароль" hint="Мін. 6 символів">
@@ -329,7 +329,7 @@ export function AuthForm() {
                 value={targetWeight}
                 onChange={(e) => setTargetWeight(e.target.value)}
                 inputMode="decimal"
-                placeholder="опц."
+                placeholder="опціонально (можна вводити або ні)"
               />
             </Field>
             <Field label="Строк, тижнів">
@@ -338,7 +338,7 @@ export function AuthForm() {
                 value={targetWeeks}
                 onChange={(e) => setTargetWeeks(e.target.value)}
                 inputMode="numeric"
-                placeholder="опц."
+                placeholder="опціонально (можна вводити або ні)"
               />
             </Field>
           </div>
