@@ -372,7 +372,7 @@ export function AuthForm() {
           <button type="submit" className="btn btn-primary btn-block mt-1" disabled={busy || !preview}>
             {busy ? (
               <>
-                <Sparkles size={16} className="animate-pulse" /> Створюємо…
+                <Sparkles size={16} className="spark-pulse" /> Створюємо…
               </>
             ) : (
               "Зареєструватись"

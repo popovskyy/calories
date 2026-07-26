@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
   Camera,
@@ -16,7 +17,7 @@ import { toast } from "sonner";
 import { AppFrame } from "@/components/AppFrame";
 import { AiResultCard } from "@/components/AiResultCard";
 import { SaveCelebrate } from "@/components/SaveCelebrate";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { MealAnalyzeLoader } from "@/components/loaders/MealAnalyzeLoader";
 import { inputClass } from "@/components/ui/Field";
 import {
   useAnalyzeMeal,
@@ -294,11 +295,17 @@ export default function AddFoodPage() {
           </div>
         ) : null}
 
-        {analyze.isPending ? (
-          <ResultSkeleton />
-        ) : result ? (
-          <AiResultCard result={result} source={image ? "фото" : "опису"} />
-        ) : null}
+        <AnimatePresence mode="wait" initial={false}>
+          {analyze.isPending ? (
+            <MealAnalyzeLoader key="loading" preview={image?.preview} />
+          ) : result ? (
+            <AiResultCard
+              key="result"
+              result={result}
+              source={image ? "фото" : "опису"}
+            />
+          ) : null}
+        </AnimatePresence>
       </div>
 
       <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-3.5">
@@ -310,7 +317,13 @@ export default function AddFoodPage() {
               onClick={runSaveFromAi}
               disabled={save.isPending}
             >
-              {save.isPending ? "Збереження…" : "Зберегти в журнал"}
+              {save.isPending ? (
+                <>
+                  <span className="spinner" /> Збереження…
+                </>
+              ) : (
+                "Зберегти в журнал"
+              )}
             </button>
             <button
               type="button"
@@ -328,7 +341,10 @@ export default function AddFoodPage() {
             onClick={runAnalyze}
             disabled={!canAnalyze}
           >
-            <Sparkles size={18} />
+            <Sparkles
+              size={18}
+              className={analyze.isPending ? "spark-pulse" : undefined}
+            />
             {analyze.isPending ? "Аналізуємо…" : "Розрахувати"}
           </button>
         )}
@@ -344,29 +360,5 @@ export default function AddFoodPage() {
         }}
       />
     </AppFrame>
-  );
-}
-
-function ResultSkeleton() {
-  return (
-    <div
-      className="rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-[18px]"
-      style={{ border: "1px solid var(--color-accent-800)" }}
-    >
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-5 w-16 rounded-[var(--radius-pill)]" />
-      </div>
-      <div className="mt-3 flex gap-1.5">
-        <Skeleton className="h-6 w-20 rounded-[var(--radius-pill)]" />
-        <Skeleton className="h-6 w-24 rounded-[var(--radius-pill)]" />
-      </div>
-      <Skeleton className="mx-auto mt-4 h-10 w-24" />
-      <div className="mt-4 flex gap-2.5">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-16 flex-1" />
-        ))}
-      </div>
-    </div>
   );
 }

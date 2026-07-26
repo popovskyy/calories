@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Dumbbell, Sparkles, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
+import { AnimatePresence } from "framer-motion";
 import { AppFrame } from "@/components/AppFrame";
+import { ActivityAnalyzeLoader } from "@/components/loaders/ActivityAnalyzeLoader";
 import { Field, inputClass } from "@/components/ui/Field";
 import {
   useAnalyzeActivity,
@@ -145,9 +147,19 @@ export default function AddActivityPage() {
             disabled={analyze.isPending}
             onClick={onAnalyze}
           >
-            {analyze.isPending ? "Рахуємо…" : "Оцінити спалені ккал"}
+            {analyze.isPending ? (
+              <>
+                <Sparkles size={18} className="spark-pulse" /> Рахуємо…
+              </>
+            ) : (
+              "Оцінити спалені ккал"
+            )}
           </button>
         ) : null}
+
+        <AnimatePresence>
+          {analyze.isPending ? <ActivityAnalyzeLoader /> : null}
+        </AnimatePresence>
 
         {result ? (
           <div className="mcard flex flex-col gap-3 p-4">
@@ -186,7 +198,13 @@ export default function AddActivityPage() {
             disabled={save.isPending}
             onClick={onSave}
           >
-            {save.isPending ? "Зберігаємо…" : "Зберегти активність"}
+            {save.isPending ? (
+              <>
+                <span className="spinner" /> Зберігаємо…
+              </>
+            ) : (
+              "Зберегти активність"
+            )}
           </button>
         </div>
       ) : null}

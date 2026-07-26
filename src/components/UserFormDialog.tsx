@@ -5,6 +5,7 @@ import { Camera, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/Avatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
+import { AvatarConjuring } from "@/components/loaders/AvatarConjuring";
 import { Modal } from "@/components/ui/Dialog";
 import { Field, inputClass } from "@/components/ui/Field";
 import { useGenerateAvatar, useSaveUser } from "@/hooks/useQueries";
@@ -206,7 +207,9 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     >
       <form onSubmit={submit} className="flex flex-col gap-3.5">
         <div className="flex flex-col items-center gap-3">
-          <Avatar name={form.name || "?"} avatarUrl={avatarUrl} size={88} />
+          <AvatarConjuring active={generating} size={88}>
+            <Avatar name={form.name || "?"} avatarUrl={avatarUrl} size={88} />
+          </AvatarConjuring>
           <AvatarPicker
             value={isPresetAvatar(avatarUrl) ? avatarUrl : null}
             onChange={(url) => {
@@ -235,7 +238,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                   >
                     {generating ? (
                       <>
-                        <Sparkles size={16} className="animate-pulse" /> Малюємо…
+                        <Sparkles size={16} className="spark-pulse" /> Малюємо…
                       </>
                     ) : (
                       <>
