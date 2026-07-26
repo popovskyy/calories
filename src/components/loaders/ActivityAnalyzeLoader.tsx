@@ -12,9 +12,15 @@ const PHRASES = [
   "Майже готово",
 ];
 
-/** Лінія пульсу: по ній біжить світлий сегмент, як сигнал із трекера. */
+/**
+ * Лінія пульсу: по ній біжить світлий сегмент, як сигнал із трекера.
+ *
+ * viewBox навмисне широкий (400×92) — svg тягнеться на всю ширину картки з
+ * preserveAspectRatio="none", тож пропорції viewBox мають бути близькі до
+ * реальних, інакше піки розплющує по горизонталі.
+ */
 const PULSE_PATH =
-  "M0 26 H26 l10 -16 l10 32 l9 -22 l7 6 H108 l9 -14 l10 28 l9 -14 H200";
+  "M0 46 H70 l14 -30 l12 60 l10 -44 l9 14 H190 l14 -34 l12 66 l11 -46 l8 14 H400";
 
 /** Стан очікування оцінки спалених калорій. */
 export function ActivityAnalyzeLoader() {
@@ -37,15 +43,15 @@ export function ActivityAnalyzeLoader() {
       </div>
 
       <svg
-        viewBox="0 0 200 52"
+        viewBox="0 0 400 92"
         preserveAspectRatio="none"
         aria-hidden
-        className="mt-3 h-[52px] w-full"
+        className="mt-3 h-[104px] w-full"
       >
         <path
           d={PULSE_PATH}
           fill="none"
-          strokeWidth={2}
+          strokeWidth={3}
           strokeLinecap="round"
           strokeLinejoin="round"
           stroke="color-mix(in srgb, var(--color-text) 12%, transparent)"
@@ -55,7 +61,7 @@ export function ActivityAnalyzeLoader() {
             className="pulse-travel"
             d={PULSE_PATH}
             fill="none"
-            strokeWidth={2.4}
+            strokeWidth={3.6}
             strokeLinecap="round"
             strokeLinejoin="round"
             stroke="var(--color-accent-300)"

@@ -41,7 +41,7 @@ export function ThinkingLine({
     <div
       aria-live="polite"
       className={cn(
-        "relative flex h-5 items-center justify-center overflow-hidden text-[14px] text-[var(--color-muted2)]",
+        "relative flex h-6 items-center justify-center overflow-hidden text-[15px] text-[var(--color-muted2)]",
         className,
       )}
     >

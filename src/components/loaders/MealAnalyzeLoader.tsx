@@ -26,10 +26,13 @@ const TEXT_PHRASES = [
 ];
 
 const MACROS = [
-  { label: "Білки", color: "var(--color-macro-protein)", radius: 40, dur: 3 },
-  { label: "Жири", color: "var(--color-macro-fats)", radius: 30, dur: 4.1 },
-  { label: "Вуглеводи", color: "var(--color-macro-carbs)", radius: 47, dur: 5.2 },
+  { label: "Білки", color: "var(--color-macro-protein)", radius: 62, dur: 3 },
+  { label: "Жири", color: "var(--color-macro-fats)", radius: 46, dur: 4.1 },
+  { label: "Вуглеводи", color: "var(--color-macro-carbs)", radius: 73, dur: 5.2 },
 ] as const;
+
+/** Висота «сцени» очікування. Нижче — і сканер/орбіта читаються як смужка. */
+const STAGE = 216;
 
 /**
  * Стан очікування відповіді ШІ по прийому їжі.
@@ -101,7 +104,10 @@ export function MealAnalyzeLoader({ preview }: { preview?: string | null }) {
 /** Фото під «сканером»: рамка наведення, сітка й промінь, що йде згори вниз. */
 function ScanStage({ preview }: { preview: string }) {
   return (
-    <div className="relative h-40 overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-tile)]">
+    <div
+      className="relative overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-tile)]"
+      style={{ height: STAGE }}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={preview}
@@ -114,7 +120,7 @@ function ScanStage({ preview }: { preview: string }) {
       {CORNERS.map((c) => (
         <span
           key={c.key}
-          className="absolute h-4 w-4 border-[var(--color-accent-200)]"
+          className="absolute h-5 w-5 border-[var(--color-accent-200)]"
           style={{ ...c.pos, ...c.border, opacity: 0.85 }}
         />
       ))}
@@ -148,7 +154,10 @@ const CORNERS = [
 /** Без фото сканувати нічого — тож макроси «кружляють» навколо тарілки. */
 function OrbitStage() {
   return (
-    <div className="relative mx-auto h-[120px] w-[120px]">
+    <div
+      className="relative mx-auto"
+      style={{ height: STAGE, width: STAGE }}
+    >
       <div
         className="absolute inset-0 rounded-full"
         style={{
@@ -163,18 +172,18 @@ function OrbitStage() {
           style={{ animationDuration: `${m.dur}s`, animationDelay: `${-i * 0.9}s` }}
         >
           <span
-            className="absolute left-1/2 top-1/2 block h-2 w-2 rounded-full"
+            className="absolute left-1/2 top-1/2 block h-2.5 w-2.5 rounded-full"
             style={{
               background: m.color,
               transform: `translate(-50%, -50%) translateY(-${m.radius}px)`,
-              boxShadow: `0 0 8px ${m.color}`,
+              boxShadow: `0 0 10px ${m.color}`,
             }}
           />
         </div>
       ))}
       <div className="absolute inset-0 flex items-center justify-center">
         <UtensilsCrossed
-          size={30}
+          size={46}
           className="spark-pulse text-[var(--color-accent-200)]"
         />
       </div>

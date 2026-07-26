@@ -505,7 +505,7 @@ body {
 .ribbon {
   position: relative;
   overflow: hidden;
-  height: 3px;
+  height: 4px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-text) 7%, transparent);
 }
@@ -572,18 +572,22 @@ body {
   animation: dot-hop 1.1s ease-in-out infinite;
 }
 
-/* Імпульс по лінії пульсу — стан «рахуємо спалені ккал» */
+/*
+ * Імпульс по лінії пульсу — стан «рахуємо спалені ккал».
+ * Числа привʼязані до довжини PULSE_PATH (~633 одиниці viewBox):
+ * світиться сегмент 150, решта 640 — темна пауза між проходами.
+ */
 @keyframes pulse-travel {
   from {
-    stroke-dashoffset: 360;
+    stroke-dashoffset: 640;
   }
   to {
-    stroke-dashoffset: -100;
+    stroke-dashoffset: -150;
   }
 }
 .pulse-travel {
-  stroke-dasharray: 100 360;
-  animation: pulse-travel 1.9s linear infinite;
+  stroke-dasharray: 150 640;
+  animation: pulse-travel 2.1s linear infinite;
 }
 
 /* Аура генерації аватара */
