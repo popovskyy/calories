@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
-import { Deer } from "@/components/ambient/Deer";
+import { CampDeer } from "@/components/ambient/CampDeer";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { playLogToss } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
@@ -90,21 +90,8 @@ export function Campfire({ consumed, target }: HeroProps) {
         }}
       />
 
-      {/* олень біля вогнища — за полум'ям. `both` тримає його завмерлим
-          біля багаття протягом .56s, поки летить дровина, і аж тоді він тікає */}
-      <div
-        key={`deer-${ritualKey}`}
-        className="ambient-mob pointer-events-none absolute bottom-[26px] left-10 z-[1]"
-        style={{
-          animation: active
-            ? "deerFlee 1.5s ease-out .56s both"
-            : "deerCamp 19s linear infinite",
-        }}
-      >
-        <div style={{ animation: `deerStalk ${active ? "0.35s" : "1.4s"} ease-in-out infinite` }}>
-          <Deer variant="camp" width={58} height={82} scared={active} />
-        </div>
-      </div>
+      {/* олень біля вогнища — FSM у CampDeer (патруль + втеча без remount) */}
+      <CampDeer ritualActive={active} />
 
       {/* вогонь + дрова + каміння: єдиний стек, що спалахує на .56s */}
       <div

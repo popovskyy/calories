@@ -2,12 +2,12 @@
 
 /**
  * Олень із «99 ночей у лісі» — гуманоїдний силует, viewBox 120×170.
- * Живе у двох масштабах: фоновий (світліший, ходить через увесь екран) і
- * «біля вогнища» (темніший, стоїть за полум'ям і світиться очима).
  *
- * Кожна анімована група має клас .deer-part із `transform-box: fill-box` —
- * без нього відсотковий transform-origin рахується від усього SVG-в'юпорта.
+ * gait керує «розумом»: idle не марширує на місці (це виглядало тупо),
+ * walk — спокійна хода, run — втеча від дровини.
  */
+
+export type DeerGait = "idle" | "walk" | "run";
 
 interface Palette {
   legFront: string;
@@ -52,14 +52,24 @@ interface DeerProps {
   variant: "field" | "camp";
   width: number;
   height: number;
-  /** Дровина полетіла у вогонь: крок частішає, очі червоніють */
+  /** Дровина у вогнищі — очі червоніють */
   scared?: boolean;
+  /** Локомоція: idle = дихає/дивиться, walk/run = ноги */
+  gait?: DeerGait;
 }
 
-export function Deer({ variant, width, height, scared = false }: DeerProps) {
+export function Deer({
+  variant,
+  width,
+  height,
+  scared = false,
+  gait = "walk",
+}: DeerProps) {
   const p = variant === "camp" ? CAMP : FIELD;
-  const pace = variant === "camp" ? 1.4 : 1.5;
-  const scan = variant === "camp" ? 5 : 6;
+  const moving = gait === "walk" || gait === "run";
+  /* run — швидкий цикл ніг; walk — повільніший, з м’яким easing у CSS */
+  const pace = gait === "run" ? 0.28 : gait === "walk" ? 1.15 : 0;
+  const scan = gait === "idle" ? 8.2 : gait === "walk" ? 6.2 : 0;
 
   return (
     <svg
@@ -68,13 +78,24 @@ export function Deer({ variant, width, height, scared = false }: DeerProps) {
       viewBox="0 0 120 170"
       aria-hidden="true"
       className={scared ? "deer-scared" : undefined}
+      style={
+        gait === "idle"
+          ? { animation: "deerBreathe 3.6s ease-in-out infinite" }
+          : gait === "run"
+            ? { animation: "deerStalk 0.22s linear infinite" }
+            : { animation: "deerStalk 1.1s ease-in-out infinite" }
+      }
     >
       <g
         className="deer-part"
-        style={{
-          transformOrigin: "50% 90%",
-          animation: `legFwd ${pace}s ease-in-out infinite`,
-        }}
+        style={
+          moving
+            ? {
+                transformOrigin: "50% 90%",
+                animation: `legFwd ${pace}s ${gait === "run" ? "linear" : "cubic-bezier(0.45, 0.05, 0.55, 0.95)"} infinite`,
+              }
+            : { transformOrigin: "50% 90%" }
+        }
       >
         <path d="M50 132h11l-1 26-4 8-6-2 3-8-3-24Z" fill={p.legFront} />
         <path
@@ -86,10 +107,14 @@ export function Deer({ variant, width, height, scared = false }: DeerProps) {
       </g>
       <g
         className="deer-part"
-        style={{
-          transformOrigin: "50% 90%",
-          animation: `legBack ${pace}s ease-in-out infinite`,
-        }}
+        style={
+          moving
+            ? {
+                transformOrigin: "50% 90%",
+                animation: `legBack ${pace}s ${gait === "run" ? "linear" : "cubic-bezier(0.45, 0.05, 0.55, 0.95)"} infinite`,
+              }
+            : { transformOrigin: "50% 90%" }
+        }
       >
         <path d="M64 132h11l-3 26 3 8-6 2-4-8-1-28Z" fill={p.legBack} />
         <path
@@ -100,7 +125,6 @@ export function Deer({ variant, width, height, scared = false }: DeerProps) {
         />
       </g>
 
-      {/* тулуб із обдертим низом */}
       <path
         d="M42 100q18-7 36 0l5 22-4 16-4-11-4 13-4-12-5 12-4-13-4 11-6-16 -2-22Z"
         fill={p.body}
@@ -108,10 +132,14 @@ export function Deer({ variant, width, height, scared = false }: DeerProps) {
 
       <g
         className="deer-part"
-        style={{
-          transformOrigin: "80% 8%",
-          animation: `armSway ${pace}s ease-in-out infinite`,
-        }}
+        style={
+          moving
+            ? {
+                transformOrigin: "80% 8%",
+                animation: `armSway ${pace}s ease-in-out infinite`,
+              }
+            : { transformOrigin: "80% 8%" }
+        }
       >
         <path
           d="M45 104q-13 13-15 32"
@@ -129,10 +157,14 @@ export function Deer({ variant, width, height, scared = false }: DeerProps) {
       </g>
       <g
         className="deer-part"
-        style={{
-          transformOrigin: "20% 8%",
-          animation: `armSway ${pace}s ease-in-out ${pace / 2}s infinite`,
-        }}
+        style={
+          moving
+            ? {
+                transformOrigin: "20% 8%",
+                animation: `armSway ${pace}s ease-in-out ${pace / 2}s infinite`,
+              }
+            : { transformOrigin: "20% 8%" }
+        }
       >
         <path
           d="M75 104q13 13 15 32"
@@ -151,10 +183,17 @@ export function Deer({ variant, width, height, scared = false }: DeerProps) {
 
       <g
         className="deer-part"
-        style={{
-          transformOrigin: "50% 78%",
-          animation: `headScan ${scan}s ease-in-out infinite`,
-        }}
+        style={
+          scan > 0
+            ? {
+                transformOrigin: "50% 78%",
+                animation: `headScan ${scan}s cubic-bezier(0.33, 1, 0.68, 1) infinite`,
+              }
+            : {
+                transformOrigin: "50% 78%",
+                transform: scared ? "rotate(6deg)" : "rotate(-2deg)",
+              }
+        }
       >
         <g stroke={p.antler} strokeWidth={p.antlerWidth} strokeLinecap="round" fill="none">
           <path d="M45 50C41 36 35 26 25 14" />
@@ -168,8 +207,13 @@ export function Deer({ variant, width, height, scared = false }: DeerProps) {
         <path d="M87 55q5-5 3-11q-6 3-7 10z" fill={p.ear} />
         <ellipse cx="60" cy="72" rx="27" ry="26" fill={p.head} />
         <path d="M50 88h20v10q0 9-10 9t-10-9z" fill={p.head} />
-        <g style={{ animation: `eyeFlare ${scan}s ease-in-out infinite` }}>
-          {/* .deer-eye — гачок для eyeScare: колір міняє CSS, не React */}
+        <g
+          style={
+            gait === "idle"
+              ? { animation: "eyeFlare 8s ease-in-out infinite" }
+              : undefined
+          }
+        >
           <circle className="deer-eye" cx="47" cy="68" r="12.5" fill={p.eye} />
           <circle className="deer-eye" cx="73" cy="68" r="12.5" fill={p.eye} />
           <circle cx="47" cy="68" r="5" fill="#0f0904" />

@@ -1202,21 +1202,26 @@ html[data-theme="minecraft"] .rounded-full {
   100% { transform: translate(-14px, -120px) scale(0.4); opacity: 0; }
 }
 @keyframes fog {
-  0% { transform: translateX(-12%); }
-  50% { transform: translateX(12%); }
-  100% { transform: translateX(-12%); }
+  0% { transform: translateX(-8%); opacity: 0.85; }
+  50% { transform: translateX(8%); opacity: 1; }
+  100% { transform: translateX(-8%); opacity: 0.85; }
 }
 @keyframes blinkEyes {
   0%,
-  92%,
-  100% { opacity: 0.85; }
-  95% { opacity: 0; }
+  90%,
+  100% { opacity: 0.75; }
+  93% { opacity: 0; }
+  96% { opacity: 0.75; }
 }
+/* Фоновий прохід: вхід → пауза (нюхає) → вихід. Ноги синхронить FieldDeer. */
 @keyframes deerWalk {
   0% { transform: translateX(-110px); opacity: 0; }
-  4% { opacity: 0.8; }
-  26% { opacity: 0.8; }
-  30% { transform: translateX(460px); opacity: 0; }
+  3% { opacity: 0.82; }
+  12% { transform: translateX(150px); opacity: 0.82; }
+  12.5%,
+  17.5% { transform: translateX(150px); opacity: 0.82; }
+  28% { transform: translateX(430px); opacity: 0.75; }
+  31% { transform: translateX(460px); opacity: 0; }
   100% { transform: translateX(460px); opacity: 0; }
 }
 @keyframes deerCamp {
@@ -1240,30 +1245,36 @@ html[data-theme="minecraft"] .rounded-full {
 @keyframes deerStalk {
   0%,
   100% { transform: translateY(0) rotate(0deg); }
-  22% { transform: translateY(-3px) rotate(-1.5deg); }
-  60% { transform: translateY(1px) rotate(1.5deg); }
+  22% { transform: translateY(-2px) rotate(-1deg); }
+  60% { transform: translateY(1px) rotate(1deg); }
+}
+/* Idle: ледь дихає — без ходи на місці */
+@keyframes deerBreathe {
+  0%,
+  100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-1.5px) scaleY(1.012); }
 }
 @keyframes headScan {
   0%,
-  100% { transform: rotate(-4deg); }
-  18% { transform: rotate(5deg); }
-  46% { transform: rotate(-6deg); }
-  72% { transform: rotate(2deg); }
+  100% { transform: rotate(-3deg); }
+  22% { transform: rotate(4deg); }
+  55% { transform: rotate(-5deg); }
+  78% { transform: rotate(2deg); }
 }
 @keyframes legFwd {
   0%,
-  100% { transform: rotate(-15deg); }
-  50% { transform: rotate(17deg); }
+  100% { transform: rotate(-11deg); }
+  50% { transform: rotate(13deg); }
 }
 @keyframes legBack {
   0%,
-  100% { transform: rotate(17deg); }
-  50% { transform: rotate(-15deg); }
+  100% { transform: rotate(13deg); }
+  50% { transform: rotate(-11deg); }
 }
 @keyframes armSway {
   0%,
-  100% { transform: rotate(7deg); }
-  50% { transform: rotate(-8deg); }
+  100% { transform: rotate(5deg); }
+  50% { transform: rotate(-6deg); }
 }
 @keyframes eyeFlare {
   0%,
