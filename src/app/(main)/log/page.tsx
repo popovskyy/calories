@@ -13,6 +13,7 @@ import { EditMealDialog } from "@/components/EditMealDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { EmberFlash } from "@/components/hero/EmberFlash";
+import { BeamFlash } from "@/components/hero/BeamFlash";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import {
@@ -107,6 +108,7 @@ function LogPageInner() {
 
       <section className="mcard p-[15px_16px]">
         <EmberFlash />
+        <BeamFlash />
         <div className="mb-2.5 flex items-center justify-between">
           <span className="text-[15px] text-[var(--color-muted)]">Баланс за день</span>
           <span

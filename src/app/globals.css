@@ -473,6 +473,84 @@ html[data-theme="lighthouse"] .nav-tab[data-active="true"] {
 html[data-theme="lighthouse"] .coin-chip {
   font-family: var(--font-display);
 }
+/* Chrome-паритет із forest/minecraft: латунь і сіль замість голого дефолту */
+html[data-theme="lighthouse"] .btn-ghost {
+  background: #15202c;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+}
+html[data-theme="lighthouse"] .icon-btn {
+  background: #15202c;
+  border: 1px solid var(--color-border-strong);
+  color: #9aafc0;
+}
+html[data-theme="lighthouse"] .tag {
+  font-weight: 800;
+}
+html[data-theme="lighthouse"] .tag-accent {
+  background: var(--color-accent-300);
+  color: #1a1208;
+}
+html[data-theme="lighthouse"] .nav-bar {
+  border-top-color: #2a3848;
+  box-shadow: 0 -8px 24px rgba(255, 179, 92, 0.05);
+}
+html[data-theme="lighthouse"] .fab-wrap {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
+}
+
+/* Ритуал маяка: оберт променя, спалах лампи, корабель, кіт доглядача */
+@keyframes lhBeamSweep {
+  0% { transform: rotate(-72deg); opacity: 0; }
+  12% { opacity: 1; }
+  55% { transform: rotate(40deg); opacity: 1; }
+  100% { transform: rotate(72deg); opacity: 0; }
+}
+@keyframes lhLampFlare {
+  0%, 100% { filter: brightness(1); }
+  18% { filter: brightness(1.9); }
+  55% { filter: brightness(1.35); }
+}
+@keyframes lhShipReveal {
+  0%, 28% { opacity: 0; }
+  42% { opacity: 0.95; }
+  70% { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+@keyframes lhCatWatch {
+  0%, 18% { transform: scaleX(1); }
+  32%, 78% { transform: scaleX(-1); }
+  100% { transform: scaleX(1); }
+}
+@keyframes lhCatTail {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(14deg); }
+}
+@keyframes lhCatBlink {
+  0%, 91%, 100% { opacity: 1; }
+  94% { opacity: 0; }
+}
+.lh-cat { transform-box: fill-box; transform-origin: center; }
+.lh-cat-tail {
+  transform-box: fill-box;
+  transform-origin: left bottom;
+  animation: lhCatTail 3.6s ease-in-out infinite;
+}
+.lh-cat-eye { animation: lhCatBlink 5s ease-in-out infinite; }
+
+/* Наступний вузол хроніки ледь дихає — тягне погляд, але не блимає */
+@keyframes epicNextPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 45%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 12%, transparent); }
+}
+.epic-next-dot { animation: epicNextPulse 2.8s ease-in-out infinite; }
+
+/* Перша поява вечірнього розбору: обвідка сама згасає, без таймера в JS */
+@keyframes adviceFresh {
+  0%, 60% { box-shadow: 0 0 0 1px var(--color-accent); }
+  100% { box-shadow: 0 0 0 1px transparent; }
+}
+.advice-fresh { animation: adviceFresh 3.4s ease-out forwards; }
 html[data-theme="lighthouse"] .fab-btn {
   background: linear-gradient(#ffc878, #e09a45);
   color: #1a1208;

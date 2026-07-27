@@ -219,6 +219,18 @@ export interface NotificationDTO {
   createdAt: string;
 }
 
+/** Вечірній розбір раціону: або порада, або причина, чому її ще нема. */
+export type AdviceResponse =
+  | { ready: false; reason: "early" | "not_enough" }
+  | {
+      ready: true;
+      date: string;
+      headline: string;
+      body: string;
+      tip: string;
+      mood: "good" | "mixed" | "over";
+    };
+
 export interface ForecastResponse {
   configured: boolean;
   startWeight: number | null;
@@ -261,9 +273,22 @@ export interface ArenaEntry {
   stage: number;
 }
 
+/** Рядок вчорашнього подіуму: хто виграв і скільки монет отримав. */
+export interface ArenaYesterdayEntry {
+  rank: number;
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  score: number;
+  coins: number;
+  isMe: boolean;
+}
+
 export interface ArenaResponse {
   date: string;
   entries: ArenaEntry[];
+  /** Топ-3 закритого вчорашнього дня; порожньо, якщо ніхто не вів журнал. */
+  yesterday: ArenaYesterdayEntry[];
 }
 
 export interface StreakResponse {

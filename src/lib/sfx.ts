@@ -139,6 +139,47 @@ export function playFinisher(pack = "default") {
 }
 
 /**
+ * Фогхорн маяка — голос теми «Маяк» на ритуалі перерахунку.
+ *
+ * Низький синус із повільним підйомом і другою гармонікою: не «гудок у
+ * вуха», а далекий сигнал з-за туману. Рецепт фіксований: це голос маяка,
+ * а не тембр саундпака (саундпак чутно у finisher).
+ */
+export function playFoghorn(pack = "default") {
+  if (prefersReducedMotion()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  // Пакет впливає лише на гучність — «кіно» звучить трохи глибше.
+  const gainScale = pack === "cinema" ? 1.25 : 1;
+
+  try {
+    const now = ac.currentTime;
+    const voices: { hz: number; gain: number }[] = [
+      { hz: 68, gain: 0.16 * gainScale },
+      { hz: 136, gain: 0.05 * gainScale },
+    ];
+    for (const v of voices) {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(v.hz, now);
+      // ледь помітний під'їзд знизу — як розгін ревуна
+      osc.frequency.exponentialRampToValueAtTime(v.hz * 1.04, now + 0.35);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(v.gain, now + 0.4);
+      gain.gain.setValueAtTime(v.gain, now + 0.9);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.7);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + 1.75);
+    }
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
  * Дровина летить у вогонь: whoosh + тріск. Тембр залежить від саундпака.
  *
  * Окремого вимикача звуку немає: він був частиною теми «ліс», але висів у

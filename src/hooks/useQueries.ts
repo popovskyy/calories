@@ -21,6 +21,7 @@ import {
   equipTheme,
   generateAvatar,
   getActivities,
+  getAdvice,
   getArena,
   getDailyCards,
   getDashboard,
@@ -187,6 +188,8 @@ export function useSaveMeal() {
       qc.invalidateQueries({ queryKey: ["daily-cards"] });
       qc.invalidateQueries({ queryKey: ["epics"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
+      // Нова вечеря змінює розбір дня — сервер перегенерує його за mealCount.
+      qc.invalidateQueries({ queryKey: ["advice"] });
     },
   });
 }
@@ -397,6 +400,19 @@ export function useForecast() {
     queryKey: ["forecast"],
     queryFn: getForecast,
     staleTime: 60_000,
+  });
+}
+
+/**
+ * Вечірній розбір раціону. Сервер сам вирішує, чи вже час (20:00 Kyiv) —
+ * тут лише довгий staleTime, бо порада за день незмінна.
+ */
+export function useAdvice() {
+  return useQuery({
+    queryKey: ["advice"],
+    queryFn: getAdvice,
+    staleTime: 10 * 60_000,
+    retry: false,
   });
 }
 

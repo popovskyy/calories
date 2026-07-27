@@ -57,6 +57,31 @@ model User {
   shields          StreakShield[]
   weights          WeightLog[]
   epics            UserEpic[]
+  advices          DailyAdvice[]
+}
+
+/**
+ * Вечірній розбір раціону від ШІ — одна порада на день на користувача.
+ *
+ * Кешуємо в БД, бо генерація коштує виклику до Gemini: без кешу кожне
+ * відкриття Огляду після 20:00 било б у платний API, а порада за той самий
+ * день усе одно та сама.
+ */
+model DailyAdvice {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String // YYYY-MM-DD
+  headline  String // короткий вердикт дня
+  body      String // 1–2 речення розбору
+  tip       String // що зробити завтра
+  mood      String // good | mixed | over
+  /** Скільки записів їжі було на момент генерації — щоб оновити після нової вечері. */
+  mealCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }
 
 /** Тижневі квести (Пн–Нд, Kyiv). Адмін може правити або додавати свої. */

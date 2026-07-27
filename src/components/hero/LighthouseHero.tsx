@@ -3,10 +3,18 @@
 import { useEffect } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import type { HeroProps } from "@/components/hero/CalorieHero";
+import { playFoghorn } from "@/lib/sfx";
+import { useAppStore } from "@/store/useAppStore";
+import { useCurrentUser } from "@/hooks/useQueries";
 
 /**
  * Маяк: дуга променя = прогрес до цілі.
  * Перебір — «перегрів» ліхтаря (тепліший акцент).
+ *
+ * Ритуал перерахунку (той самий сигнал, що жбурляє дровину в Forest):
+ * промінь робить один швидкий повний оберт, на воді зблискує корабель,
+ * лампа спалахує, здалеку — фогхорн. Кіт доглядача на галереї проводжає
+ * промінь поглядом.
  */
 export function LighthouseHero({ consumed, target, frame }: HeroProps) {
   const reduce = useReducedMotion();
@@ -16,6 +24,16 @@ export function LighthouseHero({ consumed, target, frame }: HeroProps) {
   const remaining = target - consumed;
   const over = remaining < 0;
   const inTarget = !over && Math.abs(remaining) <= safeTarget * 0.05 && consumed > 0;
+
+  const recalc = useAppStore((s) => s.recalc);
+  const consumeRecalc = useAppStore((s) => s.consumeRecalc);
+  const { user } = useCurrentUser();
+  const pack = user?.soundpack ?? "default";
+
+  // Як у Campfire: таймлайн — CSS forwards з key-рестартом, React лише
+  // грає звук і гасить сигнал у кінці.
+  const ritualActive = recalc !== null;
+  const ritualKey = recalc?.id ?? "idle";
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -31,6 +49,13 @@ export function LighthouseHero({ consumed, target, frame }: HeroProps) {
       a2.stop();
     };
   }, [consumed, progress, count, sweep]);
+
+  useEffect(() => {
+    if (!recalc) return;
+    playFoghorn(pack);
+    const t = window.setTimeout(consumeRecalc, 2600);
+    return () => window.clearTimeout(t);
+  }, [recalc, consumeRecalc, pack]);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[52px]" : "text-[62px]";
@@ -64,11 +89,58 @@ export function LighthouseHero({ consumed, target, frame }: HeroProps) {
               : "0 0 14px rgba(255,179,92,.4)",
             animation: reduce
               ? undefined
-              : inTarget
-                ? "lighthousePulse 2.4s ease-in-out infinite"
-                : undefined,
+              : ritualActive
+                ? "lhLampFlare 1.7s ease-out"
+                : inTarget
+                  ? "lighthousePulse 2.4s ease-in-out infinite"
+                  : undefined,
           }}
         />
+
+        {/* Кіт доглядача: сидить на галереї, махає хвостом, кліпає.
+            На ритуалі повертається за променем (scaleX-фліп). */}
+        <svg
+          key={`cat-${ritualKey}`}
+          aria-hidden
+          viewBox="0 0 24 18"
+          className="lh-cat absolute -top-[15px] left-[-12px] h-[18px] w-[24px]"
+          style={{
+            animation:
+              ritualActive && !reduce ? "lhCatWatch 2.4s ease-in-out forwards" : undefined,
+          }}
+        >
+          <ellipse cx="13" cy="14" rx="7" ry="4" fill="#0b1016"/>
+          <circle cx="7" cy="9" r="4.5" fill="#0b1016"/>
+          <path d="M3.5 6.5 L4.5 2.5 L7 5.5 Z" fill="#0b1016"/>
+          <path d="M10.5 6.5 L9.5 2.5 L7.5 5.5 Z" fill="#0b1016"/>
+          <path
+            className="lh-cat-tail"
+            d="M19 14 q4 -1 3.5 -6"
+            stroke="#0b1016"
+            strokeWidth="2"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <circle className="lh-cat-eye" cx="5.4" cy="9" r=".9" fill="#ffd58a"/>
+          <circle className="lh-cat-eye" cx="8.6" cy="9" r=".9" fill="#ffd58a"/>
+        </svg>
+
+        {/* Ритуальний оберт променя */}
+        {ritualActive && !reduce ? (
+          <div
+            key={`sweep-${ritualKey}`}
+            className="absolute left-1/2 top-2 origin-top"
+            style={{
+              width: 3,
+              height: 172,
+              marginLeft: -1.5,
+              background:
+                "linear-gradient(180deg, rgba(255,224,168,.95), rgba(255,179,92,0))",
+              animation: "lhBeamSweep 1.7s cubic-bezier(.22,1,.36,1) forwards",
+            }}
+          />
+        ) : null}
+
         <motion.div
           className="absolute left-1/2 top-2 origin-top"
           style={{
@@ -92,6 +164,28 @@ export function LighthouseHero({ consumed, target, frame }: HeroProps) {
           }}
         />
       </div>
+
+      {/* Корабель, який промінь вихоплює з темряви на ритуалі */}
+      {ritualActive && !reduce ? (
+        <div
+          key={`ship-${ritualKey}`}
+          className="pointer-events-none absolute bottom-[30px] right-[36px] h-[16px] w-[34px]"
+          style={{ animation: "lhShipReveal 2.2s ease-out forwards", opacity: 0 }}
+        >
+          <div
+            className="absolute bottom-0 h-[7px] w-full"
+            style={{
+              background: "#0b1016",
+              clipPath: "polygon(6% 0, 94% 0, 78% 100%, 22% 100%)",
+            }}
+          />
+          <div className="absolute bottom-[6px] left-[46%] h-[10px] w-[2px] bg-[#0b1016]" />
+          <div
+            className="absolute bottom-[10px] left-[30%] h-[2px] w-[5px] rounded-full"
+            style={{ background: "#ffd58a", boxShadow: "0 0 6px #ffb35c" }}
+          />
+        </div>
+      ) : null}
 
       <div className="pointer-events-none absolute inset-x-0 top-3 z-[2] flex flex-col items-center gap-0.5">
         <motion.div

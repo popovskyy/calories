@@ -1,5 +1,6 @@
 import type {
   ActivityDTO,
+  AdviceResponse,
   AnalyzeActivityResult,
   AnalyzeResult,
   ArenaResponse,
@@ -328,6 +329,9 @@ export const getWallet = (limit = 60) =>
 
 // --- Forecast ---
 export const getForecast = () => req<ForecastResponse>("/api/stats/forecast");
+
+// --- Вечірній розбір дня ---
+export const getAdvice = () => req<AdviceResponse>("/api/advice");
 
 // --- Notifications ---
 export interface NotificationsResponse {

@@ -6,15 +6,17 @@ import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
-import { useArena, useNudge } from "@/hooks/useQueries";
+import { CoinIcon } from "@/components/icons/CurrencyIcons";
+import { useArena, useCurrentUser, useNudge } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { humanDate } from "@/lib/date";
 import { cn } from "@/lib/cn";
-import type { ArenaEntry } from "@/lib/types";
+import type { ArenaEntry, ArenaYesterdayEntry } from "@/lib/types";
 
 export default function ArenaPage() {
   const mounted = useMounted();
   const arena = useArena();
+  const { user } = useCurrentUser();
 
   if (mounted && arena.isError) {
     return (
@@ -42,7 +44,9 @@ export default function ArenaPage() {
   const rest = entries.slice(3).filter((e) => !e.isMe);
 
   const invite = async () => {
-    const url = typeof window !== "undefined" ? window.location.origin : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    // ?ref — легка атрибуція запрошення, без повної referral-системи.
+    const url = user ? `${origin}/login?ref=${user.id}` : origin;
     const text = "Хто ближче до своєї норми? Заходь на Арену.";
     try {
       if (navigator.share) {
@@ -124,6 +128,8 @@ export default function ArenaPage() {
               </ul>
             </div>
           ) : null}
+
+          <Yesterday entries={arena.data?.yesterday ?? []} />
 
           {entries.length < 3 ? (
             <button
@@ -234,6 +240,46 @@ function NudgeButton({ entry, size = 32 }: { entry: ArenaEntry; size?: number })
     >
       <BellRing size={Math.round(size / 2)} />
     </button>
+  );
+}
+
+/** Вчорашній рахунок: без пам'яті щоденне змагання щоранку обнуляється в очах гравця. */
+function Yesterday({ entries }: { entries: ArenaYesterdayEntry[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <section className="mcard flex flex-col gap-2 p-[18px]">
+      <span className="lbl">Вчора</span>
+      <ul className="flex flex-col gap-1.5">
+        {entries.map((e) => (
+          <li
+            key={e.userId}
+            className={cn(
+              "flex items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5",
+              e.isMe && "bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]",
+            )}
+          >
+            <span className="w-5 text-[14px] font-semibold tabular-nums text-[var(--color-muted2)]">
+              {e.rank === 1 ? "🥇" : e.rank === 2 ? "🥈" : "🥉"}
+            </span>
+            <Avatar name={e.name} avatarUrl={e.avatarUrl} size={28} />
+            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-[var(--color-text)]">
+              {e.name}
+              {e.isMe ? (
+                <span className="ml-1 text-[12px] text-[var(--color-accent)]">ви</span>
+              ) : null}
+            </span>
+            <span className="text-[12px] tabular-nums text-[var(--color-muted3)]">
+              {e.score} очк.
+            </span>
+            {e.coins > 0 ? (
+              <span className="flex items-center gap-0.5 text-[13px] font-semibold tabular-nums text-[var(--color-accent)]">
+                <CoinIcon size={13} />+{e.coins}
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
