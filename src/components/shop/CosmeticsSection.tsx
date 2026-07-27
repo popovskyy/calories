@@ -8,6 +8,9 @@ import type { CosmeticKind } from "@/lib/api";
 import type { ShopCosmetic, ShopResponse } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
+/** Фінішер і звук завжди «вдягнені» — зняти не можна, лише замінити іншим. */
+const CAN_UNEQUIP: ReadonlySet<CosmeticKind> = new Set(["frame", "title"]);
+
 const GROUPS: { kind: CosmeticKind; title: string; hint: string }[] = [
   {
     kind: "finisher",
@@ -19,13 +22,13 @@ const GROUPS: { kind: CosmeticKind; title: string; hint: string }[] = [
     kind: "title",
     title: "Титули",
     hint:
-      "Невеликий підпис під твоїм ніком в Арені — його бачать усі гравці. Активний лише один.",
+      "Підпис під ніком в Арені. Активний лише один — натисни «Зняти», щоб прибрати.",
   },
   {
     kind: "frame",
     title: "Рамки",
     hint:
-      "Кольорове кільце навколо твого аватара. Рамка «Неон» також підсвічує шкалу прогресу. Видно в Огляді, Арені, Профілі.",
+      "Кільце навколо аватара; «Неон» також підсвічує шкалу ккал. Натисни «Зняти» на активній, щоб повернутись без рамки.",
   },
   {
     kind: "soundpack",
@@ -59,6 +62,7 @@ export function CosmeticsSection({ shop }: { shop: ShopResponse }) {
 function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
   const buy = useBuyCosmetic();
   const equip = useEquipCosmetic();
+  const canUnequip = CAN_UNEQUIP.has(c.kind);
 
   const onBuy = () =>
     buy.mutate(
@@ -74,6 +78,15 @@ function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
       { kind: c.kind, id: c.id },
       {
         onSuccess: () => toast.success(`Вдягнено: ${c.nameUk}`),
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
+      },
+    );
+
+  const onUnequip = () =>
+    equip.mutate(
+      { kind: c.kind, id: null },
+      {
+        onSuccess: () => toast.success(`Знято: ${c.nameUk}`),
         onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
       },
     );
@@ -111,11 +124,24 @@ function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
         і не коштує економіці жодної монети.
       */}
       {c.equipped ? (
-        <div className="btn btn-primary pointer-events-none mt-auto w-full cursor-default py-2 text-[13px]">
-          <Check size={14} strokeWidth={2.5} /> Активно
-        </div>
+        canUnequip ? (
+          <button
+            type="button"
+            className="btn btn-primary mt-auto w-full py-2 text-[13px]"
+            disabled={equip.isPending}
+            onClick={onUnequip}
+            aria-label={`Зняти ${c.nameUk}`}
+          >
+            {equip.isPending ? "…" : "Зняти"}
+          </button>
+        ) : (
+          <div className="btn btn-primary pointer-events-none mt-auto w-full cursor-default py-2 text-[13px]">
+            <Check size={14} strokeWidth={2.5} /> Активно
+          </div>
+        )
       ) : c.owned ? (
         <button
+          type="button"
           className="btn mt-auto w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] py-2 text-[13px] font-bold text-[var(--color-accent-100)]"
           disabled={equip.isPending}
           onClick={onEquip}
@@ -128,6 +154,7 @@ function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
         </div>
       ) : (
         <button
+          type="button"
           className={cn(
             "btn btn-primary mt-auto flex w-full items-center justify-center gap-1 py-2 text-[13px]",
             coins < c.price && "opacity-60",
