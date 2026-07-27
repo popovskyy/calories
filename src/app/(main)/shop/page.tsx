@@ -29,12 +29,18 @@ type ConfirmItem =
   | { kind: "skin"; item: ShopSkin }
   | { kind: "theme"; item: ShopTheme };
 
-type Tab = "stall" | "gear" | "look" | "evolution" | "wallet";
+type Tab = "look" | "stall" | "gear" | "status" | "evolution" | "wallet";
 
+/**
+ * Порядок не випадковий: скіни й теми — те, по що приходять у магазин,
+ * тому вони перша й дефолтна вкладка. Прилавок — гачок понеділка, але
+ * ховати за ним основний асортимент не можна.
+ */
 const TABS: { id: Tab; label: string }[] = [
+  { id: "look", label: "Скіни й теми" },
   { id: "stall", label: "Прилавок" },
   { id: "gear", label: "Спорядження" },
-  { id: "look", label: "Вигляд" },
+  { id: "status", label: "Статус" },
   { id: "evolution", label: "Еволюція" },
   { id: "wallet", label: "Гаманець" },
 ];
@@ -48,7 +54,7 @@ export default function ShopPage() {
   const buyTheme = useBuyTheme();
   const equipTheme = useEquipTheme();
   const [confirm, setConfirm] = useState<ConfirmItem | null>(null);
-  const [tab, setTab] = useState<Tab>("stall");
+  const [tab, setTab] = useState<Tab>("look");
 
   const coins = user?.coins ?? shop.data?.coins ?? 0;
   const skins = shop.data?.skins ?? [];
@@ -126,15 +132,19 @@ export default function ShopPage() {
         </div>
       ) : shop.data ? (
         <>
-          {/* Вкладки: плаский список із десятків карток нечитабельний */}
-          <nav className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
+          {/*
+            Вкладки переносяться, а не прокручуються: за горизонтальним
+            скролом половина розділів була невидима, і магазин здавався
+            порожнім — саме так загубились скіни й теми.
+          */}
+          <nav className="flex flex-wrap gap-1.5">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "shrink-0 rounded-[var(--radius-pill)] border px-3 py-1.5 text-[13px] font-semibold transition-colors",
+                  "rounded-[var(--radius-pill)] border px-3 py-1.5 text-[13px] font-semibold transition-colors",
                   tab === t.id
                     ? "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[var(--color-text)]"
                     : "border-[var(--color-divider)] text-[var(--color-muted3)]",
@@ -188,10 +198,10 @@ export default function ShopPage() {
                 onBuy={() => {}}
                 equipping={equipSkin.isPending ? equipSkin.variables : null}
               />
-
-              <CosmeticsSection shop={shop.data} />
             </>
           ) : null}
+
+          {tab === "status" ? <CosmeticsSection shop={shop.data} /> : null}
         </>
       ) : null}
 
