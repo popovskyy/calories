@@ -18,7 +18,8 @@ import { cn } from "@/lib/cn";
 
 /**
  * Дуель тижня — хто більше днів у ±5%.
- * UI свідомо простий: ставка → друг → виклик. Без кастомних інпутів.
+ * Поки чекаємо відповіді суперника, показуємо лише тихий рядок —
+ * велика картка не перекриває таблицю учасників.
  */
 export function DuelCard() {
   const { user } = useCurrentUser();
@@ -63,6 +64,22 @@ export function DuelCard() {
   const active = duels.filter((d) => d.status === "pending" || d.status === "accepted");
   const settled = duels.filter((d) => d.status === "settled");
 
+  const waitingThem = active.filter((d) => d.status === "pending" && !d.awaitingMe);
+  const needsAction = active.filter((d) => d.awaitingMe || d.status === "accepted");
+  /** Лише «чекаємо відповіді» — без великої картки, щоб не заважати арені. */
+  const onlyWaiting = waitingThem.length > 0 && needsAction.length === 0;
+
+  if (onlyWaiting) {
+    const names = waitingThem
+      .map((d) => (d.isMine ? d.opponentName : d.challengerName))
+      .join(", ");
+    return (
+      <p className="px-1 text-[12px] leading-snug text-[var(--color-muted3)]">
+        Виклик надіслано · чекаємо відповіді: {names}
+      </p>
+    );
+  }
+
   return (
     <section className="mcard flex flex-col gap-3 p-[18px]">
       <div className="flex items-center gap-2">
@@ -70,12 +87,15 @@ export function DuelCard() {
         <span className="lbl">Дуель</span>
       </div>
 
-      <p className="text-[13px] leading-snug text-[var(--color-muted2)]">
-        Хто за тиждень набере <strong className="text-[var(--color-text)]">більше днів у ±5%</strong>{" "}
-        — перемагає. Ставки знімаються при прийнятті; переможець забирає банк.
-      </p>
+      {active.length === 0 ? (
+        <p className="text-[13px] leading-snug text-[var(--color-muted2)]">
+          Хто за тиждень набере{" "}
+          <strong className="text-[var(--color-text)]">більше днів у ±5%</strong> —
+          перемагає. Ставки знімаються при прийнятті; переможець забирає банк.
+        </p>
+      ) : null}
 
-      {active.map((d) => (
+      {needsAction.map((d) => (
         <DuelRow
           key={d.id}
           duel={d}
@@ -83,6 +103,15 @@ export function DuelCard() {
           pending={respond.isPending}
         />
       ))}
+
+      {waitingThem.length > 0 ? (
+        <p className="text-[12px] text-[var(--color-muted3)]">
+          Ще чекаємо:{" "}
+          {waitingThem
+            .map((d) => (d.isMine ? d.opponentName : d.challengerName))
+            .join(", ")}
+        </p>
+      ) : null}
 
       {active.length === 0 ? (
         rivals.length === 0 ? (
@@ -169,9 +198,9 @@ export function DuelCard() {
         )
       ) : null}
 
-      <ReliefCard />
+      {active.length === 0 ? <ReliefCard /> : null}
 
-      {settled.length > 0 ? (
+      {settled.length > 0 && active.length === 0 ? (
         <div className="flex flex-col gap-1 border-t border-[var(--color-divider)] pt-2">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-muted3)]">
             Минулі
@@ -266,7 +295,7 @@ function DuelRow({
             Днів у ±5% цього тижня · оновлюється щодня
           </p>
         </>
-      ) : duel.awaitingMe ? (
+      ) : (
         <div className="mt-2 flex gap-2">
           <button
             type="button"
@@ -285,10 +314,6 @@ function DuelRow({
             Відхилити
           </button>
         </div>
-      ) : (
-        <p className="mt-1.5 text-[12px] text-[var(--color-muted3)]">
-          Чекаємо відповіді від {rival}
-        </p>
       )}
     </div>
   );

@@ -72,12 +72,13 @@ export default function ArenaPage() {
         </div>
       )}
 
-      <DuelCard />
-
       <p className="text-[14px] leading-relaxed text-[var(--color-muted3)]">
         У списку — усі зареєстровані. Хто ближчий до своєї норми сьогодні —
         вище. Без записів за день — в кінці.
       </p>
+
+      {/* Дуель нижче таблиці: очікування відповіді — лише тихий рядок. */}
+      <DuelCard />
     </>
   );
 }
