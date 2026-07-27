@@ -73,7 +73,7 @@ export const ITEMS: ItemDef[] = [
     id: DOUBLER_ITEM_ID,
     nameUk: "Подвоювач",
     description:
-      "Усі монети, зароблені сьогодні, множаться на 2. Вмикай зранку — діє до півночі.",
+      "Денні нагороди з сьогоднішньою датою (запис їжі, картки дня) множаться на 2. Вмикай зранку — діє до півночі. Квести, стрік і арена не подвоюються.",
     price: 80,
     icon: "⚡",
     maxStack: 5,
@@ -130,6 +130,15 @@ export const BOX_TABLE: BoxOutcome[] = [
   { weight: 12, coins: 0, itemId: SHIELD_ITEM_ID, labelUk: "Щит стріку" },
   { weight: 6, coins: 0, itemId: DOUBLER_ITEM_ID, labelUk: "Подвоювач" },
 ];
+
+/**
+ * Компенсація, коли зі скриньки випав предмет, а інвентар повний.
+ * Половина магазинної ціни — чесніше за фіксовані 40 (щит коштує 60).
+ */
+export function boxFullCompensation(itemId: string): number {
+  const price = getItem(itemId)?.price ?? 0;
+  return Math.max(20, Math.floor(price * 0.5));
+}
 
 /** Зважений випадковий вибір вмісту скриньки. */
 export function rollBox(rand: number = Math.random()): BoxOutcome {

@@ -33,12 +33,34 @@ interface Profile {
   cardRate: number;
   /** Скільки з 3 квестів тижня закриває. */
   questsDone: number;
-  /** Днів, коли бере приз арени (поле з 2 гравців). */
-  arenaWins: number;
+  /** Розмір поля арени (у приватній грі зазвичай 2–4). */
+  fieldSize: number;
+  /**
+   * Днів із призовим місцем. Для «Ідеального» — завжди 1-е;
+   * для решти — середній приз серед оплачуваних слотів.
+   */
+  arenaPrizeDays: number;
+  /** Чи брати приз 1-го місця (інакше — середнє по paidSlots). */
+  arenaAlwaysFirst: boolean;
   /** Частка виграних дуелей. */
   duelWinRate: number;
   /** Цільовий дохід із плану. */
   expected: number;
+}
+
+/**
+ * Як у rewards.ts: призових місць удвічі менше за поле.
+ * 2–3 гравці → 1 приз, 4–5 → 2, 6+ → 3.
+ */
+function paidSlots(fieldSize: number): number {
+  return Math.min(ARENA_PRIZES.length, Math.floor(fieldSize / 2));
+}
+
+/** Середній приз серед оплачуваних місць. */
+function avgPaidPrize(fieldSize: number): number {
+  const slots = paidSlots(fieldSize);
+  if (slots <= 0) return 0;
+  return ARENA_PRIZES.slice(0, slots).reduce((s, p) => s + p, 0) / slots;
 }
 
 const PROFILES: Profile[] = [
@@ -48,7 +70,9 @@ const PROFILES: Profile[] = [
     inTargetDays: 7,
     cardRate: 1,
     questsDone: 3,
-    arenaWins: 7,
+    fieldSize: 2,
+    arenaPrizeDays: 7,
+    arenaAlwaysFirst: true,
     duelWinRate: 0.75,
     expected: 930,
   },
@@ -58,7 +82,9 @@ const PROFILES: Profile[] = [
     inTargetDays: 5,
     cardRate: 0.7,
     questsDone: 2,
-    arenaWins: 3.5,
+    fieldSize: 4,
+    arenaPrizeDays: 3.5,
+    arenaAlwaysFirst: false,
     duelWinRate: 0.5,
     expected: 560,
   },
@@ -68,7 +94,9 @@ const PROFILES: Profile[] = [
     inTargetDays: 3,
     cardRate: 0.4,
     questsDone: 1,
-    arenaWins: 1,
+    fieldSize: 4,
+    arenaPrizeDays: 1,
+    arenaAlwaysFirst: false,
     duelWinRate: 0,
     expected: 250,
   },
@@ -85,7 +113,13 @@ function weeklyIncome(p: Profile) {
   // Дивіденд платиться раз на 7 днів серії — лише за безперервного логу.
   const streak = p.logDays === 7 ? STREAK_DIVIDEND_COINS : 0;
   const quests = p.questsDone * AVG_QUEST;
-  const arena = p.arenaWins * (ARENA_PRIZES[0] ?? 0);
+
+  const slots = paidSlots(p.fieldSize);
+  const prizePerDay = p.arenaAlwaysFirst
+    ? (ARENA_PRIZES[0] ?? 0)
+    : avgPaidPrize(p.fieldSize);
+  // Немає оплачуваних місць — арена нічого не дає (поле з 1 людини).
+  const arena = slots > 0 ? p.arenaPrizeDays * prizePerDay : 0;
 
   // Дуель НЕ друкує монети: обидва вносять ставку, переможець забирає банк.
   // Для економіки це перерозподіл, тож у середньому по гравцях внесок = 0,
@@ -94,7 +128,7 @@ function weeklyIncome(p: Profile) {
     p.duelWinRate > 0 ? p.duelWinRate * DUEL_STAKE * 2 - DUEL_STAKE : 0;
 
   const total = ritual + accuracy + cards + streak + quests + arena + duel;
-  return { ritual, accuracy, cards, streak, quests, arena, duel, total };
+  return { ritual, accuracy, cards, streak, quests, arena, duel, total, slots, prizePerDay };
 }
 
 console.log("═".repeat(72));
@@ -115,7 +149,8 @@ for (const p of PROFILES) {
       `серія ${w.streak.toFixed(0)}`,
   );
   console.log(
-    `  квести ${w.quests.toFixed(0)} · арена ${w.arena.toFixed(0)} · дуель ${w.duel.toFixed(0)}`,
+    `  квести ${w.quests.toFixed(0)} · арена ${w.arena.toFixed(0)} ` +
+      `(поле ${p.fieldSize}, ${w.slots} призів × ~${w.prizePerDay.toFixed(0)}) · дуель ${w.duel.toFixed(0)}`,
   );
   console.log(
     `  РАЗОМ ${w.total.toFixed(0)} / план ${p.expected} (${drift >= 0 ? "+" : ""}${drift.toFixed(0)}%)${flag}`,

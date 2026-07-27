@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildShop } from "@/lib/shop";
 import { getItem } from "@/lib/items";
-import { getWeeklyStock, slotQuantity } from "@/lib/shop-rotation";
+import {
+  getWeeklyStock,
+  slotQuantity,
+  stallPurchaseKey,
+} from "@/lib/shop-rotation";
 import { spendInTx } from "@/lib/reward-grant";
 import { weekStartYMD } from "@/lib/date";
 
@@ -36,8 +41,10 @@ export async function POST(req: NextRequest) {
   // інакше клієнт міг би оголосити будь-яку знижку.
   let price = def.price;
   let qty = 1;
+  let stallKey: string | null = null;
   if (parsed.data.fromStall) {
-    const slot = getWeeklyStock(weekStartYMD()).find(
+    const weekStart = weekStartYMD();
+    const slot = getWeeklyStock(weekStart).find(
       (s) => s.refId === def.id && s.kind !== "cosmetic",
     );
     if (!slot) {
@@ -48,10 +55,29 @@ export async function POST(req: NextRequest) {
     }
     price = slot.price;
     qty = slotQuantity(slot);
+    stallKey = stallPurchaseKey(weekStart, slot.kind, slot.refId);
   }
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Один слот прилавка = одна покупка на тиждень. RewardClaim з coins:0
+      // лише сторожить унікальність — монети списує spendInTx нижче.
+      if (stallKey) {
+        try {
+          await tx.rewardClaim.create({
+            data: { userId, key: stallKey, coins: 0 },
+          });
+        } catch (e) {
+          if (
+            e instanceof Prisma.PrismaClientKnownRequestError &&
+            e.code === "P2002"
+          ) {
+            throw Object.assign(new Error("STALL_BOUGHT"), { code: "STALL_BOUGHT" });
+          }
+          throw e;
+        }
+      }
+
       const current = await tx.userItem.findUnique({
         where: { userId_itemId: { userId, itemId: def.id } },
         select: { qty: true },
@@ -76,6 +102,12 @@ export async function POST(req: NextRequest) {
     if (code === "FULL") {
       return NextResponse.json(
         { error: `Більше ${def.maxStack} не влізе в інвентар` },
+        { status: 409 },
+      );
+    }
+    if (code === "STALL_BOUGHT") {
+      return NextResponse.json(
+        { error: "Цей слот прилавка вже куплено цього тижня" },
         { status: 409 },
       );
     }

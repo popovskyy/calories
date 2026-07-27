@@ -69,6 +69,7 @@ export function StallSection({ shop }: { shop: ShopResponse }) {
       <div className="grid grid-cols-2 gap-3">
         {shop.stall.map((slot, i) => {
           const affordable = shop.coins >= slot.price;
+          const soldOut = slot.bought;
           return (
             <div
               key={`${slot.kind}-${slot.refId}-${i}`}
@@ -95,18 +96,24 @@ export function StallSection({ shop }: { shop: ShopResponse }) {
               <button
                 className={cn(
                   "btn btn-primary mt-auto flex w-full items-center justify-center gap-1 py-2 text-[13px]",
-                  !affordable && "opacity-60",
+                  (!affordable || soldOut) && "opacity-60",
                 )}
-                disabled={pending}
+                disabled={pending || soldOut}
                 onClick={() => onBuy(slot)}
               >
-                <CoinIcon size={14} />
-                {slot.price}
-                {slot.oldPrice && slot.oldPrice > slot.price ? (
-                  <span className="text-[11px] line-through opacity-70">
-                    {slot.oldPrice}
-                  </span>
-                ) : null}
+                {soldOut ? (
+                  "Куплено"
+                ) : (
+                  <>
+                    <CoinIcon size={14} />
+                    {slot.price}
+                    {slot.oldPrice && slot.oldPrice > slot.price ? (
+                      <span className="text-[11px] line-through opacity-70">
+                        {slot.oldPrice}
+                      </span>
+                    ) : null}
+                  </>
+                )}
               </button>
             </div>
           );

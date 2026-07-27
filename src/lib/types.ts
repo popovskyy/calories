@@ -115,6 +115,8 @@ export interface ShopStallSlot {
   oldPrice: number | null;
   icon: string;
   swatch: string | null;
+  /** Уже куплено цього тижня (1 слот = 1 покупка). */
+  bought: boolean;
 }
 
 export interface ShopResponse {

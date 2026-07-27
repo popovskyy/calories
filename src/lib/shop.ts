@@ -10,7 +10,7 @@ import {
   unlockHint,
   type CosmeticKind,
 } from "@/lib/cosmetics";
-import { getWeeklyStock } from "@/lib/shop-rotation";
+import { getWeeklyStock, stallPurchaseKey } from "@/lib/shop-rotation";
 import { completedEpicIds } from "@/lib/epic-progress";
 import { countInTargetDays } from "@/lib/streak";
 import { computeEvolutionStage } from "@/lib/economy";
@@ -145,7 +145,25 @@ export async function buildShop(userId: string): Promise<ShopResponse | null> {
     };
   });
 
-  const stall: ShopStallSlot[] = getWeeklyStock(weekStartYMD());
+  const weekStart = weekStartYMD();
+  const stock = getWeeklyStock(weekStart);
+  const stallKeys = stock.map((s) => stallPurchaseKey(weekStart, s.kind, s.refId));
+  const stallClaims = await prisma.rewardClaim.findMany({
+    where: { userId, key: { in: stallKeys } },
+    select: { key: true },
+  });
+  const boughtKeys = new Set(stallClaims.map((c) => c.key));
+
+  const stall: ShopStallSlot[] = stock.map((s) => {
+    const claimBought = boughtKeys.has(
+      stallPurchaseKey(weekStart, s.kind, s.refId),
+    );
+    const cosmeticOwned =
+      s.kind === "cosmetic" &&
+      !!s.cosmeticKind &&
+      ownedCosmetics.has(`${s.cosmeticKind}:${s.refId}`);
+    return { ...s, bought: claimBought || cosmeticOwned };
+  });
 
   return {
     coins: user.coins,

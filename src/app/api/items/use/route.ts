@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildShop } from "@/lib/shop";
-import { BOX_ITEM_ID, getItem, rollBox, type ItemDef } from "@/lib/items";
+import { BOX_ITEM_ID, boxFullCompensation, getItem, rollBox, type ItemDef } from "@/lib/items";
 import { grant, type GrantedReward } from "@/lib/reward-grant";
 import { todayYMD, weekStartYMD } from "@/lib/date";
 
@@ -121,12 +121,13 @@ export async function POST(req: NextRequest) {
           update: { qty: { increment: 1 } },
         });
       } else {
-        // Інвентар повний — компенсуємо монетами, щоб приз не згорів даремно.
-        boxLabel = `${outcome.labelUk} (інвентар повний → 40 монет)`;
+        // Інвентар повний — компенсуємо половиною ціни предмета.
+        const coins = boxFullCompensation(outcome.itemId);
+        boxLabel = `${outcome.labelUk} (інвентар повний → ${coins} монет)`;
         await grant(
           userId,
           `box:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
-          40,
+          coins,
           "Скринька: компенсація",
           granted,
         );

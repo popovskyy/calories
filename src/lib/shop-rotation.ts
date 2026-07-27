@@ -114,3 +114,15 @@ export function getWeeklyStock(weekStart: string): StallSlot[] {
 export function slotQuantity(slot: StallSlot): number {
   return slot.kind === "bundle" ? 2 : 1;
 }
+
+/**
+ * Ключ RewardClaim: одна купівля слота на гравця за тиждень.
+ * Без цього знижку/набір/скриньку можна було б скуповувати весь тиждень.
+ */
+export function stallPurchaseKey(
+  weekStart: string,
+  kind: StallSlotKind,
+  refId: string,
+): string {
+  return `stall:${weekStart}:${kind}:${refId}`;
+}
