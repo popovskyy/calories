@@ -14,6 +14,7 @@ import type {
   NotificationDTO,
   QuestsResponse,
   RecentMealDTO,
+  ReliefStatus,
   SaveMealResult,
   ShopResponse,
   StreakResponse,
@@ -291,10 +292,17 @@ export const startEpicApi = (epicId: string) =>
 // --- Дуелі ---
 export const getDuels = () => req<DuelsResponse>("/api/duels");
 
-export const challengeDuel = (opponentId: string) =>
+export const challengeDuel = (opponentId: string, stake: number) =>
   req<DuelsResponse>("/api/duels", {
     method: "POST",
-    body: JSON.stringify({ action: "challenge", opponentId }),
+    body: JSON.stringify({ action: "challenge", opponentId, stake }),
+  });
+
+export const getRelief = () => req<ReliefStatus>("/api/wallet/relief");
+
+export const claimReliefApi = () =>
+  req<{ granted: GrantedReward[]; status: ReliefStatus }>("/api/wallet/relief", {
+    method: "POST",
   });
 
 export const respondDuel = (duelId: string, accept: boolean) =>

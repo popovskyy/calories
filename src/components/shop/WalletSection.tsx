@@ -2,6 +2,7 @@
 
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { ReliefCard } from "@/components/ReliefCard";
 import { useWallet } from "@/hooks/useQueries";
 import { cn } from "@/lib/cn";
 
@@ -41,6 +42,8 @@ export function WalletSection() {
   return (
     <section className="flex flex-col gap-2">
       <span className="lbl">Гаманець</span>
+
+      <ReliefCard />
 
       {txns.length === 0 ? (
         <p className="py-6 text-center text-[13px] text-[var(--color-muted3)]">

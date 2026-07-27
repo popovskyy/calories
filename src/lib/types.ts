@@ -208,10 +208,20 @@ export interface DuelDTO {
   awaitingMe: boolean;
 }
 
+/** Стан фонду підйомних — страховки для гравця без монет. */
+export interface ReliefStatus {
+  available: boolean;
+  claimedThisWeek: boolean;
+  amount: number;
+  threshold: number;
+  coins: number;
+}
+
 export interface DuelsResponse {
   duels: DuelDTO[];
-  /** Кого можна викликати (усі, крім себе). */
-  rivals: { id: string; name: string }[];
+  /** Кого можна викликати (усі, крім себе). Баланс — щоб не завищити ставку. */
+  rivals: { id: string; name: string; coins: number }[];
+  relief: ReliefStatus;
 }
 
 export interface NotificationDTO {

@@ -9,6 +9,8 @@ import {
   listDuels,
   settleDuels,
 } from "@/lib/duel";
+import { getReliefStatus } from "@/lib/relief";
+import { DUEL_MAX_STAKE } from "@/lib/economy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,20 +27,26 @@ export async function GET() {
     console.error("[duels] settle", e);
   }
 
-  const [duels, rivals] = await Promise.all([
+  // Баланс суперника потрібен, щоб не запропонувати ставку, яку він не тягне.
+  const [duels, rivals, relief] = await Promise.all([
     listDuels(userId),
     prisma.user.findMany({
       where: { id: { not: userId } },
-      select: { id: true, name: true },
+      select: { id: true, name: true, coins: true },
       orderBy: { name: "asc" },
     }),
+    getReliefStatus(userId),
   ]);
 
-  return NextResponse.json({ duels, rivals });
+  return NextResponse.json({ duels, rivals, relief });
 }
 
 const schema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("challenge"), opponentId: z.string().min(1) }),
+  z.object({
+    action: z.literal("challenge"),
+    opponentId: z.string().min(1),
+    stake: z.number().int().min(0).max(DUEL_MAX_STAKE).optional(),
+  }),
   z.object({ action: z.literal("accept"), duelId: z.string().min(1) }),
   z.object({ action: z.literal("decline"), duelId: z.string().min(1) }),
 ]);
@@ -57,7 +65,7 @@ export async function POST(req: NextRequest) {
   const body = parsed.data;
 
   if (body.action === "challenge") {
-    const res = await createDuel(userId, body.opponentId);
+    const res = await createDuel(userId, body.opponentId, body.stake);
     if (!res.ok) return NextResponse.json({ error: res.error }, { status: 409 });
   } else if (body.action === "accept") {
     const res = await acceptDuel(userId, body.duelId);
@@ -67,13 +75,15 @@ export async function POST(req: NextRequest) {
     if (!ok) return NextResponse.json({ error: "Виклик не знайдено" }, { status: 404 });
   }
 
-  const [duels, rivals] = await Promise.all([
+  // Баланс суперника потрібен, щоб не запропонувати ставку, яку він не тягне.
+  const [duels, rivals, relief] = await Promise.all([
     listDuels(userId),
     prisma.user.findMany({
       where: { id: { not: userId } },
-      select: { id: true, name: true },
+      select: { id: true, name: true, coins: true },
       orderBy: { name: "asc" },
     }),
+    getReliefStatus(userId),
   ]);
-  return NextResponse.json({ duels, rivals }, { status: 201 });
+  return NextResponse.json({ duels, rivals, relief }, { status: 201 });
 }

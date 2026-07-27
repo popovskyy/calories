@@ -1,15 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { Swords } from "lucide-react";
 import { toast } from "sonner";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { ReliefCard } from "@/components/ReliefCard";
 import {
   useChallengeDuel,
   useCurrentUser,
   useDuels,
   useRespondDuel,
 } from "@/hooks/useQueries";
+import { DUEL_MAX_STAKE, DUEL_STAKE, DUEL_STAKE_PRESETS } from "@/lib/economy";
 import type { DuelDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -25,12 +28,19 @@ export function DuelCard() {
   const q = useDuels();
   const challenge = useChallengeDuel();
   const respond = useRespondDuel();
+  const [stake, setStake] = useState<number>(DUEL_STAKE);
 
-  const onChallenge = (id: string) =>
-    challenge.mutate(id, {
-      onSuccess: () => toast.success("Виклик кинуто!"),
-      onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
-    });
+  const onChallenge = (opponentId: string) =>
+    challenge.mutate(
+      { opponentId, stake },
+      {
+        onSuccess: () =>
+          toast.success(
+            stake > 0 ? `Виклик кинуто! Ставка ${stake}` : "Виклик кинуто! На інтерес",
+          ),
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
+      },
+    );
 
   const onRespond = (duelId: string, accept: boolean) =>
     respond.mutate(
@@ -52,6 +62,7 @@ export function DuelCard() {
 
   const duels = q.data?.duels ?? [];
   const rivals = q.data?.rivals ?? [];
+  const myCoins = user?.coins ?? 0;
   const active = duels.filter((d) => d.status === "pending" || d.status === "accepted");
   const settled = duels.filter((d) => d.status === "settled");
 
@@ -62,8 +73,8 @@ export function DuelCard() {
         <span className="lbl">Дуель тижня</span>
       </div>
       <p className="text-[12px] text-[var(--color-muted3)]">
-        Хто набере більше днів у ±5%. Обидва ставлять монети — переможець
-        забирає банк.
+        Хто набере більше днів у ±5%. Ставку обираєш сам — переможець забирає
+        банк. Можна зіграти й на інтерес, без монет.
       </p>
 
       {active.map((d) => (
@@ -81,25 +92,89 @@ export function DuelCard() {
             Немає кого викликати — запроси друга в гру.
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
-            <span className="text-[12px] text-[var(--color-muted3)]">
-              Кинути виклик:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {rivals.map((r) => (
-                <button
-                  key={r.id}
-                  className="btn btn-ghost btn-sm"
-                  disabled={challenge.isPending}
-                  onClick={() => onChallenge(r.id)}
-                >
-                  {r.name}
-                </button>
-              ))}
+          <div className="flex flex-col gap-3">
+            {/* Ставку обирає той, хто викликає. Нуль — дуель на інтерес. */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12px] text-[var(--color-muted3)]">
+                Ставка з кожного:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {DUEL_STAKE_PRESETS.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setStake(v)}
+                    className={cn(
+                      "rounded-[var(--radius-pill)] border px-2.5 py-1 text-[13px] font-semibold tabular-nums transition-colors",
+                      stake === v
+                        ? "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[var(--color-text)]"
+                        : "border-[var(--color-divider)] text-[var(--color-muted3)]",
+                    )}
+                  >
+                    {v === 0 ? "на інтерес" : v}
+                  </button>
+                ))}
+                <input
+                  type="number"
+                  min={0}
+                  max={DUEL_MAX_STAKE}
+                  value={stake}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (Number.isFinite(n)) {
+                      setStake(Math.max(0, Math.min(DUEL_MAX_STAKE, Math.round(n))));
+                    }
+                  }}
+                  className="w-20 rounded-[var(--radius-pill)] border border-[var(--color-divider)] bg-transparent px-2.5 py-1 text-[13px] tabular-nums text-[var(--color-text)]"
+                  aria-label="Своя ставка"
+                />
+              </div>
+              <span className="text-[11px] text-[var(--color-muted3)]">
+                {stake === 0
+                  ? "Без монет — лише за перемогу й статус"
+                  : `Банк ${stake * 2} монет. У тебе ${myCoins}`}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12px] text-[var(--color-muted3)]">
+                Кинути виклик:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {rivals.map((r) => {
+                  // Суперник не потягне ставку — краще сказати одразу,
+                  // ніж дати йому впертись у помилку при прийнятті.
+                  const tooPoor = r.coins < stake;
+                  return (
+                    <button
+                      key={r.id}
+                      className={cn("btn btn-ghost btn-sm", tooPoor && "opacity-50")}
+                      disabled={challenge.isPending || tooPoor}
+                      onClick={() => onChallenge(r.id)}
+                      title={
+                        tooPoor
+                          ? `У ${r.name} лише ${r.coins} монет`
+                          : undefined
+                      }
+                    >
+                      {r.name}
+                      <span className="ml-1 text-[11px] tabular-nums opacity-70">
+                        {r.coins}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )
       ) : null}
+
+      {/*
+        Гравець із порожнім гаманцем не може ані прийняти дуель, ані щось
+        купити — без цього клапана він просто випадає з гри.
+      */}
+      <ReliefCard />
 
       {settled.length > 0 ? (
         <div className="flex flex-col gap-1 border-t border-[var(--color-divider)] pt-2">
@@ -155,10 +230,16 @@ function DuelRow({
         <span className="text-[14px] font-semibold text-[var(--color-text)]">
           проти {rival}
         </span>
-        <span className="flex items-center gap-1 text-[13px] font-semibold tabular-nums">
-          <CoinIcon size={13} />
-          {duel.stake * 2}
-        </span>
+        {duel.stake > 0 ? (
+          <span className="flex items-center gap-1 text-[13px] font-semibold tabular-nums">
+            <CoinIcon size={13} />
+            {duel.stake * 2}
+          </span>
+        ) : (
+          <span className="text-[12px] font-semibold text-[var(--color-muted3)]">
+            на інтерес
+          </span>
+        )}
       </div>
 
       {duel.status === "accepted" ? (

@@ -13,6 +13,7 @@ import {
   buySkin,
   buyTheme,
   challengeDuel,
+  claimReliefApi,
   changePassword,
   deleteActivity,
   deleteMeal,
@@ -32,6 +33,7 @@ import {
   getNotifications,
   getQuests,
   getRecentMeals,
+  getRelief,
   getShop,
   getStreak,
   getWallet,
@@ -530,8 +532,33 @@ export function useDuels() {
 export function useChallengeDuel() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (opponentId: string) => challengeDuel(opponentId),
+    mutationFn: ({ opponentId, stake }: { opponentId: string; stake: number }) =>
+      challengeDuel(opponentId, stake),
     onSuccess: (data) => qc.setQueryData(["duels"], data),
+  });
+}
+
+/** Стан фонду підйомних. */
+export function useRelief() {
+  return useQuery({
+    queryKey: ["relief"],
+    queryFn: getRelief,
+    staleTime: 30_000,
+  });
+}
+
+/** Підйомні з фонду — розблоковують гравця з порожнім гаманцем. */
+export function useClaimRelief() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => claimReliefApi(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["duels"] });
+      qc.invalidateQueries({ queryKey: ["shop"] });
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+      qc.invalidateQueries({ queryKey: ["relief"] });
+    },
   });
 }
 

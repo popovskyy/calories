@@ -3,7 +3,7 @@ import { shiftYMD, todayYMD, weekDays, weekStartYMD } from "@/lib/date";
 import { dayNetCalories } from "@/lib/day-totals";
 import { isInTarget } from "@/lib/quests";
 import { grant, spendInTx, type GrantedReward } from "@/lib/reward-grant";
-import { DUEL_STAKE } from "@/lib/economy";
+import { DUEL_MAX_STAKE, DUEL_STAKE } from "@/lib/economy";
 
 /**
  * Дуель тижня: хто набере більше днів у ±5%.
@@ -51,21 +51,47 @@ async function weekScore(userId: string, weekStart: string): Promise<number> {
   return totals.filter((t) => t.mealCount > 0 && isInTarget(t.net, target)).length;
 }
 
-/** Створити виклик на поточний тиждень. */
+/** Створити виклик на поточний тиждень. Ставку обирає той, хто викликає. */
 export async function createDuel(
   challengerId: string,
   opponentId: string,
+  stake: number = DUEL_STAKE,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   if (challengerId === opponentId) {
     return { ok: false, error: "Не можна викликати себе" };
   }
+  if (!Number.isInteger(stake) || stake < 0 || stake > DUEL_MAX_STAKE) {
+    return { ok: false, error: `Ставка має бути від 0 до ${DUEL_MAX_STAKE}` };
+  }
+
   const weekStart = weekStartYMD();
 
-  const opponent = await prisma.user.findUnique({
-    where: { id: opponentId },
-    select: { id: true },
-  });
+  const [opponent, challenger] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: opponentId },
+      select: { id: true, name: true, coins: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: challengerId },
+      select: { coins: true },
+    }),
+  ]);
   if (!opponent) return { ok: false, error: "Суперника не знайдено" };
+
+  // Перевіряємо гаманці ще до створення виклику: інакше суперник отримав би
+  // запрошення, яке фізично не може прийняти, і впирався б у помилку.
+  if (challenger && challenger.coins < stake) {
+    return {
+      ok: false,
+      error: `У тебе ${challenger.coins} монет — на ставку ${stake} не вистачає`,
+    };
+  }
+  if (opponent.coins < stake) {
+    return {
+      ok: false,
+      error: `У ${opponent.name} лише ${opponent.coins} монет. Знизь ставку або зіграйте на інтерес`,
+    };
+  }
 
   // Одна дуель на пару за тиждень — у будь-якому напрямку.
   const existing = await prisma.duel.findFirst({
@@ -81,7 +107,7 @@ export async function createDuel(
   if (existing) return { ok: false, error: "Дуель на цей тиждень уже є" };
 
   const duel = await prisma.duel.create({
-    data: { challengerId, opponentId, weekStart, stake: DUEL_STAKE },
+    data: { challengerId, opponentId, weekStart, stake },
   });
   return { ok: true, id: duel.id };
 }
@@ -96,6 +122,29 @@ export async function acceptDuel(
   if (duel.opponentId !== userId) return { ok: false, error: "Це не твій виклик" };
   if (duel.status !== "pending") return { ok: false, error: "Виклик уже опрацьовано" };
 
+  // Хто саме не тягне ставку — перевіряємо до транзакції, щоб показати
+  // конкретну суму замість безпорадного «комусь не вистачає монет».
+  if (duel.stake > 0) {
+    const players = await prisma.user.findMany({
+      where: { id: { in: [duel.challengerId, duel.opponentId] } },
+      select: { id: true, name: true, coins: true },
+    });
+    const broke = players.filter((p) => p.coins < duel.stake);
+    if (broke.length > 0) {
+      const who = broke
+        .map((p) =>
+          p.id === userId
+            ? `у тебе ${p.coins}`
+            : `у ${p.name} ${p.coins}`,
+        )
+        .join(", ");
+      return {
+        ok: false,
+        error: `Ставка ${duel.stake}, але ${who}. Візьми підйомні або попроси знизити ставку`,
+      };
+    }
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       for (const id of [duel.challengerId, duel.opponentId]) {
@@ -105,7 +154,7 @@ export async function acceptDuel(
           duel.stake,
           "duel",
           `duel:${duel.id}`,
-          "Ставка в дуелі",
+          `Ставка в дуелі (${duel.stake})`,
         );
         if (!paid) throw Object.assign(new Error("BROKE"), { code: "BROKE" });
       }
@@ -117,7 +166,7 @@ export async function acceptDuel(
   } catch (e) {
     const code = e && typeof e === "object" && "code" in e ? (e as { code: string }).code : null;
     if (code === "BROKE") {
-      return { ok: false, error: "Комусь із вас не вистачає монет на ставку" };
+      return { ok: false, error: "Монет не вистачило — баланс щойно змінився" };
     }
     throw e;
   }
