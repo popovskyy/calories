@@ -386,6 +386,100 @@ html[data-theme="minecraft"] .page-chrome {
 }
 
 /* ============================================================
+   ТЕМА «Маяк» (lighthouse) — coastal night, промінь = прогрес
+   ============================================================ */
+html[data-theme="lighthouse"] {
+  --color-bg: #0e141c;
+  --app-bg-image: radial-gradient(90% 50% at 50% -8%, #1a2838 0%, #121a24 48%, #0e141c 100%);
+  --color-surface: #15202c;
+  --surface-image: linear-gradient(#1a2838, #121a24);
+  --color-tile: #121a24;
+
+  --color-text: #d8e2ea;
+  --color-muted: #9aafc0;
+  --color-muted2: #7e95a8;
+  --color-muted3: #627a8d;
+
+  --color-accent: #ffb35c;
+  --color-accent-100: #ffe0a8;
+  --color-accent-200: #ffc878;
+  --color-accent-300: #ffb35c;
+  --color-accent-400: #e09a45;
+  --color-accent-500: #c47f30;
+  --color-accent-600: #8a5a22;
+  --color-accent-800: #4a3214;
+
+  --color-green: #5ec8a0;
+  --color-green-600: #3a9a74;
+  --color-red: #e08a7a;
+  --color-red-600: #b85a4c;
+
+  --color-track: #1a2430;
+  --color-macro-protein: #5ec8a0;
+  --color-macro-fats: #ffb35c;
+  --color-macro-carbs: #6aa8c8;
+  --color-ring-from: #ffe0a8;
+  --color-ring-to: #ffb35c;
+
+  --color-divider: color-mix(in srgb, #d8e2ea 14%, transparent);
+  --color-border: #2a3848;
+  --color-border-strong: #3a4c60;
+  --border-w: 1px;
+  --bevel-hi: transparent;
+  --bevel-lo: transparent;
+
+  --color-coin: #ffb35c;
+  --color-coin-bg: color-mix(in srgb, #ffb35c 12%, transparent);
+  --color-coin-border: color-mix(in srgb, #ffb35c 40%, transparent);
+
+  --color-nav-bg: #0e141c;
+  --color-nav-active-bg: transparent;
+  --color-nav-active-fg: #ffb35c;
+  --color-nav-idle-fg: #7e95a8;
+
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 0 0 1px #2a3848, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-card-lg: 0 0 0 1px #3a4c60, 0 10px 28px rgba(0, 0, 0, 0.45);
+  --shadow-fab: 0 8px 22px rgba(255, 179, 92, 0.35);
+
+  --font-display: var(--font-dm-sans), var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html[data-theme="lighthouse"] :is(.mcard, .tile) {
+  border: 1px solid var(--color-border);
+}
+html[data-theme="lighthouse"] h1,
+html[data-theme="lighthouse"] .lbl,
+html[data-theme="lighthouse"] .tabular-nums {
+  font-family: var(--font-display);
+}
+html[data-theme="lighthouse"] .btn-primary {
+  background: linear-gradient(#ffc878, #ffb35c);
+  color: #1a1208;
+  box-shadow: 0 3px 0 #8a5a22;
+}
+html[data-theme="lighthouse"] .btn-primary:not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #8a5a22;
+}
+html[data-theme="lighthouse"] .nav-tab[data-active="true"] {
+  color: var(--color-nav-active-fg);
+}
+html[data-theme="lighthouse"] .coin-chip {
+  font-family: var(--font-display);
+}
+html[data-theme="lighthouse"] .fab-btn {
+  background: linear-gradient(#ffc878, #e09a45);
+  color: #1a1208;
+  box-shadow: var(--shadow-fab);
+}
+
+/* ============================================================
    Нижня навігація. Один markup, три вигляди:
    Nocturne — плоскі таби, Forest — pill, Minecraft — хотбар-слоти.
    ============================================================ */
@@ -1205,6 +1299,33 @@ html[data-theme="minecraft"] .rounded-full {
   0% { transform: translateX(-8%); opacity: 0.85; }
   50% { transform: translateX(8%); opacity: 1; }
   100% { transform: translateX(-8%); opacity: 0.85; }
+}
+@keyframes nightDust {
+  0%,
+  100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 0.85; transform: translateY(-6px); }
+}
+@keyframes nocturneEmber {
+  0%,
+  100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes lighthouseBeam {
+  0% { transform: translateX(-50%) rotate(-18deg); }
+  50% { transform: translateX(-50%) rotate(18deg); }
+  100% { transform: translateX(-50%) rotate(-18deg); }
+}
+@keyframes lighthousePulse {
+  0%,
+  100% { filter: brightness(1); }
+  50% { filter: brightness(1.25); }
+}
+@keyframes gullDrift {
+  0%,
+  100% { transform: translate(0, 0); opacity: 0; }
+  15% { opacity: 0.55; }
+  50% { transform: translate(-40px, -8px); opacity: 0.4; }
+  85% { opacity: 0; }
 }
 @keyframes blinkEyes {
   0%,

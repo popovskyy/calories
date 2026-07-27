@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Dumbbell, Trash2, UtensilsCrossed } from "lucide-react";
@@ -119,8 +120,12 @@ function LogPageInner() {
       ) : list.length === 0 && acts.length === 0 ? (
         <EmptyState
           icon={UtensilsCrossed}
-          title="Ще немає записів"
-          subtitle="Додайте їжу або активність кнопкою «＋»."
+          context="log"
+          action={
+            <Link href="/add" className="btn btn-primary btn-sm">
+              Додати запис
+            </Link>
+          }
         />
       ) : (
         <div className="flex flex-col gap-4">

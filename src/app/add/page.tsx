@@ -47,6 +47,7 @@ export default function AddFoodPage() {
   const dash = useDashboard();
 
   const [description, setDescription] = useState("");
+  const [descOpen, setDescOpen] = useState(false);
   const [image, setImage] = useState<ImageState | null>(null);
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [celebrate, setCelebrate] = useState(false);
@@ -76,6 +77,7 @@ export default function AddFoodPage() {
 
   const applyRecent = (m: RecentMealDTO) => {
     setDescription(m.description);
+    setDescOpen(true);
     setResult({
       calories: m.calories,
       protein: m.protein,
@@ -215,7 +217,7 @@ export default function AddFoodPage() {
 
         {recentList.length > 0 ? (
           <div className="flex flex-col gap-2">
-            <span className="lbl">Повторити</span>
+            <span className="lbl">Швидкий шлях · повторити</span>
             <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
               {recentList.map((m) => (
                 <button
@@ -235,16 +237,6 @@ export default function AddFoodPage() {
             </div>
           </div>
         ) : null}
-
-        <label className="flex flex-col gap-1.5">
-          <span className="lbl">Опишіть страву</span>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="2 яйця, 100 г авокадо, шматок цільнозернового хліба"
-            className={`${inputClass} min-h-[148px] resize-none`}
-          />
-        </label>
 
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -289,6 +281,26 @@ export default function AddFoodPage() {
             onChange={(e) => void onFile(e)}
           />
         </div>
+
+        <details
+          className="group rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-tile)] open:bg-[var(--color-surface)]"
+          open={descOpen}
+          onToggle={(e) => setDescOpen((e.target as HTMLDetailsElement).open)}
+        >          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-3 text-[14px] font-semibold text-[var(--color-text)] [&::-webkit-details-marker]:hidden">
+            Описати текстом
+            <span className="text-[12px] font-normal text-[var(--color-muted3)] group-open:hidden">
+              за бажанням
+            </span>
+          </summary>
+          <div className="border-t border-[var(--color-divider)] px-3.5 pb-3.5 pt-2">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="2 яйця, 100 г авокадо, шматок цільнозернового хліба"
+              className={`${inputClass} min-h-[110px] resize-none`}
+            />
+          </div>
+        </details>
 
         {/* Під час аналізу фото вже показує сканер — тут воно було б удруге */}
         {image && !analyze.isPending ? (

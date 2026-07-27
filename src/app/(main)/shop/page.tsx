@@ -21,6 +21,7 @@ import {
   useShop,
 } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
+import { requestThemeEquipFlash } from "@/components/ThemeEquipFlash";
 import { RARITY } from "@/lib/avatar-presets";
 import type { ShopSkin, ShopTheme } from "@/lib/types";
 import { cn } from "@/lib/cn";
@@ -33,12 +34,12 @@ type Tab = "look" | "stall" | "rest";
 
 /**
  * Три входи замість шести: менше рішень на вході (Hick).
- * Вигляд = скіни/теми/косметика; Прилавок = бокси+спорядження; Решта = еволюція+гаманець.
+ * Вигляд = скіни/теми/косметика; Прилавок = бокси+спорядження; Майстерня = еволюція+гаманець.
  */
 const TABS: { id: Tab; label: string }[] = [
   { id: "look", label: "Вигляд" },
   { id: "stall", label: "Прилавок" },
-  { id: "rest", label: "Решта" },
+  { id: "rest", label: "Майстерня" },
 ];
 
 export default function ShopPage() {
@@ -77,11 +78,15 @@ export default function ShopPage() {
 
   const onEquipTheme = (t: ShopTheme) =>
     equipTheme.mutate(t.id, {
-      onSuccess: () => toast.success(`Тему змінено: ${t.nameUk}`),
+      onSuccess: () => {
+        requestThemeEquipFlash(t.id);
+        toast.success(`Тему змінено: ${t.nameUk}`);
+      },
       onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
     });
 
-  const onBuyTheme = (t: ShopTheme) =>
+  const onBuyTheme = (t: ShopTheme) => {
+    if (t.comingSoon) return;
     buyTheme.mutate(t.id, {
       onSuccess: () => {
         setConfirm(null);
@@ -89,7 +94,7 @@ export default function ShopPage() {
       },
       onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка купівлі"),
     });
-
+  };
   const isPending = buySkin.isPending || buyTheme.isPending;
 
   return (
@@ -304,32 +309,64 @@ function ThemeCard({
   equipping: boolean;
 }) {
   const locked = theme.tier === "premium" && !theme.owned;
+  const soon = !!theme.comingSoon;
 
   return (
     <div
-      className="mcard relative flex flex-col items-center gap-2 p-3"
+      className="mcard relative flex flex-col items-center gap-2 overflow-hidden p-3"
       style={{ boxShadow: `inset 0 0 0 1.5px ${theme.swatch}55, 0 0 10px ${theme.swatch}22` }}
     >
-      <div className="relative flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)]"
-        style={{ background: theme.swatch }}
+      <div
+        className="relative h-14 w-full overflow-hidden rounded-[var(--radius-md)]"
+        style={{ background: theme.previewBg }}
       >
-        {locked ? (
-          <Lock size={18} className="text-white" />
+        <div
+          className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1 rounded-sm px-1.5 py-1"
+          style={{ background: "rgba(0,0,0,.35)" }}
+        >
+          <span
+            className="truncate text-[10px] font-semibold text-white"
+            style={{ color: theme.previewAccent }}
+          >
+            Aa · {theme.fontLabel}
+          </span>
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ background: theme.previewAccent, boxShadow: `0 0 8px ${theme.previewAccent}` }}
+          />
+        </div>
+        {soon ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+            <span className="rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-semibold text-white">
+              скоро
+            </span>
+          </div>
+        ) : locked ? (
+          <div className="absolute right-1.5 top-1.5 rounded-full bg-black/45 p-1">
+            <Lock size={12} className="text-white" />
+          </div>
         ) : theme.equipped ? (
-          <Check size={18} className="text-white" />
-        ) : (
-          <span className="text-[10px] font-bold text-white">Aa</span>
-        )}
+          <div className="absolute right-1.5 top-1.5 rounded-full bg-black/45 p-1">
+            <Check size={12} className="text-white" />
+          </div>
+        ) : null}
       </div>
 
       <div className="text-center">
         <div className="text-[13px] font-semibold text-[var(--color-text)]">{theme.nameUk}</div>
-        <div className="text-[11px]" style={{ color: theme.swatch }}>
-          {theme.tier === "free" ? "Безкоштовна" : "Преміум"}
+        <div className="mt-0.5 text-[11px] leading-tight text-[var(--color-muted3)]">
+          {theme.vibe}
+        </div>
+        <div className="mt-0.5 text-[11px]" style={{ color: theme.swatch }}>
+          {soon ? "Скоро" : theme.tier === "free" ? "Безкоштовна" : "Преміум"}
         </div>
       </div>
 
-      {theme.equipped ? (
+      {soon ? (
+        <div className="btn btn-ghost btn-sm pointer-events-none w-full cursor-default opacity-70">
+          Скоро
+        </div>
+      ) : theme.equipped ? (
         <div className="btn btn-primary btn-sm pointer-events-none w-full cursor-default">
           <Check size={14} strokeWidth={2.5} /> Активна
         </div>

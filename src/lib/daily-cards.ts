@@ -1,13 +1,16 @@
 import { prisma } from "@/lib/prisma";
-import { kyivMinutesOf, shiftYMD, todayYMD } from "@/lib/date";
+import { kyivMinutesOf, shiftYMD, todayYMD, weekStartYMD } from "@/lib/date";
 import { calcMacroTargets } from "@/lib/calories";
 import { grant, type GrantedReward } from "@/lib/reward-grant";
 import {
   DAILY_CARDS_PER_DAY,
   DAILY_CARD_REWARDS,
   SETTLE_LOOKBACK_DAYS,
+  STREAK_CARDS_COMBO_COINS,
+  STREAK_CARDS_COMBO_MIN_STREAK,
 } from "@/lib/economy";
 import { CARD_REROLL_ITEM_ID } from "@/lib/items";
+import { computeStreak } from "@/lib/streak";
 
 /**
  * Щоденні картки — змінний шар, якого досі бракувало.
@@ -31,7 +34,9 @@ export type CardKind =
   | "burn_amount"
   | "photo_proof"
   | "move_after_meal"
-  | "early_start";
+  | "early_start"
+  | "macro_trio"
+  | "two_meals_spread";
 
 export interface DailyCardDef {
   code: string;
@@ -125,6 +130,22 @@ export const DAILY_CARD_POOL: DailyCardDef[] = [
     icon: "⏰",
     target: 10 * 60,
   },
+  {
+    code: "macro_trio",
+    kind: "macro_trio",
+    titleUk: "Повна тарілка",
+    description: "Один запис із білком, жирами й вуглеводами",
+    icon: "🥗",
+    target: 1,
+  },
+  {
+    code: "two_meals_spread",
+    kind: "two_meals_spread",
+    titleUk: "Дві хвилі",
+    description: "Два записи з паузою ≥3 години між ними",
+    icon: "⏳",
+    target: 2,
+  },
 ];
 
 /** Простий детермінований хеш рядка (FNV-1a). */
@@ -164,6 +185,8 @@ interface DayRaw {
   meals: {
     calories: number;
     protein: number;
+    fats: number;
+    carbs: number;
     imageUrl: string | null;
     createdAt: Date;
   }[];
@@ -186,7 +209,7 @@ async function loadDayRaw(userId: string, date: string): Promise<DayRaw | null> 
     }),
     prisma.mealLog.findMany({
       where: { userId, date, status: { not: "cancelled" } },
-      select: { calories: true, protein: true, imageUrl: true, createdAt: true },
+      select: { calories: true, protein: true, fats: true, carbs: true, imageUrl: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.activityLog.findMany({
@@ -269,6 +292,24 @@ export function evaluateCard(
       const first = Math.min(...day.meals.map((m) => kyivMinutesOf(m.createdAt)));
       const ok = first < def.target;
       return { progress: ok ? 1 : 0, target: 1, done: ok };
+    }
+    case "macro_trio": {
+      const ok = day.meals.some(
+        (m) => m.protein > 0 && m.fats > 0 && m.carbs > 0,
+      );
+      return { progress: ok ? 1 : 0, target: 1, done: ok };
+    }
+    case "two_meals_spread": {
+      if (day.meals.length < 2) {
+        return { progress: day.meals.length, target: 2, done: false };
+      }
+      const times = day.meals.map((m) => m.createdAt.getTime()).sort((a, b) => a - b);
+      const gapOk = times.some((t, i) => i > 0 && t - times[i - 1]! >= 3 * 60 * 60 * 1000);
+      return {
+        progress: gapOk ? 2 : 1,
+        target: 2,
+        done: gapOk,
+      };
     }
     default:
       return { progress: 0, target: def.target, done: false };
@@ -367,5 +408,32 @@ export async function settleDailyCards(userId: string): Promise<GrantedReward[]>
     const { granted } = await listDailyCards(userId, shiftYMD(today, -i));
     out.push(...granted);
   }
+  out.push(...(await settleStreakCardsCombo(userId, today)));
+  return out;
+}
+
+/**
+ * Стрік × обидві картки дня — рідкісний тижневий бонус (не щоденний spam).
+ */
+async function settleStreakCardsCombo(
+  userId: string,
+  today: string,
+): Promise<GrantedReward[]> {
+  const out: GrantedReward[] = [];
+  const { streak } = await computeStreak(userId);
+  if (streak < STREAK_CARDS_COMBO_MIN_STREAK) return out;
+
+  const { cards } = await listDailyCards(userId, today);
+  if (cards.length < DAILY_CARDS_PER_DAY) return out;
+  if (!cards.every((c) => c.claimed)) return out;
+
+  const week = weekStartYMD(today);
+  await grant(
+    userId,
+    `streak_cards:${week}`,
+    STREAK_CARDS_COMBO_COINS,
+    "Комбо: стрік × картки дня",
+    out,
+  );
   return out;
 }

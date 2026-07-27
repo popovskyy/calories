@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Dices, Lock } from "lucide-react";
+import { Check, Circle, Dices } from "lucide-react";
 import { toast } from "sonner";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -55,12 +55,10 @@ export function WeeklyQuestsCard() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5 text-[15px] font-semibold text-[var(--color-text)]">
-                      {quest.claimed ? (
-                        <Check size={16} className="text-[var(--color-accent)]" />
-                      ) : quest.done ? (
+                      {quest.claimed || quest.done ? (
                         <Check size={16} className="text-[var(--color-accent)]" />
                       ) : (
-                        <Lock size={14} className="text-[var(--color-muted3)]" />
+                        <Circle size={14} className="text-[var(--color-muted3)]" />
                       )}
                       {quest.titleUk}
                     </div>

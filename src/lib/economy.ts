@@ -91,6 +91,13 @@ export const DAILY_CARDS_PER_DAY = 2;
 /** Нагороди за слотами: перша картка легша, друга — вагоміша. */
 export const DAILY_CARD_REWARDS = [10, 15];
 
+/**
+ * Рідкісний бонус: стрік ≥3 і обидві картки дня закриті.
+ * Раз на тиждень — не щоденний double-dip.
+ */
+export const STREAK_CARDS_COMBO_MIN_STREAK = 3;
+export const STREAK_CARDS_COMBO_COINS = 25;
+
 // ─────────────────────────── Еволюція маскота ───────────────────────────
 
 /**

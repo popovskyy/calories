@@ -28,6 +28,8 @@ export function ProgressRing({ consumed, target, frame }: ProgressRingProps) {
   const progress = Math.min(Math.max(consumed / safeTarget, 0), 1);
   const remaining = target - consumed;
   const over = remaining < 0;
+  const nearTarget =
+    !over && consumed > 0 && Math.abs(remaining) <= safeTarget * 0.05;
 
   const offset = useMotionValue(C);
   const count = useMotionValue(0);
@@ -56,6 +58,20 @@ export function ProgressRing({ consumed, target, frame }: ProgressRingProps) {
 
   return (
     <div className="relative my-1.5 h-[248px] w-[248px] shrink-0">
+      {nearTarget && !neon && !reduce ? (
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute rounded-full"
+          style={{
+            inset: -4,
+            boxShadow: "0 0 18px rgba(145,132,217,0.35), inset 0 0 12px rgba(145,132,217,0.12)",
+            border: "1px solid rgba(145,132,217,0.35)",
+          }}
+          animate={{ opacity: [0.45, 0.9, 0.45], scale: [1, 1.015, 1] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ) : null}
+
       {neon ? (
         <motion.span
           aria-hidden

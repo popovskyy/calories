@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Handjet, Nunito, Russo_One } from "next/font/google";
+import { DM_Sans, Inter, Handjet, Nunito, Russo_One } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/PwaRegister";
@@ -32,6 +32,13 @@ const nunito = Nunito({
 const handjet = Handjet({
   variable: "--font-handjet",
   subsets: ["latin", "cyrillic"],
+  preload: false,
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
   preload: false,
 });
 
@@ -98,7 +105,7 @@ export default function RootLayout({
   return (
     <html
       lang="uk"
-      className={`${inter.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable}`}
+      className={`${inter.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable} ${dmSans.variable}`}
       suppressHydrationWarning
     >
       <head>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -7,6 +8,8 @@ import { CalorieHero } from "@/components/hero/CalorieHero";
 import { DailyCardsRow } from "@/components/DailyCardsRow";
 import { EpicCard } from "@/components/EpicCard";
 import { MacroTiles } from "@/components/MacroTiles";
+import { QuestChip } from "@/components/QuestChip";
+import { ThemeAspirationHint } from "@/components/ThemeAspirationHint";
 import { WeeklyChart } from "@/components/WeeklyChart";
 import { WeeklyQuestsCard } from "@/components/WeeklyQuestsCard";
 import { WeightGoalCard } from "@/components/WeightGoalCard";
@@ -20,12 +23,25 @@ export default function DashboardPage() {
   const mounted = useMounted();
   const { user, isLoading } = useCurrentUser();
   const dash = useDashboard();
+  const moreRef = useRef<HTMLDetailsElement>(null);
 
   if (!mounted || isLoading || !user) return <DashboardSkeleton />;
 
   const today = dash.data?.today;
   const over = (today?.difference ?? 0) < 0;
   const macroTargets = calcMacroTargets(user.targetCalories, user.weight);
+
+  const openQuests = () => {
+    const el = moreRef.current;
+    if (!el) return;
+    el.open = true;
+    requestAnimationFrame(() => {
+      document.getElementById("weekly-quests")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+  };
 
   return (
     <>
@@ -87,11 +103,16 @@ export default function DashboardPage() {
       {/* Картки дня — щоденна дія має бути вище за тижневу */}
       <DailyCardsRow />
 
+      <ThemeAspirationHint />
+
+      {/* Один квест тижня видимий без dump списку на home */}
+      <QuestChip onOpen={openQuests} />
+
       {/*
         Вага / квести / хроніки / графік — поза першим екраном.
         Інакше головна читається як дашборд SaaS.
       */}
-      <details className="group">
+      <details ref={moreRef} className="group">
         <summary className="mcard flex cursor-pointer list-none items-center justify-between gap-2 px-[18px] py-3.5 [&::-webkit-details-marker]:hidden">
           <span className="lbl !mb-0">Ще</span>
           <span className="flex items-center gap-1.5 text-[14px] text-[var(--color-muted3)]">
@@ -104,7 +125,9 @@ export default function DashboardPage() {
         </summary>
         <div className="mt-4 flex flex-col gap-4">
           <WeightGoalCard />
-          <WeeklyQuestsCard />
+          <div id="weekly-quests">
+            <WeeklyQuestsCard />
+          </div>
           <ActiveEpic />
           <section className="mcard p-[18px_18px_16px]">
             <div className="mb-3.5 flex items-baseline justify-between">

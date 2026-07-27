@@ -72,6 +72,11 @@ export interface ShopTheme {
   tier: "free" | "premium";
   price: number;
   swatch: string;
+  vibe: string;
+  fontLabel: string;
+  previewBg: string;
+  previewAccent: string;
+  comingSoon?: boolean;
   owned: boolean;
   equipped: boolean;
 }

@@ -15,7 +15,86 @@ export function AmbientLayer() {
 
   if (theme === "forest") return <ForestAmbient />;
   if (theme === "minecraft") return <MinecraftAmbient />;
-  return null;
+  if (theme === "lighthouse") return <LighthouseAmbient />;
+  return <NocturneAmbient />;
+}
+
+function NocturneAmbient() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+      <div
+        className="absolute -right-8 -top-20 h-[200px] w-[200px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(145,132,217,.14), rgba(145,132,217,0) 68%)",
+        }}
+      />
+      {Array.from({ length: 7 }).map((_, i) => (
+        <div
+          key={i}
+          className="absolute h-[3px] w-[3px] rounded-full bg-[rgba(200,190,255,.55)]"
+          style={{
+            left: `${12 + i * 12}%`,
+            top: `${18 + (i % 3) * 14}%`,
+            animation: `nightDust ${6 + (i % 4)}s ease-in-out ${i * 0.4}s infinite`,
+          }}
+        />
+      ))}
+      <div
+        className="absolute inset-x-0 bottom-[78px] h-[120px]"
+        style={{
+          background:
+            "radial-gradient(60% 100% at 50% 100%, rgba(145,132,217,.08), transparent 70%)",
+          animation: "nocturneEmber 7s ease-in-out infinite",
+        }}
+      />
+    </div>
+  );
+}
+
+function LighthouseAmbient() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+      <div
+        className="absolute left-1/2 top-[-10%] h-[140%] w-[48%]"
+        style={{
+          transform: "translateX(-50%)",
+          background:
+            "conic-gradient(from 200deg at 50% 0%, transparent 0deg, rgba(255,179,92,.12) 18deg, transparent 42deg)",
+          animation: "lighthouseBeam 14s linear infinite",
+          transformOrigin: "50% 0%",
+        }}
+      />
+      <div
+        className="absolute -left-[15%] -right-[15%] top-[40%] h-[180px]"
+        style={{
+          background:
+            "radial-gradient(55% 50% at 50% 50%, rgba(216,226,234,.06), transparent 70%)",
+          animation: "fog 32s ease-in-out infinite",
+        }}
+      />
+      <div
+        className="absolute bottom-[100px] right-[18%]"
+        style={{ animation: "gullDrift 22s ease-in-out infinite" }}
+      >
+        <svg width="28" height="12" viewBox="0 0 28 12" fill="none" aria-hidden>
+          <path
+            d="M1 8c4-6 8-6 13-1 5-5 9-5 13 1"
+            stroke="rgba(216,226,234,.35)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
+      <div
+        className="absolute inset-x-0 bottom-[78px] h-[130px]"
+        style={{
+          background:
+            "radial-gradient(70% 100% at 50% 100%, rgba(255,179,92,.1), transparent 70%)",
+        }}
+      />
+    </div>
+  );
 }
 
 function ForestAmbient() {

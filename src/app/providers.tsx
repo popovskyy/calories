@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { ThemeSync } from "@/components/ThemeSync";
+import { ThemeEquipFlash } from "@/components/ThemeEquipFlash";
 import { PendingApprovalGate } from "@/components/PendingApprovalGate";
 
 /** Екрани без сесії користувача — там /api/auth/me лише дав би зайвий 401. */
@@ -34,6 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       {signedOut ? null : <ThemeSync />}
       {children}
       {signedOut ? null : <PendingApprovalGate />}
+      <ThemeEquipFlash />
       <Toaster
         position="top-center"
         theme="dark"

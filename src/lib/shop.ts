@@ -92,8 +92,15 @@ export async function buildShop(userId: string): Promise<ShopResponse | null> {
     tier: t.tier,
     price: t.price,
     swatch: t.swatch,
-    owned: t.tier === "free" || ownedThemes.has(t.id),
-    equipped: equippedThemeId === t.id,
+    vibe: t.vibe,
+    fontLabel: t.fontLabel,
+    previewBg: t.previewBg,
+    previewAccent: t.previewAccent,
+    comingSoon: t.comingSoon,
+    owned: t.comingSoon
+      ? false
+      : t.tier === "free" || ownedThemes.has(t.id),
+    equipped: !t.comingSoon && equippedThemeId === t.id,
   }));
 
   const items: ShopItem[] = ITEMS.map((i) => {
