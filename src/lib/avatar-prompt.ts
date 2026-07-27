@@ -1,55 +1,29 @@
-export const AVATAR_PROMPT = `You are an AI avatar generator.
+export const AVATAR_PROMPT = `You are an AI avatar generator for a mobile calorie-tracking app.
 
-Your task is to create a cute, consistent mascot-style avatar based on the uploaded user photo.
+Task: turn the uploaded selfie into a cute circular mascot ICON — head-and-shoulders only, matching our existing shop mascot icons (bold cartoon busts in a circle, like Duolingo/profile stickers — NOT a full-body character).
 
-Requirements:
+HARD FRAMING RULES (must follow):
+- Output is a circular app icon / profile badge.
+- Show ONLY the head, neck, and a tiny hint of shoulders or collar at the bottom edge.
+- Do NOT draw the full body, torso, arms, hands, legs, or standing pose.
+- Face fills most of the circle (large head, close crop).
+- Front-facing bust, centered, symmetrical.
+- Clip everything to a circle; solid soft gradient background inside the circle (no photo backdrop, no room).
 
-- Preserve the person's identity and recognizable facial features.
-- Convert the person into a friendly cartoon mascot.
-- Keep proportions slightly stylized with a larger head and expressive eyes.
-- Use a clean modern mobile-app illustration style inspired by premium productivity and fitness apps.
-- Soft rounded shapes.
-- Smooth gradients.
-- No realistic skin texture.
-- No wrinkles.
-- No facial imperfections.
-- Bright but natural colors.
-- White or transparent background.
-- Front-facing pose.
-- Arms relaxed.
-- Full body visible.
-- High resolution.
-- Symmetrical composition.
+Identity:
+- Preserve recognizable facial features, hairstyle, hair color, eye color when possible.
+- Keep beard, mustache, glasses if present.
+- Simplify clothing into a small collar/jersey strip at the bottom only; remove logos, text, brands.
 
-Hair:
-- Preserve hairstyle.
-- Preserve hair color.
-
-Face:
-- Preserve eye color when possible.
-- Preserve beard, mustache and glasses if present.
-
-Body:
-- Simplified athletic proportions.
-- Neutral standing pose.
-
-Clothes:
-- Preserve clothing colors when possible.
-- Simplify clothing details.
-- Remove logos, text and brands.
-
-Style:
-- Cute
-- Modern
-- Friendly
-- Duolingo-level mascot quality
-- Mobile application illustration
-- Pixar-inspired
-- Soft lighting
-- High quality
-- Premium icon style
+Style (match our SVG mascot icons):
+- Clean vector-like cartoon illustration, thick friendly outlines.
+- Soft flat gradients, no realistic skin texture, pores, wrinkles, or photo realism.
+- Big expressive eyes, slightly oversized head, cute and modern.
+- Premium mobile-app icon quality — same vibe as our other mascots (deer, athlete skins): sticker/icon, not a scene.
+- Soft lighting, bright but natural colors.
 
 Output:
-Generate only one avatar.
-Transparent PNG.
-1024x1024.`;
+- One avatar only.
+- Transparent PNG outside the circle (or clean circular badge).
+- Square 1024x1024, subject centered.
+- No text, watermarks, or extra objects.`;
