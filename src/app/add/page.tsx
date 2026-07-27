@@ -240,7 +240,7 @@ export default function AddFoodPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="2 яйця, 100 г авокадо, шматок цільнозернового хліба"
-            className={`${inputClass} min-h-[74px] resize-none`}
+            className={`${inputClass} min-h-[148px] resize-none`}
           />
         </label>
 
@@ -248,26 +248,26 @@ export default function AddFoodPage() {
           <button
             type="button"
             onClick={() => cameraRef.current?.click()}
-            className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] border-2 border-[var(--color-accent-500)] bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-tile))] px-3 py-3.5 text-[var(--color-text)] shadow-[0_3px_0_var(--color-accent-800)] transition-[transform,box-shadow,background-color] active:translate-y-[2px] active:shadow-[0_1px_0_var(--color-accent-800)]"
+            className="flex min-h-11 flex-col items-center gap-1.5 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-accent)_35%,var(--color-divider))] bg-[var(--color-tile)] px-3 py-3 text-[var(--color-text)] shadow-[var(--shadow-card)] transition-[transform,background-color] active:scale-[0.97]"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] text-[#f5f4ff]">
-              <Camera size={22} strokeWidth={2.25} />
+            <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-accent)_14%,var(--color-surface))] text-[var(--color-accent)]">
+              <Camera size={20} strokeWidth={2} />
             </span>
-            <span className="text-[15px] font-bold leading-none">Фото</span>
-            <span className="text-[11px] font-medium text-[var(--color-muted)]">
+            <span className="text-[14px] font-semibold leading-none">Фото</span>
+            <span className="text-[11px] text-[var(--color-muted3)]">
               Зняти камерою
             </span>
           </button>
           <button
             type="button"
             onClick={() => uploadRef.current?.click()}
-            className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_12%,var(--color-tile))] px-3 py-3.5 text-[var(--color-text)] shadow-[0_3px_0_var(--color-accent-800)] transition-[transform,box-shadow,background-color] active:translate-y-[2px] active:shadow-[0_1px_0_var(--color-accent-800)]"
+            className="flex min-h-11 flex-col items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-tile)] px-3 py-3 text-[var(--color-text)] shadow-[var(--shadow-card)] transition-[transform,background-color] active:scale-[0.97]"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-300)] text-[var(--color-accent-800)]">
-              <Upload size={22} strokeWidth={2.25} />
+            <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface)] text-[var(--color-muted)]">
+              <Upload size={20} strokeWidth={2} />
             </span>
-            <span className="text-[15px] font-bold leading-none">Файл</span>
-            <span className="text-[11px] font-medium text-[var(--color-muted)]">
+            <span className="text-[14px] font-semibold leading-none">Файл</span>
+            <span className="text-[11px] text-[var(--color-muted3)]">
               З галереї
             </span>
           </button>
