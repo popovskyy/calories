@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -19,12 +19,13 @@ import { useCurrentUser, useDashboard, useEpics } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { calcMacroTargets } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
+import { cn } from "@/lib/cn";
 
 export default function DashboardPage() {
   const mounted = useMounted();
   const { user, isLoading, isError, refetch } = useCurrentUser();
   const dash = useDashboard();
-  const moreRef = useRef<HTMLDetailsElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   if (mounted && (isError || dash.isError)) {
     return (
@@ -44,15 +45,14 @@ export default function DashboardPage() {
   const macroTargets = calcMacroTargets(user.targetCalories, user.weight);
 
   const openQuests = () => {
-    const el = moreRef.current;
-    if (!el) return;
-    el.open = true;
-    requestAnimationFrame(() => {
+    setMoreOpen(true);
+    // Чекаємо, поки accordion розгорнеться, інакше scroll цілить у згорнуте.
+    window.setTimeout(() => {
       document.getElementById("weekly-quests")?.scrollIntoView({
         behavior: "smooth",
         block: "nearest",
       });
-    });
+    }, 340);
   };
 
   return (
@@ -124,38 +124,54 @@ export default function DashboardPage() {
         Вага / квести / хроніки / графік — поза першим екраном.
         Інакше головна читається як дашборд SaaS.
       */}
-      <details ref={moreRef} className="group">
-        <summary className="mcard flex cursor-pointer list-none items-center justify-between gap-2 px-[18px] py-3.5 [&::-webkit-details-marker]:hidden">
+      <section>
+        <button
+          type="button"
+          aria-expanded={moreOpen}
+          onClick={() => setMoreOpen((o) => !o)}
+          className="mcard flex w-full cursor-pointer items-center justify-between gap-2 px-[18px] py-3.5 text-left"
+        >
           <span className="lbl !mb-0">Ще</span>
           <span className="flex items-center gap-1.5 text-[14px] text-[var(--color-muted3)]">
-            вага · квести · графік
+            вага · квести · хроніки · графік
             <ChevronDown
               size={16}
-              className="shrink-0 transition-transform duration-[var(--duration-ui)] group-open:rotate-180"
+              className={cn(
+                "shrink-0 transition-transform duration-[var(--duration-sheet)]",
+                moreOpen && "rotate-180",
+              )}
             />
           </span>
-        </summary>
-        <div className="mt-4 flex flex-col gap-4">
-          <WeightGoalCard />
-          <div id="weekly-quests">
-            <WeeklyQuestsCard />
-          </div>
-          <ActiveEpic />
-          <section className="mcard p-[18px_18px_16px]">
-            <div className="mb-3.5 flex items-baseline justify-between">
-              <span className="lbl">Останні 7 днів</span>
-              <span className="text-[14px] text-[var(--color-muted3)]">
-                ціль {user.targetCalories.toLocaleString("uk-UA")}
-              </span>
+        </button>
+        {/* grid-rows 0fr→1fr — height-анімація без вимірювань */}
+        <div
+          className="grid transition-[grid-template-rows] duration-[var(--duration-sheet)] ease-[var(--ease-out)]"
+          style={{ gridTemplateRows: moreOpen ? "1fr" : "0fr" }}
+        >
+          <div className="overflow-hidden">
+            <div className="flex flex-col gap-4 pt-4">
+              <WeightGoalCard />
+              <div id="weekly-quests">
+                <WeeklyQuestsCard />
+              </div>
+              <ActiveEpic />
+              <section className="mcard p-[18px_18px_16px]">
+                <div className="mb-3.5 flex items-baseline justify-between">
+                  <span className="lbl">Останні 7 днів</span>
+                  <span className="text-[14px] text-[var(--color-muted3)]">
+                    ціль {user.targetCalories.toLocaleString("uk-UA")}
+                  </span>
+                </div>
+                {dash.data ? (
+                  <WeeklyChart days={dash.data.days} target={user.targetCalories} />
+                ) : (
+                  <Skeleton className="h-[150px] w-full" />
+                )}
+              </section>
             </div>
-            {dash.data ? (
-              <WeeklyChart days={dash.data.days} target={user.targetCalories} />
-            ) : (
-              <Skeleton className="h-[150px] w-full" />
-            )}
-          </section>
+          </div>
         </div>
-      </details>
+      </section>
     </>
   );
 }

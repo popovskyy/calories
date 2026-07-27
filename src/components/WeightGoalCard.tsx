@@ -1,10 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { Scale } from "lucide-react";
+import { toast } from "sonner";
 import { ProgressBar } from "@/components/ProgressBar";
 import { UserFormDialog } from "@/components/UserFormDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useCurrentUser, useForecast } from "@/hooks/useQueries";
+import {
+  useCurrentUser,
+  useForecast,
+  useLogWeight,
+  useWeightHistory,
+} from "@/hooks/useQueries";
 
 export function WeightGoalCard() {
   const { user } = useCurrentUser();
@@ -110,6 +117,9 @@ export function WeightGoalCard() {
 
       <ProgressBar value={done} />
 
+      <WeighInRow currentWeight={currentWeight} />
+      <WeightSparkline />
+
       <div>
         <p className="text-[15px] font-semibold text-[var(--color-text)]">
           Прогноз ШІ на сьогодні: {fmtKg(expectedWeight)}
@@ -131,6 +141,115 @@ export function WeightGoalCard() {
         Оцінка орієнтовна: 7700 ккал ≈ 1 кг
       </p>
     </section>
+  );
+}
+
+/** Швидке зважування: одне поле і кнопка — без відкриття форми профілю. */
+function WeighInRow({ currentWeight }: { currentWeight: number | null }) {
+  const logWeight = useLogWeight();
+  const [value, setValue] = useState("");
+
+  const submit = () => {
+    const w = Number(value.replace(",", "."));
+    if (!Number.isFinite(w) || w < 30 || w > 300) {
+      toast.error("Вкажи вагу від 30 до 300 кг");
+      return;
+    }
+    logWeight.mutate(Math.round(w * 10) / 10, {
+      onSuccess: (res) => {
+        setValue("");
+        toast.success(
+          `Вагу записано: ${res.weight.toFixed(1).replace(".", ",")} кг`,
+        );
+      },
+      onError: (e) =>
+        toast.error(e instanceof Error ? e.message : "Не вдалося записати"),
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="relative flex-1">
+        <Scale
+          size={15}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted3)]"
+        />
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.1"
+          min={30}
+          max={300}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+          placeholder={
+            currentWeight != null
+              ? `Зважився? Зараз ${currentWeight.toFixed(1).replace(".", ",")}`
+              : "Вага, кг"
+          }
+          className="h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-tile)] pl-9 pr-3 text-[15px] tabular-nums text-[var(--color-text)] placeholder:text-[var(--color-muted3)] focus:border-[var(--color-accent)] focus:outline-none"
+        />
+      </div>
+      <button
+        type="button"
+        className="btn btn-primary btn-sm h-11 shrink-0 px-4"
+        disabled={logWeight.isPending || value.trim() === ""}
+        onClick={submit}
+      >
+        {logWeight.isPending ? "…" : "Записати"}
+      </button>
+    </div>
+  );
+}
+
+/** Спарклайн останніх зважувань — тренд видно без сторінки статистики. */
+function WeightSparkline() {
+  const { data } = useWeightHistory();
+  const points = (data?.items ?? []).slice(-30);
+  if (points.length < 2) return null;
+
+  const w = 320;
+  const h = 44;
+  const pad = 3;
+  const weights = points.map((p) => p.weight);
+  const min = Math.min(...weights);
+  const max = Math.max(...weights);
+  const span = Math.max(max - min, 0.5);
+  const xy = points.map((p, i) => {
+    const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+    const y = pad + (1 - (p.weight - min) / span) * (h - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const last = xy[xy.length - 1]!.split(",");
+
+  return (
+    <div>
+      <svg
+        aria-hidden
+        viewBox={`0 0 ${w} ${h}`}
+        className="h-[44px] w-full"
+        preserveAspectRatio="none"
+      >
+        <polyline
+          points={xy.join(" ")}
+          fill="none"
+          stroke="var(--color-accent)"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          opacity="0.85"
+        />
+        <circle cx={last[0]} cy={last[1]} r="3" fill="var(--color-accent)" />
+      </svg>
+      <div className="flex justify-between text-[11px] tabular-nums text-[var(--color-muted3)]">
+        <span>{fmtKg(min)}</span>
+        <span>
+          {points.length} {points.length === 1 ? "запис" : points.length < 5 ? "записи" : "записів"}
+        </span>
+        <span>{fmtKg(max)}</span>
+      </div>
+    </div>
   );
 }
 

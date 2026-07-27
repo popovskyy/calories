@@ -12,6 +12,7 @@ import type {
   MealDTO,
   NotificationDTO,
   QuestsResponse,
+  RecentActivityDTO,
   RecentMealDTO,
   ReliefStatus,
   SaveMealResult,
@@ -117,6 +118,9 @@ export const generateAvatar = (input: GenerateAvatarInput) =>
 // --- Meals ---
 export const getMeals = (date: string) =>
   req<MealDTO[]>(`/api/meals?date=${encodeURIComponent(date)}`);
+
+export const getRecentActivities = (limit = 10) =>
+  req<RecentActivityDTO[]>(`/api/activities/recent?limit=${limit}`);
 
 export const getRecentMeals = (limit = 12) =>
   req<RecentMealDTO[]>(`/api/meals/recent?limit=${limit}`);
@@ -300,6 +304,22 @@ export const getRelief = () => req<ReliefStatus>("/api/wallet/relief");
 export const claimReliefApi = () =>
   req<{ granted: GrantedReward[]; status: ReliefStatus }>("/api/wallet/relief", {
     method: "POST",
+  });
+
+// --- Вага ---
+export interface WeightPoint {
+  date: string;
+  weight: number;
+}
+
+export const getWeightHistory = () =>
+  req<{ items: WeightPoint[] }>("/api/weight");
+
+/** Швидке зважування: оновлює вагу, норму калорій і точку історії за сьогодні. */
+export const logWeight = (weight: number) =>
+  req<{ ok: boolean; date: string; weight: number }>("/api/weight", {
+    method: "POST",
+    body: JSON.stringify({ weight }),
   });
 
 // --- Гаманець ---

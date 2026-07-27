@@ -1,50 +1,112 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <!--
+    Маскот «Роналду»: нічний стадіон, прожектори, фірмовий кіф, упевнена
+    усмішка, комір Португалії з «7». Стиль deer.svg: сцена + легка анімація.
+  -->
   <defs>
-    <radialGradient id="bg" cx="50%" cy="30%" r="85%">
-      <stop offset="0" stop-color="#18A862"/>
-      <stop offset="1" stop-color="#053B22"/>
+    <radialGradient id="r-bg" cx="50%" cy="24%" r="88%">
+      <stop offset="0" stop-color="#0f5c38"/>
+      <stop offset="0.55" stop-color="#07351f"/>
+      <stop offset="1" stop-color="#02150c"/>
     </radialGradient>
-    <linearGradient id="sk" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#F7D0AC"/>
-      <stop offset="1" stop-color="#E0A87E"/>
+    <linearGradient id="r-skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#efc49c"/>
+      <stop offset="0.6" stop-color="#d8a074"/>
+      <stop offset="1" stop-color="#b8814f"/>
     </linearGradient>
-    <linearGradient id="hr" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2A2630"/>
-      <stop offset="1" stop-color="#100E15"/>
+    <linearGradient id="r-hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#38291b"/>
+      <stop offset="1" stop-color="#140d06"/>
     </linearGradient>
-    <clipPath id="cl"><circle cx="128" cy="128" r="128"/></clipPath>
+    <linearGradient id="r-kit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9b1421"/>
+      <stop offset="1" stop-color="#5e0a12"/>
+    </linearGradient>
+    <clipPath id="r-clip">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
   </defs>
-  <g clip-path="url(#cl)">
-    <circle cx="128" cy="128" r="128" fill="url(#bg)"/>
-    <!-- jersey: Portugal red with green trim -->
-    <path d="M36 256 V226 Q128 188 220 226 V256 Z" fill="#E11D2A" stroke="#04250f" stroke-width="6"/>
-    <path d="M92 214 q36 14 72 0" fill="none" stroke="#0B7A3B" stroke-width="7" stroke-linecap="round"/>
-    <!-- neck -->
-    <path d="M110 184 h36 v22 q-18 12 -36 0 Z" fill="url(#sk)" stroke="#C68A56" stroke-width="5"/>
-    <!-- ears -->
-    <circle cx="74" cy="122" r="12" fill="url(#sk)" stroke="#C68A56" stroke-width="5"/>
-    <circle cx="182" cy="122" r="12" fill="url(#sk)" stroke="#C68A56" stroke-width="5"/>
-    <!-- head -->
-    <ellipse cx="128" cy="120" rx="55" ry="59" fill="url(#sk)" stroke="#C68A56" stroke-width="5"/>
-    <!-- light stubble jaw -->
-    <path d="M84 132 Q90 170 128 180 Q166 170 172 132 Q160 152 128 156 Q96 152 84 132 Z" fill="#3a3138" opacity="0.28"/>
-    <!-- hair: short quiff with side part -->
-    <path d="M72 108 Q66 56 128 52 Q192 56 186 110 Q176 82 150 76 Q140 92 132 100 Q150 80 150 74 Q120 78 104 100 Q98 84 118 74 Q86 82 72 108 Z" fill="url(#hr)" stroke="#0c0a10" stroke-width="4"/>
-    <path d="M120 74 Q112 92 108 104" fill="none" stroke="#0c0a10" stroke-width="3" stroke-linecap="round"/>
-    <!-- eyebrows (right one raised = confident) -->
-    <path d="M92 102 q17 -6 33 1" fill="none" stroke="#17141b" stroke-width="9" stroke-linecap="round"/>
-    <path d="M131 96 q17 -6 33 3" fill="none" stroke="#17141b" stroke-width="9" stroke-linecap="round"/>
-    <!-- eyes -->
-    <ellipse cx="108" cy="120" rx="14" ry="16" fill="#fff" stroke="#2a2630" stroke-width="3.5"/>
-    <ellipse cx="148" cy="120" rx="14" ry="16" fill="#fff" stroke="#2a2630" stroke-width="3.5"/>
-    <circle cx="110" cy="123" r="7.5" fill="#241f14"/>
-    <circle cx="150" cy="123" r="7.5" fill="#241f14"/>
-    <circle cx="113" cy="119" r="2.6" fill="#fff"/>
-    <circle cx="153" cy="119" r="2.6" fill="#fff"/>
-    <!-- nose -->
-    <path d="M128 126 q-5 12 -1 18 q4 3 8 0" fill="none" stroke="#C68A56" stroke-width="4.5" stroke-linecap="round"/>
-    <!-- confident grin -->
-    <path d="M106 156 Q128 172 150 156" fill="none" stroke="#7a4a2a" stroke-width="5" stroke-linecap="round"/>
-    <path d="M108 157 Q128 164 148 157" fill="#fff"/>
+
+  <style>
+    .r-eye { transform-box: fill-box; transform-origin: center; animation: rBlink 5.5s ease-in-out infinite; }
+    .r-flood { animation: rFlood 6s ease-in-out infinite; }
+    .r-flood2 { animation-delay: -3s; }
+    .r-stand { animation: rStand 8s ease-in-out infinite; }
+    @keyframes rBlink {
+      0%, 92%, 100% { transform: scaleY(1); }
+      94.5% { transform: scaleY(0.08); }
+    }
+    @keyframes rFlood {
+      0%, 100% { opacity: .5; }
+      50% { opacity: .95; }
+    }
+    @keyframes rStand {
+      0%, 100% { opacity: .25; }
+      50% { opacity: .45; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .r-eye, .r-flood, .r-flood2, .r-stand { animation: none !important; }
+    }
+  </style>
+
+  <g clip-path="url(#r-clip)">
+    <circle cx="128" cy="128" r="128" fill="url(#r-bg)"/>
+
+    <!-- прожектори стадіону -->
+    <g class="r-flood">
+      <path d="M30 30 l10 -12 M40 34 l12 -10 M26 42 l8 -14" stroke="#eaf6ff" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="34" cy="34" r="7" fill="#eaf6ff"/>
+    </g>
+    <g class="r-flood r-flood2">
+      <path d="M226 30 l-10 -12 M216 34 l-12 -10 M230 42 l-8 -14" stroke="#eaf6ff" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="222" cy="34" r="7" fill="#eaf6ff"/>
+    </g>
+    <!-- трибуни -->
+    <path class="r-stand" d="M0 84 q64 -18 128 0 q64 18 128 0 v14 q-64 16 -128 0 q-64 -16 -128 0z" fill="#0a1f14"/>
+
+    <!-- вуха -->
+    <ellipse cx="74" cy="142" rx="9" ry="13" fill="#d8a074"/>
+    <ellipse cx="182" cy="142" rx="9" ry="13" fill="#d8a074"/>
+
+    <!-- голова: гостре підборіддя -->
+    <path d="M76 138 Q76 88 128 84 Q180 88 180 138 Q180 176 155 190 Q128 202 101 190 Q76 176 76 138Z" fill="url(#r-skin)" stroke="#a87850" stroke-width="2.5"/>
+
+    <!-- волосся поверх чола + фірмовий кіф -->
+    <path d="M74 124 Q72 62 128 56 Q184 62 182 124 L174 126 Q174 96 128 92 Q82 96 82 126 Z" fill="url(#r-hair)"/>
+    <path d="M98 64 q4 -20 28 -18 q-4 -12 -20 -8 q-16 4 -8 26z" fill="url(#r-hair)"/>
+    <path d="M92 74 q14 -10 34 -10" stroke="#4a3826" stroke-width="2.5" fill="none" opacity=".6" stroke-linecap="round"/>
+
+    <!-- брови — гострі, впевнені -->
+    <path d="M92 120 q17 -11 34 -3" fill="none" stroke="#1d140b" stroke-width="6.5" stroke-linecap="round"/>
+    <path d="M130 117 q17 -8 34 3" fill="none" stroke="#1d140b" stroke-width="6.5" stroke-linecap="round"/>
+
+    <!-- очі -->
+    <g class="r-eye">
+      <ellipse cx="108" cy="138" rx="13" ry="14" fill="#fff"/>
+      <circle cx="110" cy="141" r="6.5" fill="#33260f"/>
+      <circle cx="112.5" cy="138" r="2.2" fill="#fff"/>
+    </g>
+    <g class="r-eye" style="animation-delay:-.12s">
+      <ellipse cx="148" cy="138" rx="13" ry="14" fill="#fff"/>
+      <circle cx="146" cy="141" r="6.5" fill="#33260f"/>
+      <circle cx="148.5" cy="138" r="2.2" fill="#fff"/>
+    </g>
+
+    <!-- ніс -->
+    <path d="M124 148 q4 10 8 0 q0 8 -4 8 q-4 0 -4 -8z" fill="#c08a5c"/>
+
+    <!-- широка усмішка -->
+    <path d="M100 168 q28 24 56 0 q-6 16 -28 19 q-22 -3 -28 -19z" fill="#7a4028"/>
+    <path d="M108 171 q20 12 40 0 l-3 7 q-17 8 -34 0 z" fill="#fff"/>
+    <path d="M96 164 q2 6 8 9 M160 164 q-2 6 -8 9" stroke="#b8824f" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+
+    <!-- легка щетина -->
+    <path d="M100 178 q28 20 56 0 q-4 14 -28 17 q-24 -3 -28 -17z" fill="#1d140b" opacity=".12"/>
+
+    <!-- комір збірної з 7 -->
+    <path d="M42 256 V214 Q128 186 214 214 V256 Z" fill="url(#r-kit)"/>
+    <path d="M42 256 V220 Q128 196 214 220 V256 Z" fill="none" stroke="#0f5c38" stroke-width="5" opacity=".8"/>
+    <path d="M112 214 q16 8 32 0 l-4 10 q-12 6 -24 0 z" fill="#e8c86a"/>
+    <text x="128" y="248" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="26" font-weight="900" fill="#e8c86a">7</text>
   </g>
 </svg>

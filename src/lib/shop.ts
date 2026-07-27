@@ -130,7 +130,10 @@ export async function buildShop(userId: string): Promise<ShopResponse | null> {
     soundpack: user.soundpack,
   };
 
-  const cosmetics: ShopCosmetic[] = ALL_COSMETICS.map((c) => {
+  const cosmetics: ShopCosmetic[] = ALL_COSMETICS.filter(
+    // Знята з вітрини косметика видима лише власникам (вдягнути/зняти).
+    (c) => !c.vaulted || ownedCosmetics.has(`${c.kind}:${c.id}`),
+  ).map((c) => {
     const earnedOnly = c.unlock.via !== "shop";
     const owned =
       isDefaultCosmetic(c) ||

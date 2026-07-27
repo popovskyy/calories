@@ -57,9 +57,11 @@ export function RewardCelebrations() {
 
   const soundpack = user?.soundpack ?? "default";
   const packRef = useRef(soundpack);
-  packRef.current = soundpack;
   const reduceRef = useRef(reduce);
-  reduceRef.current = reduce;
+  useEffect(() => {
+    packRef.current = soundpack;
+    reduceRef.current = reduce;
+  }, [soundpack, reduce]);
 
   useEffect(() => {
     return qc.getQueryCache().subscribe((event) => {

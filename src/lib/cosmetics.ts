@@ -29,6 +29,12 @@ export interface CosmeticDef {
   /** Колір/градієнт для прев'ю в магазині. */
   swatch: string;
   sortOrder: number;
+  /**
+   * Знято з вітрини (детокс магазину): власники зберігають річ і можуть її
+   * вдягати, але купити більше не можна і в ротацію прилавка вона не потрапляє.
+   * Видаляти з каталогу не можна — рендер вдягнутих речей шукає def за id.
+   */
+  vaulted?: boolean;
 }
 
 /**
@@ -58,6 +64,7 @@ export const FINISHERS: CosmeticDef[] = [
     unlock: { via: "shop", price: 200 },
     swatch: "linear-gradient(135deg,#5b9c3a,#3d6b26)",
     sortOrder: 20,
+    vaulted: true,
   },
   {
     id: "perfect",
@@ -77,6 +84,7 @@ export const FINISHERS: CosmeticDef[] = [
     unlock: { via: "shop", price: 250 },
     swatch: "linear-gradient(135deg,#1A1A40,#9184d9)",
     sortOrder: 40,
+    vaulted: true,
   },
   {
     id: "goldrain",
@@ -110,6 +118,7 @@ export const TITLES: CosmeticDef[] = [
     unlock: { via: "shop", price: 150 },
     swatch: "#9184d9",
     sortOrder: 10,
+    vaulted: true,
   },
   {
     id: "gourmet",
@@ -137,6 +146,7 @@ export const TITLES: CosmeticDef[] = [
     unlock: { via: "shop", price: 300 },
     swatch: "#AFAFAF",
     sortOrder: 40,
+    vaulted: true,
   },
   {
     id: "unbroken",
@@ -190,6 +200,7 @@ export const FRAMES: CosmeticDef[] = [
     unlock: { via: "shop", price: 200 },
     swatch: "linear-gradient(135deg,#e8e8e8,#9a9a9a)",
     sortOrder: 10,
+    vaulted: true,
   },
   {
     id: "gold",

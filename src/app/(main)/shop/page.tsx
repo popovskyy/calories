@@ -8,7 +8,6 @@ import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { Modal } from "@/components/ui/Dialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StallSection } from "@/components/shop/StallSection";
-import { GearSection } from "@/components/shop/GearSection";
 import { CosmeticsSection } from "@/components/shop/CosmeticsSection";
 import { EvolutionSection } from "@/components/shop/EvolutionSection";
 import { WalletSection } from "@/components/shop/WalletSection";
@@ -154,12 +153,7 @@ export default function ShopPage() {
             ))}
           </nav>
 
-          {tab === "stall" ? (
-            <>
-              <StallSection shop={shop.data} />
-              <GearSection shop={shop.data} />
-            </>
-          ) : null}
+          {tab === "stall" ? <StallSection shop={shop.data} /> : null}
           {tab === "rest" ? (
             <>
               <EvolutionSection shop={shop.data} user={user} />
@@ -188,16 +182,8 @@ export default function ShopPage() {
               ) : null}
 
               <SkinSection
-                title="Преміум"
-                skins={premium}
-                coins={coins}
-                onEquip={onEquipSkin}
-                onBuy={(s) => setConfirm({ kind: "skin", item: s })}
-                equipping={equipSkin.isPending ? equipSkin.variables : null}
-              />
-              <SkinSection
-                title="Безкоштовні"
-                skins={free}
+                title="Маскоти"
+                skins={[...premium, ...free]}
                 coins={coins}
                 onEquip={onEquipSkin}
                 onBuy={(s) => setConfirm({ kind: "skin", item: s })}

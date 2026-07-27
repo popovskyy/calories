@@ -41,10 +41,10 @@ function saleableItems(): ItemDef[] {
   return ITEMS.filter((i) => i.id !== BOX_ITEM_ID);
 }
 
-/** Косметика, що реально продається (заслужені речі в ротацію не потрапляють). */
+/** Косметика, що реально продається (заслужені й зняті з вітрини — ні). */
 function rotatableCosmetics(): CosmeticDef[] {
   return ALL_COSMETICS.filter(
-    (c) => c.unlock.via === "shop" && !isDefaultCosmetic(c),
+    (c) => c.unlock.via === "shop" && !isDefaultCosmetic(c) && !c.vaulted,
   );
 }
 

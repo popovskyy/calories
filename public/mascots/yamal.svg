@@ -1,55 +1,104 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <!--
+    Маскот «Ямаль»: вечір Барселони, кучері, юна широка усмішка,
+    блаугранові смуги коміра з «19» і конфеті. Стиль deer.svg.
+  -->
   <defs>
-    <radialGradient id="bg" cx="50%" cy="30%" r="85%">
-      <stop offset="0" stop-color="#D21A4E"/>
-      <stop offset="1" stop-color="#66082B"/>
+    <radialGradient id="y-bg" cx="50%" cy="24%" r="88%">
+      <stop offset="0" stop-color="#8c1040"/>
+      <stop offset="0.55" stop-color="#4c0a26"/>
+      <stop offset="1" stop-color="#1c0410"/>
     </radialGradient>
-    <linearGradient id="sk" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#C88A5A"/>
-      <stop offset="1" stop-color="#9A5E34"/>
+    <linearGradient id="y-skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d8a06a"/>
+      <stop offset="0.6" stop-color="#b87e46"/>
+      <stop offset="1" stop-color="#94602e"/>
     </linearGradient>
-    <linearGradient id="hr" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#241E24"/>
-      <stop offset="1" stop-color="#0F0B10"/>
+    <linearGradient id="y-hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#241a10"/>
+      <stop offset="1" stop-color="#0e0904"/>
     </linearGradient>
-    <clipPath id="cl"><circle cx="128" cy="128" r="128"/></clipPath>
+    <clipPath id="y-clip">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
   </defs>
-  <g clip-path="url(#cl)">
-    <circle cx="128" cy="128" r="128" fill="url(#bg)"/>
-    <!-- jersey: Spain red + yellow -->
-    <path d="M36 256 V226 Q128 188 220 226 V256 Z" fill="#C60B1E" stroke="#4d0512" stroke-width="6"/>
-    <path d="M60 220 q68 20 136 0" fill="none" stroke="#FFC400" stroke-width="8" stroke-linecap="round"/>
-    <!-- neck -->
-    <path d="M110 184 h36 v22 q-18 12 -36 0 Z" fill="url(#sk)" stroke="#7A4526" stroke-width="5"/>
-    <!-- ears -->
-    <circle cx="74" cy="126" r="12" fill="url(#sk)" stroke="#7A4526" stroke-width="5"/>
-    <circle cx="182" cy="126" r="12" fill="url(#sk)" stroke="#7A4526" stroke-width="5"/>
-    <!-- head -->
-    <ellipse cx="128" cy="122" rx="55" ry="59" fill="url(#sk)" stroke="#7A4526" stroke-width="5"/>
-    <!-- curly hair: cluster of bumps on top, integrated -->
-    <g fill="url(#hr)" stroke="#0c0810" stroke-width="3.5">
-      <path d="M70 110 Q62 66 96 60 Q112 46 140 54 Q176 50 186 88 Q194 104 184 118
-               Q182 96 168 90 Q176 78 160 74 Q150 88 150 96 Q150 74 132 72
-               Q114 74 112 92 Q108 76 120 70 Q96 72 96 92 Q86 84 84 100
-               Q78 96 70 110 Z"/>
+
+  <style>
+    .y-eye { transform-box: fill-box; transform-origin: center; animation: yBlink 5s ease-in-out infinite; }
+    .y-conf { animation: yConf 5s ease-in-out infinite; }
+    .y-conf2 { animation-delay: -1.8s; }
+    .y-conf3 { animation-delay: -3.4s; }
+    @keyframes yBlink {
+      0%, 91%, 100% { transform: scaleY(1); }
+      93.5% { transform: scaleY(0.08); }
+    }
+    @keyframes yConf {
+      0%, 100% { opacity: .35; transform: translateY(0); }
+      50% { opacity: .9; transform: translateY(6px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .y-eye, .y-conf, .y-conf2, .y-conf3 { animation: none !important; }
+    }
+  </style>
+
+  <g clip-path="url(#y-clip)">
+    <circle cx="128" cy="128" r="128" fill="url(#y-bg)"/>
+
+    <!-- конфеті -->
+    <rect class="y-conf" x="36" y="36" width="7" height="7" rx="2" fill="#ffd86a" transform="rotate(18 39 39)"/>
+    <rect class="y-conf y-conf2" x="212" y="52" width="6" height="6" rx="2" fill="#5c9ce0" transform="rotate(-14 215 55)"/>
+    <rect class="y-conf y-conf3" x="52" y="78" width="5" height="5" rx="1.5" fill="#ff6a8a" transform="rotate(30 54 80)"/>
+    <rect class="y-conf y-conf2" x="196" y="24" width="5" height="5" rx="1.5" fill="#7ee08a" transform="rotate(-24 198 26)"/>
+
+    <!-- кучері — хмарка з окремих завитків -->
+    <circle cx="92" cy="76" r="20" fill="url(#y-hair)"/>
+    <circle cx="118" cy="62" r="22" fill="url(#y-hair)"/>
+    <circle cx="148" cy="64" r="21" fill="url(#y-hair)"/>
+    <circle cx="170" cy="80" r="18" fill="url(#y-hair)"/>
+    <circle cx="78" cy="98 " r="15" fill="url(#y-hair)"/>
+    <circle cx="180" cy="100" r="14" fill="url(#y-hair)"/>
+    <path d="M76 104 Q78 76 128 72 Q178 76 180 104 L180 118 Q128 96 76 118 Z" fill="url(#y-hair)"/>
+    <!-- завиток-блік -->
+    <path d="M100 66 a8 8 0 1 1 10 8 M144 58 a8 8 0 1 1 10 8" stroke="#4a3624" stroke-width="2.5" fill="none" opacity=".7"/>
+
+    <!-- голова — юна, кругліша -->
+    <ellipse cx="128" cy="142" rx="51" ry="52" fill="url(#y-skin)" stroke="#7c4e22" stroke-width="2.5"/>
+
+    <!-- вуха -->
+    <ellipse cx="78" cy="144" rx="8" ry="12" fill="#b87e46"/>
+    <ellipse cx="178" cy="144" rx="8" ry="12" fill="#b87e46"/>
+
+    <!-- брови — легкі, підняті -->
+    <path d="M96 120 q15 -8 30 -2" fill="none" stroke="#160e06" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M130 118 q15 -6 30 2" fill="none" stroke="#160e06" stroke-width="5.5" stroke-linecap="round"/>
+
+    <!-- очі — великі, жваві -->
+    <g class="y-eye">
+      <ellipse cx="109" cy="138" rx="14" ry="15.5" fill="#fff"/>
+      <circle cx="112" cy="141" r="7.5" fill="#1d1206"/>
+      <circle cx="115" cy="137.5" r="2.5" fill="#fff"/>
     </g>
-    <circle cx="86" cy="96" r="10" fill="#1a151c"/>
-    <circle cx="128" cy="66" r="11" fill="#1a151c"/>
-    <circle cx="166" cy="86" r="10" fill="#1a151c"/>
-    <!-- eyebrows -->
-    <path d="M92 104 q17 -7 33 1" fill="none" stroke="#17121a" stroke-width="8.5" stroke-linecap="round"/>
-    <path d="M131 105 q17 -8 33 0" fill="none" stroke="#17121a" stroke-width="8.5" stroke-linecap="round"/>
-    <!-- big eyes -->
-    <ellipse cx="108" cy="122" rx="15" ry="17" fill="#fff" stroke="#241a12" stroke-width="3.5"/>
-    <ellipse cx="148" cy="122" rx="15" ry="17" fill="#fff" stroke="#241a12" stroke-width="3.5"/>
-    <circle cx="110" cy="125" r="8" fill="#20160e"/>
-    <circle cx="150" cy="125" r="8" fill="#20160e"/>
-    <circle cx="113" cy="121" r="2.8" fill="#fff"/>
-    <circle cx="153" cy="121" r="2.8" fill="#fff"/>
-    <!-- nose -->
-    <path d="M128 130 q-5 11 -1 17 q4 3 8 0" fill="none" stroke="#8A5230" stroke-width="4.5" stroke-linecap="round"/>
-    <!-- big confident smile -->
-    <path d="M104 158 Q128 178 152 158" fill="none" stroke="#3a2010" stroke-width="5" stroke-linecap="round"/>
-    <path d="M108 160 Q128 172 148 160 Z" fill="#fff"/>
+    <g class="y-eye" style="animation-delay:-.1s">
+      <ellipse cx="147" cy="138" rx="14" ry="15.5" fill="#fff"/>
+      <circle cx="144" cy="141" r="7.5" fill="#1d1206"/>
+      <circle cx="147" cy="137.5" r="2.5" fill="#fff"/>
+    </g>
+
+    <!-- ніс -->
+    <path d="M123 150 q5 9 10 0 q-1 8 -5 8 q-4 0 -5 -8z" fill="#9a6a38"/>
+
+    <!-- широка юна усмішка -->
+    <path d="M98 168 q30 26 60 0 q-6 18 -30 21 q-24 -3 -30 -21z" fill="#6a3820"/>
+    <path d="M106 171 q22 14 44 0 l-3 8 q-19 9 -38 0 z" fill="#fff"/>
+    <path d="M94 164 q3 7 9 10 M162 164 q-3 7 -9 10" stroke="#94602e" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+
+    <!-- блаугранові смуги коміра з 19 -->
+    <path d="M42 256 V212 Q128 186 214 212 V256 Z" fill="#a50044"/>
+    <path d="M74 256 V204 Q88 200 102 198 V256 Z" fill="#004d98"/>
+    <path d="M154 256 V198 Q168 200 182 204 V256 Z" fill="#004d98"/>
+    <text x="128" y="248" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="24" font-weight="900" fill="#ffd86a">19</text>
+
+    <!-- блік -->
+    <path d="M92 96 a50 40 0 0 1 36 -20" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".2"/>
   </g>
 </svg>

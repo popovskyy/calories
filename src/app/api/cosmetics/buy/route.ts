@@ -35,6 +35,12 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  if (def.vaulted) {
+    return NextResponse.json(
+      { error: "Цю річ знято з продажу" },
+      { status: 400 },
+    );
+  }
 
   const userId = auth.session.userId;
   const price = def.unlock.price;

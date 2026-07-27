@@ -294,6 +294,14 @@ export interface QuestsResponse {
   granted: GrantedReward[];
 }
 
+export interface RecentActivityDTO {
+  id: string;
+  description: string;
+  caloriesBurned: number;
+  durationMin: number | null;
+  createdAt: string;
+}
+
 export interface RecentMealDTO {
   id: string;
   description: string;

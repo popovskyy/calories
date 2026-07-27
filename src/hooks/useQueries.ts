@@ -30,13 +30,16 @@ import {
   getMeals,
   getNotifications,
   getQuests,
+  getRecentActivities,
   getRecentMeals,
   getRelief,
   getShop,
   getStreak,
   getWallet,
+  getWeightHistory,
   login,
   logout,
+  logWeight,
   markNotificationsRead,
   nudgeUser,
   register,
@@ -196,6 +199,14 @@ export function useRecentMeals(limit = 12) {
   });
 }
 
+export function useRecentActivities(limit = 10) {
+  return useQuery({
+    queryKey: ["activities", "recent", limit],
+    queryFn: () => getRecentActivities(limit),
+    staleTime: 30_000,
+  });
+}
+
 export function useStreak() {
   return useQuery({
     queryKey: ["streak"],
@@ -291,6 +302,7 @@ export function useSaveActivity() {
       // активність зменшує денний баланс — дровина летить «у мінус»
       armRecalc(-data.caloriesBurned);
       qc.invalidateQueries({ queryKey: ["activities", vars.date] });
+      qc.invalidateQueries({ queryKey: ["activities", "recent"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["arena"] });
       qc.invalidateQueries({ queryKey: ["me"] });
@@ -385,6 +397,29 @@ export function useForecast() {
     queryKey: ["forecast"],
     queryFn: getForecast,
     staleTime: 60_000,
+  });
+}
+
+// --- Вага ---
+export function useWeightHistory() {
+  return useQuery({
+    queryKey: ["weight-history"],
+    queryFn: getWeightHistory,
+    staleTime: 60_000,
+  });
+}
+
+export function useLogWeight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (weight: number) => logWeight(weight),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["weight-history"] });
+      qc.invalidateQueries({ queryKey: ["me"] }); // вага + перерахована норма
+      qc.invalidateQueries({ queryKey: ["forecast"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["epics"] }); // ваговий епік і плато
+    },
   });
 }
 

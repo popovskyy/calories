@@ -1,52 +1,104 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <!--
+    Маскот «Мессі»: небесно-блакитний вечір, три зірки і золотий м'яч-місяць,
+    борода, спокійна усмішка, біло-блакитний комір Аргентини з «10».
+  -->
   <defs>
-    <radialGradient id="bg" cx="50%" cy="30%" r="85%">
-      <stop offset="0" stop-color="#9AD1FF"/>
-      <stop offset="1" stop-color="#245C9E"/>
+    <radialGradient id="m-bg" cx="50%" cy="26%" r="86%">
+      <stop offset="0" stop-color="#6fb4e8"/>
+      <stop offset="0.55" stop-color="#2c6296"/>
+      <stop offset="1" stop-color="#0e2a48"/>
     </radialGradient>
-    <linearGradient id="sk" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#F8CBA2"/>
-      <stop offset="1" stop-color="#DDA067"/>
+    <linearGradient id="m-skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4cba0"/>
+      <stop offset="0.6" stop-color="#dfa876"/>
+      <stop offset="1" stop-color="#bf8a55"/>
     </linearGradient>
-    <linearGradient id="hr" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6E4A2C"/>
-      <stop offset="1" stop-color="#4A3120"/>
+    <linearGradient id="m-hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#54402a"/>
+      <stop offset="1" stop-color="#241708"/>
     </linearGradient>
-    <clipPath id="cl"><circle cx="128" cy="128" r="128"/></clipPath>
+    <clipPath id="m-clip">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
   </defs>
-  <g clip-path="url(#cl)">
-    <circle cx="128" cy="128" r="128" fill="url(#bg)"/>
-    <!-- jersey: Argentina sky-blue & white -->
-    <path d="M36 256 V226 Q128 188 220 226 V256 Z" fill="#EFF6FF" stroke="#274a7a" stroke-width="6"/>
-    <rect x="72" y="212" width="15" height="44" fill="#79C3EE"/>
-    <rect x="105" y="204" width="15" height="52" fill="#79C3EE"/>
-    <rect x="136" y="204" width="15" height="52" fill="#79C3EE"/>
-    <rect x="169" y="212" width="15" height="44" fill="#79C3EE"/>
-    <path d="M36 256 V226 Q128 188 220 226 V256 Z" fill="none" stroke="#274a7a" stroke-width="6"/>
-    <!-- neck -->
-    <path d="M110 184 h36 v22 q-18 12 -36 0 Z" fill="url(#sk)" stroke="#C68A54" stroke-width="5"/>
-    <!-- ears -->
-    <circle cx="74" cy="124" r="12" fill="url(#sk)" stroke="#C68A54" stroke-width="5"/>
-    <circle cx="182" cy="124" r="12" fill="url(#sk)" stroke="#C68A54" stroke-width="5"/>
-    <!-- head -->
-    <ellipse cx="128" cy="120" rx="56" ry="60" fill="url(#sk)" stroke="#C68A54" stroke-width="5"/>
-    <!-- trimmed beard hugging jaw -->
-    <path d="M78 126 Q84 172 128 184 Q172 172 178 126 Q170 150 150 160 Q128 166 106 160 Q86 150 78 126 Z" fill="#5E4028"/>
-    <!-- hair (integrated, side sweep) -->
-    <path d="M70 112 Q60 56 128 52 Q196 56 186 112 Q178 84 150 78 Q170 90 168 108 Q150 84 128 84 Q108 84 92 106 Q86 92 108 80 Q80 84 70 112 Z" fill="url(#hr)" stroke="#3C2917" stroke-width="4"/>
-    <!-- eyebrows -->
-    <path d="M92 102 q17 -8 33 0" fill="none" stroke="#4A3120" stroke-width="9" stroke-linecap="round"/>
-    <path d="M131 102 q17 -8 33 0" fill="none" stroke="#4A3120" stroke-width="9" stroke-linecap="round"/>
-    <!-- eyes -->
-    <ellipse cx="108" cy="120" rx="14" ry="16" fill="#fff" stroke="#3a2a1e" stroke-width="3.5"/>
-    <ellipse cx="148" cy="120" rx="14" ry="16" fill="#fff" stroke="#3a2a1e" stroke-width="3.5"/>
-    <circle cx="110" cy="123" r="7.5" fill="#4A3626"/>
-    <circle cx="150" cy="123" r="7.5" fill="#4A3626"/>
-    <circle cx="113" cy="119" r="2.6" fill="#fff"/>
-    <circle cx="153" cy="119" r="2.6" fill="#fff"/>
-    <!-- nose -->
-    <path d="M128 126 q-5 12 -1 18 q4 3 8 0" fill="none" stroke="#C68A56" stroke-width="4.5" stroke-linecap="round"/>
-    <!-- calm smile -->
-    <path d="M110 158 Q128 170 146 158" fill="none" stroke="#6a3f24" stroke-width="5" stroke-linecap="round"/>
+
+  <style>
+    .m-eye { transform-box: fill-box; transform-origin: center; animation: mBlink 6.5s ease-in-out infinite; }
+    .m-star { animation: mStar 4.5s ease-in-out infinite; }
+    .m-star2 { animation-delay: -1.6s; }
+    .m-star3 { animation-delay: -3s; }
+    .m-ball { animation: mBall 9s ease-in-out infinite; }
+    @keyframes mBlink {
+      0%, 93%, 100% { transform: scaleY(1); }
+      95.5% { transform: scaleY(0.08); }
+    }
+    @keyframes mStar {
+      0%, 100% { opacity: .3; }
+      50% { opacity: .95; }
+    }
+    @keyframes mBall {
+      0%, 100% { opacity: .55; }
+      50% { opacity: .85; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .m-eye, .m-star, .m-star2, .m-star3, .m-ball { animation: none !important; }
+    }
+  </style>
+
+  <g clip-path="url(#m-clip)">
+    <circle cx="128" cy="128" r="128" fill="url(#m-bg)"/>
+
+    <!-- золотий м'яч-місяць і три зірки чемпіона -->
+    <circle class="m-ball" cx="204" cy="46" r="17" fill="#ffd86a"/>
+    <path class="m-ball" d="M197 40 l7 5 -3 8 -8 0 -3 -8z" fill="#c9a13a"/>
+    <path class="m-star" d="M42 40 l3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1z" fill="#fff"/>
+    <path class="m-star m-star2" d="M74 24 l2 5 5 1 -4 4 1 5 -4 -2 -4 2 1 -5 -4 -4 5 -1z" fill="#fff" opacity=".8"/>
+    <path class="m-star m-star3" d="M30 76 l2 5 5 1 -4 4 1 5 -4 -2 -4 2 1 -5 -4 -4 5 -1z" fill="#fff" opacity=".7"/>
+
+    <!-- вуха -->
+    <ellipse cx="78" cy="142" rx="8" ry="12" fill="#dfa876"/>
+    <ellipse cx="178" cy="142" rx="8" ry="12" fill="#dfa876"/>
+
+    <!-- голова -->
+    <ellipse cx="128" cy="140" rx="52" ry="54" fill="url(#m-skin)" stroke="#a87850" stroke-width="2.5"/>
+
+    <!-- борода: обіймає щелепу, поверх голови -->
+    <path d="M80 142 Q82 200 128 204 Q174 200 176 142 L166 142 Q164 184 128 188 Q92 184 90 142 Z" fill="url(#m-hair)"/>
+    <path d="M96 168 q6 14 20 18 M160 168 q-6 14 -20 18" stroke="#3a2a16" stroke-width="2.5" fill="none" opacity=".6" stroke-linecap="round"/>
+
+    <!-- волосся поверх чола -->
+    <path d="M76 130 Q72 62 128 58 Q184 62 180 130 L172 132 Q172 96 128 92 Q84 96 84 132 Z" fill="url(#m-hair)"/>
+    <path d="M104 68 q12 -8 30 -6 M96 78 q10 -8 24 -8" stroke="#6a5236" stroke-width="2.5" fill="none" opacity=".55" stroke-linecap="round"/>
+
+    <!-- брови — спокійні -->
+    <path d="M94 120 q16 -7 32 -1" fill="none" stroke="#33240f" stroke-width="6" stroke-linecap="round"/>
+    <path d="M130 119 q16 -6 32 1" fill="none" stroke="#33240f" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- очі — великі, спокійні -->
+    <g class="m-eye">
+      <ellipse cx="108" cy="138" rx="13.5" ry="15" fill="#fff"/>
+      <circle cx="110" cy="141" r="7" fill="#3a2a12"/>
+      <circle cx="112.5" cy="138" r="2.3" fill="#fff"/>
+    </g>
+    <g class="m-eye" style="animation-delay:-.15s">
+      <ellipse cx="148" cy="138" rx="13.5" ry="15" fill="#fff"/>
+      <circle cx="146" cy="141" r="7" fill="#3a2a12"/>
+      <circle cx="148.5" cy="138" r="2.3" fill="#fff"/>
+    </g>
+
+    <!-- ніс -->
+    <path d="M123 150 q5 9 10 0 q-1 8 -5 8 q-4 0 -5 -8z" fill="#c98a62"/>
+
+    <!-- вуса + спокійна усмішка в бороді -->
+    <path d="M106 166 q22 10 44 0 q-4 -8 -22 -6 q-18 -2 -22 6z" fill="#241708"/>
+    <path d="M108 172 q20 14 40 0 q-4 10 -20 12 q-16 -2 -20 -12z" fill="#7a4028"/>
+    <path d="M114 174 q14 8 28 0 l-2 5 q-12 6 -24 0 z" fill="#fff"/>
+
+    <!-- комір Аргентини: смуги + 10 -->
+    <path d="M42 256 V216 Q128 194 214 216 V256 Z" fill="#eef6fc"/>
+    <path d="M60 256 V222 Q80 214 96 212 V256 Z" fill="#9ad2f5"/>
+    <path d="M160 256 V212 Q176 214 196 222 V256 Z" fill="#9ad2f5"/>
+    <text x="128" y="250" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="24" font-weight="900" fill="#2c6296">10</text>
   </g>
 </svg>
