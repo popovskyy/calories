@@ -92,6 +92,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Фото з аналізу/камери зберігаємо в записі — картка «Доказ» дивиться на imageUrl.
+  const imageUrl =
+    d.imageUrl?.trim() ||
+    (d.imageBase64
+      ? `data:${d.imageMimeType?.trim() || "image/jpeg"};base64,${d.imageBase64}`
+      : null);
+
   const meal = await prisma.mealLog.create({
     data: {
       userId: auth.session.userId,
@@ -101,7 +108,7 @@ export async function POST(req: NextRequest) {
       protein: protein!,
       fats: fats!,
       carbs: carbs!,
-      imageUrl: d.imageUrl ?? null,
+      imageUrl,
       status: "approved",
     },
   });

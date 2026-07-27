@@ -13,6 +13,10 @@ export const QUEST_KINDS = [
   "dual_days",
   "no_blowout",
   "weekend_clean",
+  "week_balance",
+  "activity_minutes",
+  "burn_total",
+  "protein_days",
 ] as const;
 
 export type QuestKindValue = (typeof QUEST_KINDS)[number];
@@ -22,7 +26,8 @@ export const QUEST_LIMITS = {
   titleMax: 80,
   descriptionMax: 280,
   targetMin: 1,
-  targetMax: 7,
+  /** Хвилини / ккал для марафонних видів; для «днів» достатньо ≤7. */
+  targetMax: 5000,
   rewardMin: 0,
   rewardMax: 5000,
   sortOrderMax: 1000,
@@ -49,8 +54,8 @@ export const questFields = {
   target: z.coerce
     .number({ message: "має бути число" })
     .int("має бути ціле число")
-    .min(QUEST_LIMITS.targetMin, `мінімум ${QUEST_LIMITS.targetMin} день`)
-    .max(QUEST_LIMITS.targetMax, `максимум ${QUEST_LIMITS.targetMax} днів`),
+    .min(QUEST_LIMITS.targetMin, `мінімум ${QUEST_LIMITS.targetMin}`)
+    .max(QUEST_LIMITS.targetMax, `максимум ${QUEST_LIMITS.targetMax}`),
   rewardCoins: z.coerce
     .number({ message: "має бути число" })
     .int("має бути ціле число")
@@ -110,7 +115,7 @@ export function validateQuestDraft(draft: {
     return `Опис задовгий (максимум ${QUEST_LIMITS.descriptionMax} символів)`;
   const t = draft.target ?? 0;
   if (!Number.isInteger(t) || t < QUEST_LIMITS.targetMin || t > QUEST_LIMITS.targetMax)
-    return `Ціль має бути від ${QUEST_LIMITS.targetMin} до ${QUEST_LIMITS.targetMax} днів`;
+    return `Ціль має бути від ${QUEST_LIMITS.targetMin} до ${QUEST_LIMITS.targetMax}`;
   const r = draft.rewardCoins ?? 0;
   if (!Number.isInteger(r) || r < QUEST_LIMITS.rewardMin || r > QUEST_LIMITS.rewardMax)
     return `Нагорода має бути від ${QUEST_LIMITS.rewardMin} до ${QUEST_LIMITS.rewardMax} монет`;

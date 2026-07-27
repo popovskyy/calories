@@ -43,6 +43,8 @@ export interface UserDTO {
   startWeight: number | null;
   startWeightDate: string | null;
   remindersEnabled: boolean;
+  /** false — акаунт чекає підтвердження адміна */
+  approved: boolean;
 }
 
 /** Нарахована нагорода (для тостів) */

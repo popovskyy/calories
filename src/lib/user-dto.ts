@@ -53,5 +53,6 @@ export function toUserDTO(user: UserWithSkins): UserDTO {
     startWeight: user.startWeight ?? null,
     startWeightDate: user.startWeightDate ?? null,
     remindersEnabled: user.remindersEnabled,
+    approved: user.approved ?? true,
   };
 }

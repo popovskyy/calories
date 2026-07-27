@@ -97,6 +97,7 @@ export default function AdminPage() {
           targetCalories: draft.targetCalories,
           avatarUrl: draft.avatarUrl,
           coins: draft.coins,
+          approved: draft.approved,
           recalcTarget: false,
         }),
       });
@@ -142,6 +143,28 @@ export default function AdminPage() {
       toast.error(err instanceof Error ? err.message : "Помилка");
     } finally {
       setRecalcing(false);
+    }
+  };
+
+  const setApproved = async (approved: boolean) => {
+    if (!selected) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: selected.id, approved }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Помилка");
+      toast.success(approved ? "Користувача підтверджено" : "Доступ закрито");
+      setSelected(body);
+      setDraft({ ...body, password: "" });
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Помилка");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -285,6 +308,11 @@ export default function AdminPage() {
                             @{u.username} · {GOAL_LABELS[u.goal]}
                           </span>
                           <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {u.approved ? null : (
+                              <span className="tag bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[var(--color-accent)]">
+                                очікує
+                              </span>
+                            )}
                             <span className="tag tag-accent tabular-nums">
                               {u.coins} монет
                             </span>
@@ -469,6 +497,25 @@ export default function AdminPage() {
                   </div>
 
                   <div className="flex flex-col gap-2 pt-1">
+                    {draft.approved === false ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-block"
+                        disabled={saving}
+                        onClick={() => void setApproved(true)}
+                      >
+                        Підтвердити доступ
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-block"
+                        disabled={saving}
+                        onClick={() => void setApproved(false)}
+                      >
+                        Закрити доступ
+                      </button>
+                    )}
                     <SubmitButton loading={saving} icon={<Save size={16} />}>
                       Зберегти
                     </SubmitButton>

@@ -89,7 +89,7 @@ export const QUEST_POOL: QuestTemplate[] = [
   {
     code: "dual_4",
     titleUk: "Повний день",
-    description: "4 дні підряд або будь-які 4: і їжа, і активність",
+    description: "4 будь-які дні тижня: і їжа, і активність",
     kind: "dual_days",
     target: 4,
     rewardCoins: 120,

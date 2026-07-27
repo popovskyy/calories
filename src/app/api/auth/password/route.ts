@@ -17,7 +17,7 @@ const schema = z.object({
 
 /** PATCH /api/auth/password — зміна пароля поточного користувача */
 export async function PATCH(req: NextRequest) {
-  const auth = await requireSession();
+  const auth = await requireSession({ allowPending: true });
   if (!auth.ok) return auth.response;
 
   const body = await req.json().catch(() => null);

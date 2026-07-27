@@ -136,6 +136,8 @@ export default function AddFoodPage() {
         protein: macros.protein,
         fats: macros.fats,
         carbs: macros.carbs,
+        // Картка «Доказ» перевіряє imageUrl — фото має лишитись у записі.
+        imageUrl: image ? image.preview : null,
       },
       {
         onSuccess: (res) => {

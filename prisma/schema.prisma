@@ -33,6 +33,8 @@ model User {
   startWeight      Float?
   startWeightDate  String? // YYYY-MM-DD
   remindersEnabled Boolean            @default(false)
+  /** Нові акаунти false — поки адмін не підтвердить. Існуючі лишаються true. */
+  approved         Boolean            @default(true)
   createdAt        DateTime           @default(now())
   // Косметика, що вдягається (id з каталогів у lib/cosmetics.ts)
   finisher         String             @default("confetti") // анімація закриття дня

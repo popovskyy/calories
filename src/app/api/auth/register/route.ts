@@ -7,7 +7,6 @@ import {
 } from "@/lib/auth";
 import { calcTargetCalories } from "@/lib/calories";
 import { todayYMD } from "@/lib/date";
-import { generateMascotAvatar } from "@/lib/gemini-avatar";
 import { prisma } from "@/lib/prisma";
 import { assertAvatarAllowed } from "@/lib/skin-catalog";
 import { setThemeCookie } from "@/lib/theme-cookie";
@@ -41,7 +40,7 @@ const registerSchema = z.object({
   targetWeight: z.number().positive().nullable().optional(),
   targetWeeks: z.number().int().min(1).max(104).nullable().optional(),
   avatarUrl: z.string().max(2_500_000).nullable().optional(),
-  // фото для генерації аватара під час реєстрації (ще немає сесії)
+  // фото лишаємо в API для сумісності клієнта — AI-аватар лише після апруву
   imageBase64: z.string().optional(),
   imageMimeType: z.string().optional(),
 });
@@ -56,8 +55,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { username, password, avatarUrl, imageBase64, imageMimeType, targetWeight, targetWeeks, ...profile } =
-    parsed.data;
+  const {
+    username,
+    password,
+    avatarUrl,
+    imageBase64: _photo,
+    imageMimeType: _mime,
+    targetWeight,
+    targetWeeks,
+    ...profile
+  } = parsed.data;
   const login = username.toLowerCase();
 
   const exists = await prisma.user.findUnique({ where: { username: login } });
@@ -68,23 +75,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let finalAvatar = avatarUrl ?? null;
-  let avatarWarning: string | null = null;
-  if (imageBase64) {
-    try {
-      finalAvatar = await generateMascotAvatar({
-        imageBase64,
-        imageMimeType,
-      });
-    } catch (err) {
-      avatarWarning =
-        err instanceof Error
-          ? err.message
-          : "Не вдалося згенерувати аватар";
-      console.error("[register] avatar generation failed:", avatarWarning);
-      finalAvatar = avatarUrl ?? null;
-    }
-  }
+  // Без Gemini на реєстрації: інакше спам спалює білінг до апруву.
+  const finalAvatar = avatarUrl ?? null;
+  const avatarWarning = _photo
+    ? "Аватар з фото згенерується після підтвердження адміном"
+    : null;
 
   const gate = await assertAvatarAllowed(null, finalAvatar);
   if (!gate.ok) {
@@ -120,6 +115,7 @@ export async function POST(req: NextRequest) {
       targetWeeks: targetWeeks ?? null,
       startWeight: profile.weight,
       startWeightDate: today,
+      approved: false,
     },
     include: {
       skins: { select: { skinId: true } },

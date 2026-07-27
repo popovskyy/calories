@@ -40,6 +40,10 @@ const KINDS = [
   { value: "dual_days", label: "Їжа + активність" },
   { value: "no_blowout", label: "Без перебору +15%" },
   { value: "weekend_clean", label: "Чисті вихідні" },
+  { value: "week_balance", label: "Тижневий баланс" },
+  { value: "activity_minutes", label: "Хвилини руху" },
+  { value: "burn_total", label: "Спалені ккал" },
+  { value: "protein_days", label: "Дні з білком" },
 ] as const;
 
 const KIND_LABEL = new Map<string, string>(KINDS.map((k) => [k.value, k.label]));

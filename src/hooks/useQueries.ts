@@ -81,6 +81,8 @@ export function useMe() {
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
+    // Поки чекаємо апрув — підтягуємо статус без перезавантаження.
+    refetchInterval: (q) => (q.state.data && !q.state.data.approved ? 8_000 : false),
   });
 }
 

@@ -67,7 +67,10 @@ export async function getSessionUser(): Promise<UserDTO | null> {
   return toUserDTO(user);
 }
 
-export async function requireSession(): Promise<
+export async function requireSession(opts?: {
+  /** Дозволити сесію без апруву (logout / me / password). */
+  allowPending?: boolean;
+}): Promise<
   { ok: true; session: SessionPayload } | { ok: false; response: NextResponse }
 > {
   const session = await getSession();
@@ -77,5 +80,31 @@ export async function requireSession(): Promise<
       response: NextResponse.json({ error: "Потрібен вхід" }, { status: 401 }),
     };
   }
+
+  if (!opts?.allowPending) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { approved: true },
+    });
+    if (!user) {
+      return {
+        ok: false,
+        response: NextResponse.json({ error: "Потрібен вхід" }, { status: 401 }),
+      };
+    }
+    if (!user.approved) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          {
+            error: "Акаунт очікує підтвердження адміністратора",
+            code: "PENDING_APPROVAL",
+          },
+          { status: 403 },
+        ),
+      };
+    }
+  }
+
   return { ok: true, session };
 }

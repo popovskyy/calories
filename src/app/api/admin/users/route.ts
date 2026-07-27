@@ -21,7 +21,9 @@ export async function GET() {
       themes: { select: { themeId: true } },
     },
   });
-  return NextResponse.json(users.map(toUserDTO));
+  // Непідтверджені зверху — щоб адмін одразу бачив чергу.
+  const sorted = [...users].sort((a, b) => Number(a.approved) - Number(b.approved));
+  return NextResponse.json(sorted.map(toUserDTO));
 }
 
 const currentYear = new Date().getFullYear();
@@ -49,6 +51,7 @@ const updateSchema = z.object({
   targetCalories: z.number().int().positive().optional(),
   avatarUrl: z.string().nullable().optional(),
   coins: z.number().int().min(0).max(10_000_000).optional(),
+  approved: z.boolean().optional(),
   recalcTarget: z.boolean().optional(),
 });
 
@@ -70,6 +73,8 @@ export async function PATCH(req: NextRequest) {
   if (!existing) {
     return NextResponse.json({ error: "Юзера не знайдено" }, { status: 404 });
   }
+
+  const wasApproved = existing.approved;
 
   if (rest.username && rest.username.toLowerCase() !== existing.username) {
     const clash = await prisma.user.findUnique({
@@ -112,6 +117,7 @@ export async function PATCH(req: NextRequest) {
       ...(password ? { passwordHash: await hashPassword(password) } : {}),
       ...(rest.avatarUrl !== undefined ? { avatarUrl: rest.avatarUrl } : {}),
       ...(rest.coins !== undefined ? { coins: rest.coins } : {}),
+      ...(rest.approved !== undefined ? { approved: rest.approved } : {}),
       targetCalories,
     },
     include: {
@@ -142,6 +148,16 @@ export async function PATCH(req: NextRequest) {
       title: "Монети нараховано",
       body: `Адмін нарахував +${delta.toLocaleString("uk-UA")} монет. Баланс: ${rest.coins.toLocaleString("uk-UA")}.`,
       url: "/shop",
+      dedupeKey: null,
+    }).catch(console.error);
+  }
+
+  if (rest.approved === true && !wasApproved) {
+    void notifyUser(id, {
+      kind: "system",
+      title: "Акаунт підтверджено",
+      body: "Адмін відкрив доступ — можна користуватись додатком.",
+      url: "/",
       dedupeKey: null,
     }).catch(console.error);
   }
