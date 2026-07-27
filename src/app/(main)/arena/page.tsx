@@ -2,7 +2,6 @@
 
 import { Trophy } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { DuelCard } from "@/components/DuelCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useArena } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
@@ -71,14 +70,6 @@ export default function ArenaPage() {
           </ul>
         </div>
       )}
-
-      <p className="text-[14px] leading-relaxed text-[var(--color-muted3)]">
-        У списку — усі зареєстровані. Хто ближчий до своєї норми сьогодні —
-        вище. Без записів за день — в кінці.
-      </p>
-
-      {/* Дуель нижче таблиці: очікування відповіді — лише тихий рядок. */}
-      <DuelCard />
     </>
   );
 }
