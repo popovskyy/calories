@@ -200,22 +200,6 @@ export interface EpicsResponse {
   granted: GrantedReward[];
 }
 
-export interface DuelDTO {
-  id: string;
-  weekStart: string;
-  status: string;
-  stake: number;
-  challengerId: string;
-  opponentId: string;
-  challengerName: string;
-  opponentName: string;
-  challengerScore: number;
-  opponentScore: number;
-  winnerId: string | null;
-  isMine: boolean;
-  awaitingMe: boolean;
-}
-
 /** Стан фонду підйомних — страховки для гравця без монет. */
 export interface ReliefStatus {
   available: boolean;
@@ -223,13 +207,6 @@ export interface ReliefStatus {
   amount: number;
   threshold: number;
   coins: number;
-}
-
-export interface DuelsResponse {
-  duels: DuelDTO[];
-  /** Кого можна викликати (усі, крім себе). Баланс — щоб не завищити ставку. */
-  rivals: { id: string; name: string; coins: number }[];
-  relief: ReliefStatus;
 }
 
 export interface NotificationDTO {
@@ -269,8 +246,10 @@ export interface ArenaEntry {
   todayCalories: number;
   /** target - today (>0 = залишок, <0 = перебір) */
   difference: number;
-  /** |consumed - target| — чим менше, тим краще для рейтингу */
+  /** |consumed - target| — тайбрейк рейтингу і призовий гейт ±15% */
   absError: number;
+  /** Очки дня 0–100 — основа рейтингу (див. dayScore в lib/arena.ts). */
+  score: number;
   hasLog: boolean;
   /** Чи є хоч один запис їжі — лише такі дні беруть участь у призах арени. */
   hasMeal: boolean;

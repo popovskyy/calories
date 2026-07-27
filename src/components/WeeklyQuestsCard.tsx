@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Circle, Dices } from "lucide-react";
 import { toast } from "sonner";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
@@ -13,6 +15,30 @@ export function WeeklyQuestsCard() {
   const q = useQuests();
   const shop = useShop();
   const reroll = useRerollQuest();
+  const reduce = useReducedMotion();
+  // Клейм-флеш на рядку: тост і звук робить RewardCelebrations, тут — лише
+  // локальний спалах на самому квесті, щоб момент мав адресу.
+  const seenClaimed = useRef<Set<string> | null>(null);
+  const [flashIds, setFlashIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const quests = q.data?.quests;
+    if (!quests) return;
+    if (seenClaimed.current === null) {
+      seenClaimed.current = new Set(
+        quests.filter((x) => x.claimed).map((x) => x.id),
+      );
+      return;
+    }
+    const newly = quests.filter(
+      (x) => x.claimed && !seenClaimed.current!.has(x.id),
+    );
+    if (newly.length === 0) return;
+    for (const x of newly) seenClaimed.current.add(x.id);
+    setFlashIds(newly.map((x) => x.id));
+    const t = window.setTimeout(() => setFlashIds([]), 1600);
+    return () => window.clearTimeout(t);
+  }, [q.data?.quests]);
 
   const rerollQty =
     shop.data?.items.find((i) => i.id === QUEST_REROLL_ITEM_ID)?.qty ?? 0;
@@ -48,10 +74,28 @@ export function WeeklyQuestsCard() {
               <li
                 key={quest.id}
                 className={cn(
-                  "rounded-[var(--radius-md)] border border-[var(--color-divider)] p-3",
-                  quest.claimed && "opacity-80",
+                  "relative rounded-[var(--radius-md)] border border-[var(--color-divider)] p-3",
+                  quest.claimed && !flashIds.includes(quest.id) && "opacity-80",
                 )}
               >
+                <AnimatePresence>
+                  {flashIds.includes(quest.id) ? (
+                    <motion.div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 z-10 rounded-[var(--radius-md)]"
+                      initial={{ opacity: reduce ? 0.5 : 0.9 }}
+                      animate={{ opacity: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: reduce ? 0.4 : 1.4, ease: "easeOut" }}
+                      style={{
+                        background:
+                          "radial-gradient(60% 100% at 50% 50%, color-mix(in srgb, var(--color-accent) 35%, transparent), transparent)",
+                        boxShadow:
+                          "inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 60%, transparent)",
+                      }}
+                    />
+                  ) : null}
+                </AnimatePresence>
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5 text-[15px] font-semibold text-[var(--color-text)]">

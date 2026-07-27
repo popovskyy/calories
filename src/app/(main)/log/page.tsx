@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { EmberFlash } from "@/components/hero/EmberFlash";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { LoadError } from "@/components/ui/LoadError";
 import {
   useActivities,
   useCurrentUser,
@@ -52,6 +53,17 @@ function LogPageInner() {
     }
   }, [searchParams, setSelectedDate]);
 
+  if (mounted && (meals.isError || activities.isError)) {
+    return (
+      <LoadError
+        message="Не вдалося завантажити журнал"
+        onRetry={() => {
+          if (meals.isError) void meals.refetch();
+          if (activities.isError) void activities.refetch();
+        }}
+      />
+    );
+  }
   if (!mounted || isLoading || !user) return <LogSkeleton />;
 
   const list = meals.data ?? [];

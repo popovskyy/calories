@@ -1,11 +1,12 @@
 "use client";
 
-import { Share2, Trophy } from "lucide-react";
+import { BellRing, Share2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useArena } from "@/hooks/useQueries";
+import { LoadError } from "@/components/ui/LoadError";
+import { useArena, useNudge } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { humanDate } from "@/lib/date";
 import { cn } from "@/lib/cn";
@@ -15,6 +16,14 @@ export default function ArenaPage() {
   const mounted = useMounted();
   const arena = useArena();
 
+  if (mounted && arena.isError) {
+    return (
+      <LoadError
+        message="Не вдалося завантажити арену"
+        onRetry={() => void arena.refetch()}
+      />
+    );
+  }
   if (!mounted || arena.isLoading) {
     return (
       <>
@@ -102,10 +111,11 @@ export default function ArenaPage() {
 
           {rest.length > 0 ? (
             <div className="overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
-              <div className="grid grid-cols-[36px_1fr_auto] gap-2 bg-[var(--color-surface)] px-3 py-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-muted3)]">
+              <div className="grid grid-cols-[36px_1fr_auto_auto] gap-2 bg-[var(--color-surface)] px-3 py-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-muted3)]">
                 <span>#</span>
                 <span>Далі</span>
-                <span className="text-right">До цілі</span>
+                <span className="text-right">Очки</span>
+                <span className="w-8" aria-hidden />
               </div>
               <ul className="divide-y divide-[var(--color-divider)] bg-[var(--color-bg)]">
                 {rest.map((e) => (
@@ -131,6 +141,102 @@ export default function ArenaPage() {
   );
 }
 
+/**
+ * Міні-кільце денного прогресу навколо аватара — стан гравця видно
+ * без читання цифр: скільки з'їдено до норми, перебір — червоним.
+ */
+function ProgressHalo({
+  entry,
+  size,
+  children,
+}: {
+  entry: ArenaEntry;
+  size: number;
+  children: React.ReactNode;
+}) {
+  const stroke = 3;
+  const s = size + 10;
+  const r = (s - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p =
+    entry.targetCalories > 0
+      ? Math.min(1, entry.todayCalories / entry.targetCalories)
+      : 0;
+  const over = entry.difference < 0;
+  const inTarget =
+    entry.hasLog && entry.absError <= entry.targetCalories * 0.05;
+  const color = over
+    ? "var(--color-red)"
+    : inTarget
+      ? "var(--color-green)"
+      : "var(--color-accent)";
+
+  return (
+    <div className="relative shrink-0" style={{ width: s, height: s }}>
+      <svg
+        aria-hidden
+        className="absolute inset-0 -rotate-90"
+        width={s}
+        height={s}
+        viewBox={`0 0 ${s} ${s}`}
+      >
+        <circle
+          cx={s / 2}
+          cy={s / 2}
+          r={r}
+          fill="none"
+          stroke="color-mix(in srgb, var(--color-text) 14%, transparent)"
+          strokeWidth={stroke}
+        />
+        {entry.hasLog && p > 0 ? (
+          <circle
+            cx={s / 2}
+            cy={s / 2}
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - p)}
+            className="transition-[stroke-dashoffset] duration-500"
+          />
+        ) : null}
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Дружній штурхан: пуш супернику, сервер лімітує раз на годину на пару. */
+function NudgeButton({ entry, size = 32 }: { entry: ArenaEntry; size?: number }) {
+  const nudge = useNudge();
+  if (entry.isMe) return null;
+
+  const onNudge = () =>
+    nudge.mutate(entry.userId, {
+      onSuccess: () => toast.success(`Штурхан для ${entry.name} полетів 👉`),
+      onError: (e) =>
+        toast.error(e instanceof Error ? e.message : "Не вдалося штурхнути"),
+    });
+
+  return (
+    <button
+      type="button"
+      className="icon-btn shrink-0"
+      style={{ width: size, height: size }}
+      aria-label={`Штурхнути ${entry.name}`}
+      title="Штурхнути (раз на годину)"
+      disabled={nudge.isPending}
+      onClick={onNudge}
+    >
+      <BellRing size={Math.round(size / 2)} />
+    </button>
+  );
+}
+
 function Podium({ entries }: { entries: ArenaEntry[] }) {
   // Візуальний порядок: 2 · 1 · 3
   const first = entries[0];
@@ -148,18 +254,24 @@ function Podium({ entries }: { entries: ArenaEntry[] }) {
         <div key={place} className="flex flex-col items-center gap-2">
           {entry ? (
             <>
-              <Avatar
-                name={entry.name}
-                avatarUrl={entry.avatarUrl}
-                size={place === 1 ? 48 : 40}
-                stage={entry.stage}
-                frame={entry.frame}
-              />
-              <div className="w-full truncate text-center text-[13px] font-semibold text-[var(--color-text)]">
-                {entry.name}
+              <ProgressHalo entry={entry} size={place === 1 ? 48 : 40}>
+                <Avatar
+                  name={entry.name}
+                  avatarUrl={entry.avatarUrl}
+                  size={place === 1 ? 48 : 40}
+                  stage={entry.stage}
+                  frame={entry.frame}
+                />
+              </ProgressHalo>
+              <div className="flex w-full items-center justify-center gap-1">
+                <span className="min-w-0 truncate text-[13px] font-semibold text-[var(--color-text)]">
+                  {entry.name}
+                </span>
                 {entry.isMe ? (
-                  <span className="ml-1 text-[11px] text-[var(--color-accent)]">ви</span>
-                ) : null}
+                  <span className="text-[11px] text-[var(--color-accent)]">ви</span>
+                ) : (
+                  <NudgeButton entry={entry} size={26} />
+                )}
               </div>
             </>
           ) : (
@@ -196,7 +308,7 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
   return (
     <li
       className={cn(
-        "grid grid-cols-[36px_1fr_auto] items-center gap-2 px-3 py-3",
+        "grid grid-cols-[36px_1fr_auto_auto] items-center gap-2 px-3 py-3",
         entry.isMe && "bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)]",
       )}
     >
@@ -204,13 +316,15 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
         {entry.rank}
       </span>
       <div className="flex min-w-0 items-center gap-2.5">
-        <Avatar
-          name={entry.name}
-          avatarUrl={entry.avatarUrl}
-          size={36}
-          stage={entry.stage}
-          frame={entry.frame}
-        />
+        <ProgressHalo entry={entry} size={36}>
+          <Avatar
+            name={entry.name}
+            avatarUrl={entry.avatarUrl}
+            size={36}
+            stage={entry.stage}
+            frame={entry.frame}
+          />
+        </ProgressHalo>
         <div className="min-w-0">
           <div className="truncate text-[16px] font-semibold text-[var(--color-text)]">
             {entry.name}
@@ -244,12 +358,17 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
                   : "text-[var(--color-accent-300)]",
           )}
         >
-          {label}
+          {entry.hasLog ? entry.score : "—"}
         </div>
-        <div className="text-[12px] text-[var(--color-muted3)]">
-          {!entry.hasLog ? "немає логу" : exact ? "влучно" : over ? "перебір" : "недобір"}
+        <div className="text-[12px] tabular-nums text-[var(--color-muted3)]">
+          {!entry.hasLog
+            ? "немає логу"
+            : exact
+              ? "влучно"
+              : `${label} · ${over ? "перебір" : "недобір"}`}
         </div>
       </div>
+      <NudgeButton entry={entry} />
     </li>
   );
 }

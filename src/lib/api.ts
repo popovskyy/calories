@@ -6,7 +6,6 @@ import type {
   CoinTxnDTO,
   DailyCardsResponse,
   DashboardResponse,
-  DuelsResponse,
   EpicsResponse,
   ForecastResponse,
   GrantedReward,
@@ -289,13 +288,11 @@ export const startEpicApi = (epicId: string) =>
     body: JSON.stringify({ epicId }),
   });
 
-// --- Дуелі ---
-export const getDuels = () => req<DuelsResponse>("/api/duels");
-
-export const challengeDuel = (opponentId: string, stake: number) =>
-  req<DuelsResponse>("/api/duels", {
+/** Дружній штурхан з арени (ліміт: раз на годину на пару). */
+export const nudgeUser = (userId: string) =>
+  req<{ ok: boolean }>("/api/arena/nudge", {
     method: "POST",
-    body: JSON.stringify({ action: "challenge", opponentId, stake }),
+    body: JSON.stringify({ userId }),
   });
 
 export const getRelief = () => req<ReliefStatus>("/api/wallet/relief");
@@ -303,12 +300,6 @@ export const getRelief = () => req<ReliefStatus>("/api/wallet/relief");
 export const claimReliefApi = () =>
   req<{ granted: GrantedReward[]; status: ReliefStatus }>("/api/wallet/relief", {
     method: "POST",
-  });
-
-export const respondDuel = (duelId: string, accept: boolean) =>
-  req<DuelsResponse>("/api/duels", {
-    method: "POST",
-    body: JSON.stringify({ action: accept ? "accept" : "decline", duelId }),
   });
 
 // --- Гаманець ---

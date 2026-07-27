@@ -2,6 +2,7 @@ import { AppFrame } from "@/components/AppFrame";
 import { AmbientLayer } from "@/components/ambient/AmbientLayer";
 import { TabBar } from "@/components/TabBar";
 import { Fab } from "@/components/Fab";
+import { RewardCelebrations } from "@/components/RewardCelebrations";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </main>
       <Fab />
       <TabBar />
+      <RewardCelebrations />
     </AppFrame>
   );
 }

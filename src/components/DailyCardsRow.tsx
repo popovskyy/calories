@@ -6,13 +6,17 @@ import { Check, Dices } from "lucide-react";
 import { toast } from "sonner";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useDailyCards, useShop, useUseItem } from "@/hooks/useQueries";
+import {
+  useCurrentUser,
+  useDailyCards,
+  useShop,
+  useUseItem,
+} from "@/hooks/useQueries";
 import { CARD_REROLL_ITEM_ID } from "@/lib/items";
 import { todayYMD } from "@/lib/date";
 import type { DailyCardDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { playFinisher } from "@/lib/sfx";
-import { useCurrentUser } from "@/hooks/useQueries";
 
 /**
  * Дві картки дня — змінний шар, який повертає інтерес щоранку.

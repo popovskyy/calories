@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 
-/** Показується лише на екранах Огляд і Журнал */
+/**
+ * Плаваюча кнопка «+». Видима на всіх табах — записати їжу можна з арени чи
+ * профілю без навігації назад. Без pathname-гейта кнопка не перемонтовується
+ * на кожен перехід, тож поява анімується один раз за сесію.
+ */
 export function Fab({ href = "/add" }: { href?: string }) {
-  const pathname = usePathname();
-  const visible = pathname === "/" || pathname.startsWith("/log");
-  if (!visible) return null;
-
   return (
     <Link
       href={href}
@@ -20,7 +19,12 @@ export function Fab({ href = "/add" }: { href?: string }) {
       <motion.span
         initial={{ scale: 0.92, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 500, damping: 26, delay: 0.05 }}
+        transition={{
+          // Спрінг лише на scale: спрінг по opacity осцилює навколо 1 і
+          // читається як блимання (найпомітніше на пласкій minecraft-кнопці).
+          scale: { type: "spring", stiffness: 500, damping: 26, delay: 0.05 },
+          opacity: { duration: 0.2, delay: 0.05, ease: "easeOut" },
+        }}
         className="fab-btn flex items-center justify-center text-[#f5f4ff]"
       >
         <Plus className="fab-btn-icon" strokeWidth={2.6} />

@@ -9,17 +9,27 @@ import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { ReminderToggle } from "@/components/ReminderToggle";
 import { UserFormDialog } from "@/components/UserFormDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { LoadError } from "@/components/ui/LoadError";
 import { useCurrentUser, useLogout, useStreak } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { GOAL_LABELS } from "@/lib/calories";
 
 export default function ProfilePage() {
   const mounted = useMounted();
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading, isError, refetch } = useCurrentUser();
   const logout = useLogout();
   const streak = useStreak();
   const [formOpen, setFormOpen] = useState(false);
   const [pwdOpen, setPwdOpen] = useState(false);
+
+  if (mounted && isError) {
+    return (
+      <LoadError
+        message="Не вдалося завантажити профіль"
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   if (!mounted || isLoading) {
     return (

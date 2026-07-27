@@ -12,7 +12,6 @@ import {
   buyItem,
   buySkin,
   buyTheme,
-  challengeDuel,
   claimReliefApi,
   changePassword,
   deleteActivity,
@@ -25,7 +24,6 @@ import {
   getArena,
   getDailyCards,
   getDashboard,
-  getDuels,
   getEpics,
   getForecast,
   getMe,
@@ -40,9 +38,9 @@ import {
   login,
   logout,
   markNotificationsRead,
+  nudgeUser,
   register,
   rerollQuest,
-  respondDuel,
   saveActivity,
   saveMeal,
   saveUser,
@@ -237,6 +235,10 @@ export function useDeleteMeal(date: string) {
       qc.invalidateQueries({ queryKey: ["arena"] });
       qc.invalidateQueries({ queryKey: ["streak"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
+      // Видалення може відкотити прогрес квестів/карток — перечитуємо.
+      qc.invalidateQueries({ queryKey: ["quests"] });
+      qc.invalidateQueries({ queryKey: ["daily-cards"] });
+      qc.invalidateQueries({ queryKey: ["epics"] });
     },
   });
 }
@@ -261,6 +263,9 @@ export function useUpdateMeal(listDate: string) {
       qc.invalidateQueries({ queryKey: ["arena"] });
       qc.invalidateQueries({ queryKey: ["streak"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
+      qc.invalidateQueries({ queryKey: ["quests"] });
+      qc.invalidateQueries({ queryKey: ["daily-cards"] });
+      qc.invalidateQueries({ queryKey: ["epics"] });
     },
   });
 }
@@ -292,6 +297,10 @@ export function useSaveActivity() {
       qc.invalidateQueries({ queryKey: ["shop"] });
       qc.invalidateQueries({ queryKey: ["quests"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
+      qc.invalidateQueries({ queryKey: ["daily-cards"] });
+      qc.invalidateQueries({ queryKey: ["epics"] });
+      qc.invalidateQueries({ queryKey: ["streak"] });
+      qc.invalidateQueries({ queryKey: ["wallet"] });
     },
   });
 }
@@ -318,6 +327,13 @@ export function useArena() {
     queryKey: ["arena"],
     queryFn: getArena,
     refetchInterval: 60_000,
+  });
+}
+
+/** Штурхан суперника з арени. */
+export function useNudge() {
+  return useMutation({
+    mutationFn: (userId: string) => nudgeUser(userId),
   });
 }
 
@@ -522,24 +538,6 @@ export function useStartEpic() {
   });
 }
 
-// --- Дуелі ---
-export function useDuels() {
-  return useQuery({
-    queryKey: ["duels"],
-    queryFn: getDuels,
-    staleTime: 30_000,
-  });
-}
-
-export function useChallengeDuel() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ opponentId, stake }: { opponentId: string; stake: number }) =>
-      challengeDuel(opponentId, stake),
-    onSuccess: (data) => qc.setQueryData(["duels"], data),
-  });
-}
-
 /** Стан фонду підйомних. */
 export function useRelief() {
   return useQuery({
@@ -556,23 +554,9 @@ export function useClaimRelief() {
     mutationFn: () => claimReliefApi(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["me"] });
-      qc.invalidateQueries({ queryKey: ["duels"] });
       qc.invalidateQueries({ queryKey: ["shop"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
       qc.invalidateQueries({ queryKey: ["relief"] });
-    },
-  });
-}
-
-export function useRespondDuel() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ duelId, accept }: { duelId: string; accept: boolean }) =>
-      respondDuel(duelId, accept),
-    onSuccess: (data) => {
-      qc.setQueryData(["duels"], data);
-      qc.invalidateQueries({ queryKey: ["me"] }); // ставка списана
-      qc.invalidateQueries({ queryKey: ["wallet"] });
     },
   });
 }

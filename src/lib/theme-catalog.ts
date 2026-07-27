@@ -66,10 +66,12 @@ export const THEMES: ThemeDef[] = [
     previewAccent: "#ffb35c",
   },
   {
+    // Ціна виставлена ще до релізу: buy-роут перевіряє лише tier, тож
+    // premium-тема з price 0 роздавалася б безкоштовно, щойно зникне comingSoon.
     id: "polonyna",
     nameUk: "Полонина",
     tier: "premium",
-    price: 0,
+    price: 460,
     swatch: "#f0d9a0",
     vibe: "світанок · сосна · іній",
     previewBg: "linear-gradient(160deg, #1a2430 0%, #243044 50%, #2f5d4a 100%)",

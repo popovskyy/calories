@@ -200,7 +200,7 @@ export default function ShopPage() {
                 skins={free}
                 coins={coins}
                 onEquip={onEquipSkin}
-                onBuy={() => {}}
+                onBuy={(s) => setConfirm({ kind: "skin", item: s })}
                 equipping={equipSkin.isPending ? equipSkin.variables : null}
               />
               <CosmeticsSection shop={shop.data} />

@@ -1290,11 +1290,6 @@ html[data-theme="minecraft"] .rounded-full {
   20% { opacity: 1; }
   100% { transform: translate(var(--dx, 0px), -90px) scale(0.3); opacity: 0; }
 }
-@keyframes ember {
-  0% { transform: translate(0, 0) scale(1); opacity: 0; }
-  15% { opacity: 0.95; }
-  100% { transform: translate(-14px, -120px) scale(0.4); opacity: 0; }
-}
 @keyframes fog {
   0% { transform: translateX(-8%); opacity: 0.85; }
   50% { transform: translateX(8%); opacity: 1; }
@@ -1344,24 +1339,6 @@ html[data-theme="minecraft"] .rounded-full {
   28% { transform: translateX(430px); opacity: 0.75; }
   31% { transform: translateX(460px); opacity: 0; }
   100% { transform: translateX(460px); opacity: 0; }
-}
-@keyframes deerCamp {
-  0% { transform: translateX(-70px) scaleX(1); opacity: 0; }
-  5% { transform: translateX(-46px) scaleX(1); opacity: 0.95; }
-  22% { transform: translateX(96px) scaleX(1); }
-  24%,
-  40% { transform: translateX(112px) scaleX(1); }
-  44%,
-  58% { transform: translateX(112px) scaleX(-1); }
-  80% { transform: translateX(-30px) scaleX(-1); opacity: 0.95; }
-  88% { transform: translateX(-70px) scaleX(-1); opacity: 0; }
-  100% { transform: translateX(-70px) scaleX(1); opacity: 0; }
-}
-@keyframes deerFlee {
-  0% { transform: translateX(112px) scaleX(1); opacity: 0.95; }
-  12% { transform: translateX(104px) scaleX(1); }
-  20% { transform: translateX(104px) scaleX(-1); }
-  100% { transform: translateX(-90px) scaleX(-1); opacity: 0; }
 }
 @keyframes deerStalk {
   0%,
@@ -1481,13 +1458,6 @@ html[data-theme="minecraft"] .rounded-full {
   40% { opacity: 0.6; }
   70% { opacity: 0.28; }
 }
-@keyframes xpFlash {
-  0%,
-  100% { filter: none; }
-  30% { filter: brightness(2.2); }
-  60% { filter: brightness(1.2); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
