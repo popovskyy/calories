@@ -14,7 +14,7 @@ export function Fab({ href = "/add" }: { href?: string }) {
   return (
     <Link
       href={href}
-      aria-label="Додати прийом їжі"
+      aria-label="Додати їжу або калорії"
       className="fab-wrap absolute right-4 z-20"
     >
       <motion.span
@@ -24,7 +24,7 @@ export function Fab({ href = "/add" }: { href?: string }) {
         whileTap={{ scale: 0.9 }}
         className="fab-btn flex items-center justify-center text-[#f5f4ff]"
       >
-        <Plus className="fab-btn-icon" strokeWidth={2.4} />
+        <Plus className="fab-btn-icon" strokeWidth={2.6} />
       </motion.span>
     </Link>
   );

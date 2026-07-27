@@ -472,23 +472,23 @@ html[data-theme="minecraft"] .nav-tab-label {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
 }
 .fab-btn {
-  width: 52px;
-  height: 52px;
+  width: 64px;
+  height: 64px;
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--color-accent-400), var(--color-accent-600));
   box-shadow: var(--shadow-fab);
 }
 .fab-btn-icon {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
 }
 
 html[data-theme="forest"] .fab-wrap {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
 }
 html[data-theme="forest"] .fab-btn {
-  width: 60px;
-  height: 60px;
+  width: 68px;
+  height: 68px;
   border-radius: 22px;
   border: 3px solid #ffd9a8;
   background: linear-gradient(#ffb347, #ff7a25);
@@ -500,16 +500,16 @@ html[data-theme="forest"] .fab-btn:active {
   box-shadow: 0 2px 0 #a8500c, 0 0 30px rgba(255, 138, 61, 0.5);
 }
 html[data-theme="forest"] .fab-btn-icon {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
 }
 
 html[data-theme="minecraft"] .fab-wrap {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
 }
 html[data-theme="minecraft"] .fab-btn {
-  width: 60px;
-  height: 60px;
+  width: 68px;
+  height: 68px;
   border-radius: 0;
   background: #5b9c3a;
   border: 5px solid;
@@ -526,8 +526,8 @@ html[data-theme="minecraft"] .fab-btn:active {
   border-right-color: #8fd15c;
 }
 html[data-theme="minecraft"] .fab-btn-icon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
 }
 
 /* ============================================================

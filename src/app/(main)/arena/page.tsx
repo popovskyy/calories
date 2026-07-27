@@ -41,6 +41,16 @@ export default function ArenaPage() {
             {date ? ` · ${humanDate(date)}` : ""}
           </p>
         </div>
+        {entries.length > 0 ? (
+          <span className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--color-tile)] px-2.5 py-1 text-[13px] font-semibold tabular-nums text-[var(--color-muted2)]">
+            {entries.length}{" "}
+            {entries.length === 1
+              ? "учасник"
+              : entries.length < 5
+                ? "учасники"
+                : "учасників"}
+          </span>
+        ) : null}
       </header>
 
       {entries.length === 0 ? (
@@ -51,7 +61,7 @@ export default function ArenaPage() {
         <div className="overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
           <div className="grid grid-cols-[36px_1fr_auto] gap-2 bg-[var(--color-surface)] px-3 py-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-muted3)]">
             <span>#</span>
-            <span>Гравець</span>
+            <span>Усі гравці</span>
             <span className="text-right">До цілі</span>
           </div>
           <ul className="divide-y divide-[var(--color-divider)] bg-[var(--color-bg)]">
@@ -65,8 +75,8 @@ export default function ArenaPage() {
       <DuelCard />
 
       <p className="text-[14px] leading-relaxed text-[var(--color-muted3)]">
-        Рейтинг за |зʼїдене − ціль|: чим менше відхилення, тим вище. Голодування не
-        дає переваги. Без записів за день — в кінці списку.
+        У списку — усі зареєстровані. Хто ближчий до своєї норми сьогодні —
+        вище. Без записів за день — в кінці.
       </p>
     </>
   );
@@ -110,7 +120,6 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
               </span>
             ) : null}
           </div>
-          {/* Титул стоїть над цифрами: у приватній грі статус важливіший за ккал */}
           {entry.title ? (
             <div className="truncate text-[12px] font-semibold text-[var(--color-accent)]">
               {entry.title}

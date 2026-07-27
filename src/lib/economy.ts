@@ -58,7 +58,7 @@ export const ARENA_SETTLE_HOUR = 4;
 /** Ставка за замовчуванням, коли гравець не вибрав свою. */
 export const DUEL_STAKE = 50;
 /** Готові варіанти ставки в інтерфейсі. Нуль — дуель «на інтерес». */
-export const DUEL_STAKE_PRESETS = [0, 25, 50, 100, 200];
+export const DUEL_STAKE_PRESETS = [0, 25, 50, 100];
 /** Стеля ставки: більше — і одна програна дуель знищує тижневий заробіток. */
 export const DUEL_MAX_STAKE = 500;
 

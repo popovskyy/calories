@@ -12,16 +12,13 @@ import {
   useDuels,
   useRespondDuel,
 } from "@/hooks/useQueries";
-import { DUEL_MAX_STAKE, DUEL_STAKE, DUEL_STAKE_PRESETS } from "@/lib/economy";
+import { DUEL_STAKE, DUEL_STAKE_PRESETS } from "@/lib/economy";
 import type { DuelDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
 /**
- * Дуель тижня — соціальний важіль, який працює навіть удвох.
- *
- * Лідерборд на 2–5 гравців нічого не дає: місця й так очевидні. А прямий
- * виклик конкретній людині створює підзвітність — злити його перед другом
- * незручно, і саме це тримає дисципліну сильніше за будь-яку монету.
+ * Дуель тижня — хто більше днів у ±5%.
+ * UI свідомо простий: ставка → друг → виклик. Без кастомних інпутів.
  */
 export function DuelCard() {
   const { user } = useCurrentUser();
@@ -36,7 +33,7 @@ export function DuelCard() {
       {
         onSuccess: () =>
           toast.success(
-            stake > 0 ? `Виклик кинуто! Ставка ${stake}` : "Виклик кинуто! На інтерес",
+            stake > 0 ? `Виклик кинуто · ставка ${stake}` : "Виклик кинуто · на інтерес",
           ),
         onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),
       },
@@ -54,7 +51,7 @@ export function DuelCard() {
   if (q.isLoading) {
     return (
       <section className="mcard flex flex-col gap-3 p-[18px]">
-        <span className="lbl">Дуель тижня</span>
+        <span className="lbl">Дуель</span>
         <Skeleton className="h-16 w-full" />
       </section>
     );
@@ -70,11 +67,12 @@ export function DuelCard() {
     <section className="mcard flex flex-col gap-3 p-[18px]">
       <div className="flex items-center gap-2">
         <Swords size={16} className="text-[var(--color-accent)]" />
-        <span className="lbl">Дуель тижня</span>
+        <span className="lbl">Дуель</span>
       </div>
-      <p className="text-[12px] text-[var(--color-muted3)]">
-        Хто набере більше днів у ±5%. Ставку обираєш сам — переможець забирає
-        банк. Можна зіграти й на інтерес, без монет.
+
+      <p className="text-[13px] leading-snug text-[var(--color-muted2)]">
+        Хто за тиждень набере <strong className="text-[var(--color-text)]">більше днів у ±5%</strong>{" "}
+        — перемагає. Ставки знімаються при прийнятті; переможець забирає банк.
       </p>
 
       {active.map((d) => (
@@ -93,10 +91,9 @@ export function DuelCard() {
           </p>
         ) : (
           <div className="flex flex-col gap-3">
-            {/* Ставку обирає той, хто викликає. Нуль — дуель на інтерес. */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[12px] text-[var(--color-muted3)]">
-                Ставка з кожного:
+              <span className="text-[12px] font-semibold text-[var(--color-muted3)]">
+                1. Ставка
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {DUEL_STAKE_PRESETS.map((v) => (
@@ -105,61 +102,63 @@ export function DuelCard() {
                     type="button"
                     onClick={() => setStake(v)}
                     className={cn(
-                      "rounded-[var(--radius-pill)] border px-2.5 py-1 text-[13px] font-semibold tabular-nums transition-colors",
+                      "rounded-[var(--radius-pill)] border px-3 py-1.5 text-[13px] font-semibold tabular-nums transition-colors",
                       stake === v
                         ? "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[var(--color-text)]"
                         : "border-[var(--color-divider)] text-[var(--color-muted3)]",
                     )}
                   >
-                    {v === 0 ? "на інтерес" : v}
+                    {v === 0 ? (
+                      "без монет"
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        <CoinIcon size={12} />
+                        {v}
+                      </span>
+                    )}
                   </button>
                 ))}
-                <input
-                  type="number"
-                  min={0}
-                  max={DUEL_MAX_STAKE}
-                  value={stake}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (Number.isFinite(n)) {
-                      setStake(Math.max(0, Math.min(DUEL_MAX_STAKE, Math.round(n))));
-                    }
-                  }}
-                  className="w-20 rounded-[var(--radius-pill)] border border-[var(--color-divider)] bg-transparent px-2.5 py-1 text-[13px] tabular-nums text-[var(--color-text)]"
-                  aria-label="Своя ставка"
-                />
               </div>
-              <span className="text-[11px] text-[var(--color-muted3)]">
-                {stake === 0
-                  ? "Без монет — лише за перемогу й статус"
-                  : `Банк ${stake * 2} монет. У тебе ${myCoins}`}
-              </span>
+              {stake > 0 ? (
+                <span className="text-[11px] text-[var(--color-muted3)]">
+                  Кожен вносить {stake} · банк {stake * 2} · у тебе {myCoins}
+                </span>
+              ) : (
+                <span className="text-[11px] text-[var(--color-muted3)]">
+                  Граємо на інтерес — монети не чіпаємо
+                </span>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[12px] text-[var(--color-muted3)]">
-                Кинути виклик:
+              <span className="text-[12px] font-semibold text-[var(--color-muted3)]">
+                2. Кого викликати
               </span>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2">
                 {rivals.map((r) => {
-                  // Суперник не потягне ставку — краще сказати одразу,
-                  // ніж дати йому впертись у помилку при прийнятті.
-                  const tooPoor = r.coins < stake;
+                  const tooPoor = stake > 0 && r.coins < stake;
+                  const meBroke = stake > 0 && myCoins < stake;
+                  const disabled = challenge.isPending || tooPoor || meBroke;
                   return (
                     <button
                       key={r.id}
-                      className={cn("btn btn-ghost btn-sm", tooPoor && "opacity-50")}
-                      disabled={challenge.isPending || tooPoor}
+                      type="button"
+                      className={cn(
+                        "btn btn-ghost flex w-full items-center justify-between py-2.5 text-[14px]",
+                        disabled && "opacity-50",
+                      )}
+                      disabled={disabled}
                       onClick={() => onChallenge(r.id)}
-                      title={
-                        tooPoor
-                          ? `У ${r.name} лише ${r.coins} монет`
-                          : undefined
-                      }
                     >
-                      {r.name}
-                      <span className="ml-1 text-[11px] tabular-nums opacity-70">
-                        {r.coins}
+                      <span className="font-semibold text-[var(--color-text)]">
+                        {r.name}
+                      </span>
+                      <span className="text-[12px] text-[var(--color-muted3)]">
+                        {meBroke
+                          ? "немає монет"
+                          : tooPoor
+                            ? `у нього ${r.coins}`
+                            : "кинути виклик →"}
                       </span>
                     </button>
                   );
@@ -170,15 +169,14 @@ export function DuelCard() {
         )
       ) : null}
 
-      {/*
-        Гравець із порожнім гаманцем не може ані прийняти дуель, ані щось
-        купити — без цього клапана він просто випадає з гри.
-      */}
       <ReliefCard />
 
       {settled.length > 0 ? (
         <div className="flex flex-col gap-1 border-t border-[var(--color-divider)] pt-2">
-          {settled.slice(0, 2).map((d) => {
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-muted3)]">
+            Минулі
+          </span>
+          {settled.slice(0, 3).map((d) => {
             const iWon = d.winnerId === user?.id;
             return (
               <div
@@ -186,7 +184,7 @@ export function DuelCard() {
                 className="flex items-center justify-between text-[12px] text-[var(--color-muted3)]"
               >
                 <span>
-                  {d.challengerName} {d.challengerScore} : {d.opponentScore}{" "}
+                  {d.challengerName} {d.challengerScore}:{d.opponentScore}{" "}
                   {d.opponentName}
                 </span>
                 <span
@@ -228,38 +226,50 @@ function DuelRow({
     <div className="rounded-[var(--radius-md)] border border-[var(--color-divider)] p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[14px] font-semibold text-[var(--color-text)]">
-          проти {rival}
+          vs {rival}
         </span>
         {duel.stake > 0 ? (
           <span className="flex items-center gap-1 text-[13px] font-semibold tabular-nums">
             <CoinIcon size={13} />
-            {duel.stake * 2}
+            банк {duel.stake * 2}
           </span>
         ) : (
           <span className="text-[12px] font-semibold text-[var(--color-muted3)]">
-            на інтерес
+            без монет
           </span>
         )}
       </div>
 
       {duel.status === "accepted" ? (
-        <div className="mt-2 flex items-center justify-center gap-3">
-          <span
-            className={cn(
-              "text-[24px] font-bold tabular-nums",
-              leading ? "text-[var(--color-accent)]" : "text-[var(--color-text)]",
-            )}
-          >
-            {myScore}
-          </span>
-          <span className="text-[13px] text-[var(--color-muted3)]">:</span>
-          <span className="text-[24px] font-bold tabular-nums text-[var(--color-text)]">
-            {theirScore}
-          </span>
-        </div>
+        <>
+          <div className="mt-2 flex items-center justify-center gap-3">
+            <div className="flex flex-col items-center">
+              <span className="text-[11px] text-[var(--color-muted3)]">ти</span>
+              <span
+                className={cn(
+                  "text-[28px] font-bold tabular-nums leading-none",
+                  leading ? "text-[var(--color-accent)]" : "text-[var(--color-text)]",
+                )}
+              >
+                {myScore}
+              </span>
+            </div>
+            <span className="pt-3 text-[13px] text-[var(--color-muted3)]">:</span>
+            <div className="flex flex-col items-center">
+              <span className="text-[11px] text-[var(--color-muted3)]">{rival}</span>
+              <span className="text-[28px] font-bold tabular-nums leading-none text-[var(--color-text)]">
+                {theirScore}
+              </span>
+            </div>
+          </div>
+          <p className="mt-2 text-center text-[11px] text-[var(--color-muted3)]">
+            Днів у ±5% цього тижня · оновлюється щодня
+          </p>
+        </>
       ) : duel.awaitingMe ? (
         <div className="mt-2 flex gap-2">
           <button
+            type="button"
             className="btn btn-primary btn-sm flex-1"
             disabled={pending}
             onClick={() => onRespond(duel.id, true)}
@@ -267,16 +277,17 @@ function DuelRow({
             Прийняти
           </button>
           <button
+            type="button"
             className="btn btn-ghost btn-sm"
             disabled={pending}
             onClick={() => onRespond(duel.id, false)}
           >
-            Ні
+            Відхилити
           </button>
         </div>
       ) : (
         <p className="mt-1.5 text-[12px] text-[var(--color-muted3)]">
-          Чекаємо на відповідь суперника
+          Чекаємо відповіді від {rival}
         </p>
       )}
     </div>
