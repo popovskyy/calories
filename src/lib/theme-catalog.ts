@@ -11,8 +11,6 @@ export interface ThemeDef {
   swatch: string;
   /** Короткий vibe для картки магазину. */
   vibe: string;
-  /** Підпис шрифту / атмосфери. */
-  fontLabel: string;
   /** Фон міні-прев’ю (CSS). */
   previewBg: string;
   /** Акцент у прев’ю. */
@@ -32,7 +30,6 @@ export const THEMES: ThemeDef[] = [
     price: 0,
     swatch: "#9184d9",
     vibe: "кільце · ніч · спокій",
-    fontLabel: "Inter",
     previewBg: "linear-gradient(160deg, #161826 0%, #1e2140 55%, #2a2450 100%)",
     previewAccent: "#9184d9",
   },
@@ -45,7 +42,6 @@ export const THEMES: ThemeDef[] = [
     price: 300,
     swatch: "#5b9c3a",
     vibe: "блоки · XP · creeper",
-    fontLabel: "Handjet",
     previewBg: "linear-gradient(160deg, #1a1a1e 0%, #25252a 50%, #2f4a22 100%)",
     previewAccent: "#80ff20",
   },
@@ -55,8 +51,7 @@ export const THEMES: ThemeDef[] = [
     tier: "premium",
     price: 500,
     swatch: "#ff8a3d",
-    vibe: "вогнище · олені · Russo",
-    fontLabel: "Russo One",
+    vibe: "вогнище · олені · ніч",
     previewBg: "linear-gradient(160deg, #08120e 0%, #0f1f18 45%, #2a1810 100%)",
     previewAccent: "#ff8a3d",
   },
@@ -67,7 +62,6 @@ export const THEMES: ThemeDef[] = [
     price: 420,
     swatch: "#ffb35c",
     vibe: "промінь · сіль · ніч",
-    fontLabel: "DM Sans",
     previewBg: "linear-gradient(160deg, #0e141c 0%, #15202c 50%, #1a2838 100%)",
     previewAccent: "#ffb35c",
   },
@@ -78,7 +72,6 @@ export const THEMES: ThemeDef[] = [
     price: 0,
     swatch: "#f0d9a0",
     vibe: "світанок · сосна · іній",
-    fontLabel: "скоро",
     previewBg: "linear-gradient(160deg, #1a2430 0%, #243044 50%, #2f5d4a 100%)",
     previewAccent: "#f0d9a0",
     comingSoon: true,

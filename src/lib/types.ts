@@ -73,7 +73,6 @@ export interface ShopTheme {
   price: number;
   swatch: string;
   vibe: string;
-  fontLabel: string;
   previewBg: string;
   previewAccent: string;
   comingSoon?: boolean;

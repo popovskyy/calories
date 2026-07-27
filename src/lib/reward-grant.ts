@@ -30,7 +30,9 @@ function kindFromKey(key: string): TxnKind {
   const prefix = key.split(":")[0] ?? "";
   if (prefix === "quest") return "quest";
   if (prefix === "arena") return "arena";
-  if (prefix === "streak" || prefix === "streak_div") return "streak";
+  if (prefix === "streak" || prefix === "streak_div" || prefix === "streak_cards") {
+    return "streak";
+  }
   if (prefix === "dc") return "daily_card";
   if (prefix === "epic") return "epic";
   if (prefix === "duel") return "duel";

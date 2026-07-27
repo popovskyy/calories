@@ -28,23 +28,27 @@ export function DailyCardsRow() {
   const reduce = useReducedMotion();
   const seenClaimed = useRef<Set<string> | null>(null);
   const [burst, setBurst] = useState(false);
+  const [morningSlot, setMorningSlot] = useState<number | null>(null);
 
   const rerollQty =
     shop.data?.items.find((i) => i.id === CARD_REROLL_ITEM_ID)?.qty ?? 0;
+  const anyClaimed = q.data?.cards.some((c) => c.claimed) ?? false;
 
-  // Claim theater: коли картка вперше стає claimed — один toast + micro-burst
+  // Claim theater: коли картка вперше стає claimed — toast з реальною сумою (з doubler)
   useEffect(() => {
     const cards = q.data?.cards;
     if (!cards) return;
     if (seenClaimed.current === null) {
-      seenClaimed.current = new Set(cards.filter((c) => c.claimed).map((c) => c.code));
+      seenClaimed.current = new Set(
+        cards.filter((c) => c.claimed).map((c) => `${c.slot}:${c.code}`),
+      );
       return;
     }
     const newly = cards.filter(
-      (c) => c.claimed && !seenClaimed.current!.has(c.code),
+      (c) => c.claimed && !seenClaimed.current!.has(`${c.slot}:${c.code}`),
     );
     if (newly.length === 0) return;
-    for (const c of newly) seenClaimed.current.add(c.code);
+    for (const c of newly) seenClaimed.current.add(`${c.slot}:${c.code}`);
     const coins = newly.reduce((s, c) => s + c.rewardCoins, 0);
     const label =
       newly.length === 1
@@ -56,6 +60,24 @@ export function DailyCardsRow() {
     const t = window.setTimeout(() => setBurst(false), reduce ? 350 : 900);
     return () => window.clearTimeout(t);
   }, [q.data?.cards, reduce, user?.soundpack]);
+
+  // Підсвічуємо першу незавершену картку раз на сесію
+  useEffect(() => {
+    const cards = q.data?.cards;
+    if (!cards?.length || morningSlot !== null) return;
+    const unfinished = cards.find((c) => !c.claimed && !c.done);
+    if (!unfinished) return;
+    const key = `dc-morning:${todayYMD()}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+      setMorningSlot(unfinished.slot);
+      const t = window.setTimeout(() => setMorningSlot(null), 4200);
+      return () => window.clearTimeout(t);
+    } catch {
+      /* private mode */
+    }
+  }, [q.data?.cards, morningSlot]);
 
   const onReroll = () =>
     useItem.mutate(
@@ -76,12 +98,18 @@ export function DailyCardsRow() {
         <button
           type="button"
           onClick={onReroll}
-          disabled={rerollQty === 0 || useItem.isPending}
+          disabled={rerollQty === 0 || anyClaimed || useItem.isPending}
           className={cn(
             "btn btn-ghost btn-sm gap-1 px-2.5",
-            rerollQty === 0 && "opacity-40",
+            (rerollQty === 0 || anyClaimed) && "opacity-40",
           )}
-          title={rerollQty === 0 ? "0 перетягувань — у крамниці" : undefined}
+          title={
+            anyClaimed
+              ? "Після нагороди перетягувати не можна"
+              : rerollQty === 0
+                ? "0 перетягувань — у крамниці"
+                : undefined
+          }
         >
           <Dices size={13} />
           {rerollQty > 0 ? (
@@ -106,8 +134,8 @@ export function DailyCardsRow() {
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          {q.data.cards.map((c, i) => (
-            <Card key={c.code} card={c} slot={i} />
+          {q.data.cards.map((c) => (
+            <Card key={`${c.slot}:${c.code}`} card={c} morningPull={morningSlot === c.slot} />
           ))}
         </div>
       )}
@@ -147,28 +175,9 @@ export function DailyCardsRow() {
   );
 }
 
-function Card({ card, slot }: { card: DailyCardDTO; slot: number }) {
+function Card({ card, morningPull }: { card: DailyCardDTO; morningPull: boolean }) {
   const pct = card.target > 0 ? Math.min(1, card.progress / card.target) : 0;
   const done = card.claimed || card.done;
-  const [morningPull, setMorningPull] = useState(false);
-
-  // Soft highlight unfinished card on first open of the day (no modal)
-  useEffect(() => {
-    if (done) return;
-    const key = `dc-morning:${todayYMD()}`;
-    try {
-      if (sessionStorage.getItem(key)) return;
-      // Підсвічуємо першу незавершену (slot 0 пріоритет)
-      if (slot === 0) {
-        sessionStorage.setItem(key, "1");
-        setMorningPull(true);
-        const t = window.setTimeout(() => setMorningPull(false), 4200);
-        return () => window.clearTimeout(t);
-      }
-    } catch {
-      /* private mode */
-    }
-  }, [done, slot]);
 
   return (
     <div

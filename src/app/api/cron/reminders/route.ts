@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/push";
 import { getItem, SHIELD_ITEM_ID } from "@/lib/items";
 import { humanDate, kyivHourNow, shiftYMD, todayYMD, weekStartYMD } from "@/lib/date";
-import { listDailyCards } from "@/lib/daily-cards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,12 +11,12 @@ export const maxDuration = 60;
 /** Скільки днів мовчання вважаємо зникненням. */
 const WINBACK_SILENCE_DAYS = 3;
 
-/** Картки з дедлайном у той самий день — для м’якого evening nudge. */
-const TIME_SENSITIVE_CODES = new Set(["early_finish", "early_start"]);
-
 /**
  * Cron: нагадування о ~20:00 Kyiv користувачам без запису їжі сьогодні.
  * Два розклади UTC (17 і 18) покривають літо/зиму; вікно 20–22 + dedupeKey.
+ *
+ * Не чіпаємо listDailyCards: когорта без їжі сьогодні вже провалила
+ * early_start / early_finish, а listDailyCards ще й може грантити нагороди.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -51,23 +50,10 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   await Promise.allSettled(
     users.map(async (user) => {
-      let body = `Загляньте в журнал за ${humanDate(today)}.`;
-      try {
-        const { cards } = await listDailyCards(user.id, today);
-        const timed = cards.find(
-          (c) => !c.claimed && !c.done && TIME_SENSITIVE_CODES.has(c.code),
-        );
-        if (timed) {
-          body = `Ще є картка «${timed.titleUk}» — і жодного запису сьогодні.`;
-        }
-      } catch {
-        /* fallback body */
-      }
-
       await notifyUser(user.id, {
         kind: "reminder",
         title: "Час записати їжу",
-        body,
+        body: `Загляньте в журнал за ${humanDate(today)}.`,
         url: `/log?date=${today}`,
         dedupeKey,
       });

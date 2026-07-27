@@ -342,18 +342,31 @@ async function rerollCount(userId: string, date: string): Promise<number> {
  *
  * Картки безпечно платити «наживо», без правила закритого дня: усі умови
  * монотонні (з'їв білок — з'їв, пройшов 20 хв — пройшов) і доїданням
- * увечері їх не скасувати. Виняток — clean_deficit, який залежить від
- * підсумку дня, тому він платиться лише за закритим днем.
+ * увечері їх не скасувати. Винятки — clean_deficit / early_finish /
+ * move_after_meal: їх можна «скасувати» пізнішим записом, тому платимо
+ * лише за закритим днем.
  */
 const FINAL_DAY_KINDS: ReadonlySet<CardKind> = new Set<CardKind>([
   "clean_deficit",
   "early_finish",
+  "move_after_meal",
 ]);
+
+/** Ключ RewardClaim: дата + reroll-індекс + код — інакше ре-рол дає повторну виплату. */
+export function dailyCardClaimKey(
+  date: string,
+  rerolls: number,
+  code: string,
+): string {
+  return `dc:${date}:r${rerolls}:${code}`;
+}
 
 export async function listDailyCards(
   userId: string,
   date: string = todayYMD(),
+  opts: { grant?: boolean } = {},
 ): Promise<{ date: string; cards: DailyCardDTO[]; granted: GrantedReward[] }> {
+  const allowGrant = opts.grant !== false;
   const rerolls = await rerollCount(userId, date);
   const defs = pickDailyCards(userId, date, rerolls);
   const day = await loadDayRaw(userId, date);
@@ -361,12 +374,14 @@ export async function listDailyCards(
 
   if (!day) return { date, cards: [], granted };
 
-  const keys = defs.map((d) => `dc:${date}:${d.code}`);
+  const keys = defs.map((d) => dailyCardClaimKey(date, rerolls, d.code));
+  // Старий формат `dc:date:code` — щоб після деплою не виплатити вдруге.
+  const legacyKeys = defs.map((d) => `dc:${date}:${d.code}`);
   const claims = await prisma.rewardClaim.findMany({
-    where: { userId, key: { in: keys } },
-    select: { key: true },
+    where: { userId, key: { in: [...keys, ...legacyKeys] } },
+    select: { key: true, coins: true },
   });
-  const claimed = new Set(claims.map((c) => c.key));
+  const claimedCoins = new Map(claims.map((c) => [c.key, c.coins]));
 
   const isClosed = date < todayYMD();
   const cards: DailyCardDTO[] = [];
@@ -374,13 +389,19 @@ export async function listDailyCards(
   for (const [slot, def] of defs.entries()) {
     const { progress, target, done } = evaluateCard(def, day);
     const key = keys[slot]!;
-    const coins = cardReward(slot);
+    const legacyKey = legacyKeys[slot]!;
+    const baseCoins = cardReward(slot);
     const payable = done && (!FINAL_DAY_KINDS.has(def.kind) || isClosed);
 
-    let isClaimed = claimed.has(key);
-    if (payable && !isClaimed) {
-      await grant(userId, key, coins, `Картка дня: ${def.titleUk}`, granted);
+    const priorCoins = claimedCoins.get(key) ?? claimedCoins.get(legacyKey);
+    let isClaimed = priorCoins !== undefined;
+    let rewardCoins = priorCoins ?? baseCoins;
+    if (allowGrant && payable && !isClaimed) {
+      const before = granted.length;
+      await grant(userId, key, baseCoins, `Картка дня: ${def.titleUk}`, granted);
       isClaimed = true;
+      const just = granted[granted.length - 1];
+      if (just && granted.length > before) rewardCoins = just.coins;
     }
 
     cards.push({
@@ -393,7 +414,7 @@ export async function listDailyCards(
       target,
       done,
       claimed: isClaimed,
-      rewardCoins: coins,
+      rewardCoins,
     });
   }
 

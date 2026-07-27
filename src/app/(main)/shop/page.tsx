@@ -22,6 +22,7 @@ import {
 } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { requestThemeEquipFlash } from "@/components/ThemeEquipFlash";
+import { ThemePreview } from "@/components/shop/ThemePreview";
 import { RARITY } from "@/lib/avatar-presets";
 import type { ShopSkin, ShopTheme } from "@/lib/types";
 import { cn } from "@/lib/cn";
@@ -316,27 +317,14 @@ function ThemeCard({
       className="mcard relative flex flex-col items-center gap-2 overflow-hidden p-3"
       style={{ boxShadow: `inset 0 0 0 1.5px ${theme.swatch}55, 0 0 10px ${theme.swatch}22` }}
     >
-      <div
-        className="relative h-14 w-full overflow-hidden rounded-[var(--radius-md)]"
-        style={{ background: theme.previewBg }}
-      >
-        <div
-          className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1 rounded-sm px-1.5 py-1"
-          style={{ background: "rgba(0,0,0,.35)" }}
-        >
-          <span
-            className="truncate text-[10px] font-semibold text-white"
-            style={{ color: theme.previewAccent }}
-          >
-            Aa · {theme.fontLabel}
-          </span>
-          <span
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ background: theme.previewAccent, boxShadow: `0 0 8px ${theme.previewAccent}` }}
-          />
-        </div>
+      <div className="relative w-full">
+        <ThemePreview
+          themeId={theme.id}
+          previewBg={theme.previewBg}
+          previewAccent={theme.previewAccent}
+        />
         {soon ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+          <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-md)] bg-black/45">
             <span className="rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-semibold text-white">
               скоро
             </span>

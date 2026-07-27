@@ -30,7 +30,7 @@ export default function ArenaPage() {
   const date = arena.data?.date;
   const me = entries.find((e) => e.isMe);
   const podium = entries.slice(0, 3);
-  const rest = entries.slice(3);
+  const rest = entries.slice(3).filter((e) => !e.isMe);
 
   const invite = async () => {
     const url = typeof window !== "undefined" ? window.location.origin : "";

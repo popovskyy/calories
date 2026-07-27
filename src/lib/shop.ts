@@ -93,7 +93,6 @@ export async function buildShop(userId: string): Promise<ShopResponse | null> {
     price: t.price,
     swatch: t.swatch,
     vibe: t.vibe,
-    fontLabel: t.fontLabel,
     previewBg: t.previewBg,
     previewAccent: t.previewAccent,
     comingSoon: t.comingSoon,
