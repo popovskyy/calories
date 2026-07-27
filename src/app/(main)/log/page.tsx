@@ -103,7 +103,7 @@ function LogPageInner() {
             {Math.round(pct * 100)}%
           </span>
         </div>
-        <ProgressBar value={pct} over={over} />
+        <ProgressBar value={pct} over={over} frame={user.frame} />
         <div className="mt-2 flex justify-between text-[13px] text-[var(--color-muted3)]">
           <span>Зʼїдено {consumed.toLocaleString("uk-UA")}</span>
           <span>Спалено {burned.toLocaleString("uk-UA")}</span>

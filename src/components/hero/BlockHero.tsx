@@ -12,7 +12,8 @@ const BEVEL = {
 } as const;
 
 /** Minecraft-герой: блоковий бокс із числом + XP-бар під ним. */
-export function BlockHero({ consumed, target }: HeroProps) {
+export function BlockHero({ consumed, target, frame }: HeroProps) {
+  const neon = frame === "neon";
   const safeTarget = target > 0 ? target : 1;
   const progress = Math.min(Math.max(consumed / safeTarget, 0), 1);
   const remaining = target - consumed;
@@ -39,7 +40,16 @@ export function BlockHero({ consumed, target }: HeroProps) {
     <div className="flex w-full flex-col items-center">
       <div
         className="my-2 flex h-[186px] w-[186px] shrink-0 flex-col items-center justify-center gap-0.5 border-4 border-solid bg-[#26262b]"
-        style={BEVEL}
+        style={{
+          ...BEVEL,
+          ...(neon
+            ? {
+                boxShadow:
+                  "0 0 16px rgba(0,240,255,0.45), 0 0 28px rgba(255,43,214,0.3)",
+                borderColor: "#00F0FF",
+              }
+            : null),
+        }}
       >
         <motion.div
           className={`${numSize} font-extrabold leading-[0.9] text-white`}
@@ -60,7 +70,7 @@ export function BlockHero({ consumed, target }: HeroProps) {
           className="text-[19px] font-bold uppercase"
           style={{
             fontFamily: "var(--font-display)",
-            color: over ? "var(--color-red)" : "var(--color-green)",
+            color: over ? "var(--color-red)" : neon ? "#00F0FF" : "var(--color-green)",
             textShadow: "2px 2px 0 #131316",
           }}
         >
@@ -73,14 +83,27 @@ export function BlockHero({ consumed, target }: HeroProps) {
       {/* XP-бар: темний жолоб зі світлою нижньою фаскою, як у грі */}
       <div
         className="mt-1.5 mb-2 h-[18px] w-full bg-[#16161a]"
-        style={{ borderTop: "3px solid #0c0c0f", borderBottom: "3px solid #3f3f45" }}
+        style={{
+          borderTop: neon ? "3px solid #00F0FF88" : "3px solid #0c0c0f",
+          borderBottom: neon ? "3px solid #FF2BD688" : "3px solid #3f3f45",
+          boxShadow: neon
+            ? "0 0 12px rgba(0,240,255,0.4), 0 0 20px rgba(255,43,214,0.25)"
+            : undefined,
+        }}
       >
         <motion.div
           className="h-full"
           style={{
             width,
-            background: over ? "var(--color-red)" : "#80ff20",
-            borderBottom: `3px solid ${over ? "#841f16" : "#4fae0d"}`,
+            background: over
+              ? "var(--color-red)"
+              : neon
+                ? "linear-gradient(90deg,#00F0FF,#7B61FF,#FF2BD6)"
+                : "#80ff20",
+            borderBottom: `3px solid ${
+              over ? "#841f16" : neon ? "#7B61FF" : "#4fae0d"
+            }`,
+            boxShadow: neon && !over ? "0 0 8px rgba(0,240,255,0.7)" : undefined,
           }}
         />
       </div>

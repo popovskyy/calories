@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "framer-motion";
 
 const R = 108;
 const C = 2 * Math.PI * R;
@@ -11,9 +17,13 @@ const CX = SIZE / 2;
 interface ProgressRingProps {
   consumed: number;
   target: number;
+  /** Куплена рамка — «neon» додає неонову обводку й світіння. */
+  frame?: string | null;
 }
 
-export function ProgressRing({ consumed, target }: ProgressRingProps) {
+export function ProgressRing({ consumed, target, frame }: ProgressRingProps) {
+  const reduce = useReducedMotion();
+  const neon = frame === "neon";
   const safeTarget = target > 0 ? target : 1;
   const progress = Math.min(Math.max(consumed / safeTarget, 0), 1);
   const remaining = target - consumed;
@@ -42,13 +52,30 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
   const numSize =
     digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[56px]" : "text-[64px]";
 
+  const gradId = neon ? "ring-grad-neon" : "ring-grad";
+
   return (
-    <div className="relative my-1.5 h-[248px] w-[248px] shrink-0 overflow-hidden">
+    <div className="relative my-1.5 h-[248px] w-[248px] shrink-0">
+      {neon ? (
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute rounded-full"
+          style={{
+            inset: -6,
+            boxShadow:
+              "0 0 18px rgba(0,240,255,0.55), 0 0 36px rgba(255,43,214,0.35), inset 0 0 18px rgba(0,240,255,0.15)",
+            border: "1.5px solid rgba(0,240,255,0.65)",
+          }}
+          animate={reduce ? undefined : { opacity: [0.65, 1, 0.65] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ) : null}
+
       <svg
         width={SIZE}
         height={SIZE}
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="block"
+        className="relative z-[1] block overflow-hidden"
         style={{ transform: "rotate(-90deg)" }}
       >
         <circle
@@ -56,7 +83,7 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
           cy={CX}
           r={R}
           fill="none"
-          stroke="var(--color-track)"
+          stroke={neon ? "rgba(0,240,255,0.18)" : "var(--color-track)"}
           strokeWidth="20"
         />
         <motion.circle
@@ -64,24 +91,42 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
           cy={CX}
           r={R}
           fill="none"
-          stroke="url(#ring-grad)"
+          stroke={`url(#${gradId})`}
           strokeWidth="20"
           strokeLinecap="round"
           strokeDasharray={C}
-          style={{ strokeDashoffset: offset }}
+          style={{
+            strokeDashoffset: offset,
+            filter: neon
+              ? "drop-shadow(0 0 6px rgba(0,240,255,0.85)) drop-shadow(0 0 12px rgba(255,43,214,0.45))"
+              : undefined,
+          }}
         />
         <defs>
           <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="var(--color-ring-from)" />
             <stop offset="1" stopColor="var(--color-ring-to)" />
           </linearGradient>
+          <linearGradient id="ring-grad-neon" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#00F0FF" />
+            <stop offset="0.55" stopColor="#7B61FF" />
+            <stop offset="1" stopColor="#FF2BD6" />
+          </linearGradient>
         </defs>
       </svg>
 
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <div className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center">
         <div className="flex w-[176px] flex-col items-center justify-center overflow-hidden text-center">
           <motion.div
             className={`${numSize} font-semibold leading-[0.95] tracking-[-0.02em] text-[var(--color-text)]`}
+            style={
+              neon
+                ? {
+                    textShadow:
+                      "0 0 12px rgba(0,240,255,0.35), 0 0 24px rgba(255,43,214,0.2)",
+                  }
+                : undefined
+            }
           >
             {rounded}
           </motion.div>
@@ -90,7 +135,14 @@ export function ProgressRing({ consumed, target }: ProgressRingProps) {
           </div>
           <div
             className="mt-1 max-w-full truncate text-[15px] font-semibold leading-tight"
-            style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
+            style={{
+              color: over
+                ? "var(--color-red)"
+                : neon
+                  ? "#00F0FF"
+                  : "var(--color-green)",
+              textShadow: neon && !over ? "0 0 10px rgba(0,240,255,0.55)" : undefined,
+            }}
           >
             {over
               ? `Перебір ${Math.abs(remaining).toLocaleString("uk-UA")}`

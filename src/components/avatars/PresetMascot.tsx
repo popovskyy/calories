@@ -272,6 +272,37 @@ function EpicRing({ reduce }: { reduce: boolean }) {
   );
 }
 
+/** Неонова рамка — пульсуюче ціано-маджентове світіння. */
+function NeonRing({ reduce }: { reduce: boolean }) {
+  return (
+    <motion.span
+      aria-hidden
+      className="pointer-events-none absolute rounded-full"
+      style={{
+        inset: -4,
+        padding: 2.5,
+        background:
+          "conic-gradient(from 90deg, #00F0FF, #7B61FF, #FF2BD6, #00F0FF)",
+        boxShadow:
+          "0 0 10px rgba(0,240,255,0.85), 0 0 22px rgba(255,43,214,0.55)",
+        WebkitMask:
+          "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+        WebkitMaskComposite: "xor",
+        maskComposite: "exclude",
+      }}
+      animate={
+        reduce
+          ? undefined
+          : { opacity: [0.75, 1, 0.75], rotate: 360 }
+      }
+      transition={{
+        opacity: { duration: 1.8, repeat: Infinity, ease: "easeInOut" },
+        rotate: { duration: 6, repeat: Infinity, ease: "linear" },
+      }}
+    />
+  );
+}
+
 /** Анімований маскот з idle-підстрибуванням (Duolingo-відчуття). */
 export function PresetMascot({
   id,
@@ -311,8 +342,8 @@ export function PresetMascot({
     <motion.div
       className={cn(
         "relative shrink-0 rounded-full",
-        // overflow-hidden обрізав би кільце «Епічної», яке виступає за межі
-        frame === "epic" ? undefined : "overflow-hidden",
+        // overflow-hidden обрізав би кільце «Епічної»/«Неон», яке виступає за межі
+        frame === "epic" || frame === "neon" ? undefined : "overflow-hidden",
         className,
       )}
       style={{
@@ -349,6 +380,7 @@ export function PresetMascot({
       )}
 
       {frame === "epic" ? <EpicRing reduce={!!reduce} /> : null}
+      {frame === "neon" ? <NeonRing reduce={!!reduce} /> : null}
 
       {/* Легенда мерехтить — саме це й помічають друзі в арені */}
       {stage >= 4 && idle ? (

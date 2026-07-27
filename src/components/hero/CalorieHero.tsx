@@ -8,6 +8,8 @@ import { useThemeId } from "@/hooks/useThemeId";
 export interface HeroProps {
   consumed: number;
   target: number;
+  /** Рамка аватара — «neon» підсвічує кільце прогресу. */
+  frame?: string | null;
 }
 
 /**

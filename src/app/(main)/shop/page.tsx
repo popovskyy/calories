@@ -332,12 +332,12 @@ function ThemeCard({
       </div>
 
       {theme.equipped ? (
-        <div className="flex items-center gap-1 text-[13px] font-semibold text-[var(--color-accent)]">
-          <Check size={14} /> Активна
+        <div className="btn btn-primary pointer-events-none w-full cursor-default py-2 text-[13px]">
+          <Check size={14} strokeWidth={2.5} /> Активна
         </div>
       ) : theme.owned ? (
         <button
-          className="btn btn-ghost w-full py-2 text-[13px]"
+          className="btn w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] py-2 text-[13px] font-bold text-[var(--color-accent-100)]"
           disabled={equipping}
           onClick={() => onEquip(theme)}
         >
@@ -455,12 +455,12 @@ function SkinCard({
       </div>
 
       {skin.equipped ? (
-        <div className="flex items-center gap-1 text-[13px] font-semibold text-[var(--color-accent)]">
-          <Check size={14} /> Вдягнено
+        <div className="btn btn-primary pointer-events-none w-full cursor-default py-2 text-[13px]">
+          <Check size={14} strokeWidth={2.5} /> Вдягнено
         </div>
       ) : skin.owned ? (
         <button
-          className="btn btn-ghost w-full py-2 text-[13px]"
+          className="btn w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] py-2 text-[13px] font-bold text-[var(--color-accent-100)]"
           disabled={equipping}
           onClick={() => onEquip(skin)}
         >

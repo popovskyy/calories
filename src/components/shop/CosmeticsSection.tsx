@@ -25,7 +25,7 @@ const GROUPS: { kind: CosmeticKind; title: string; hint: string }[] = [
     kind: "frame",
     title: "Рамки",
     hint:
-      "Кольорове кільце навколо твого аватара. Видно скрізь, де він показується: Огляд, Арена, Профіль.",
+      "Кольорове кільце навколо твого аватара. Рамка «Неон» також підсвічує шкалу прогресу. Видно в Огляді, Арені, Профілі.",
   },
   {
     kind: "soundpack",
@@ -111,12 +111,12 @@ function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
         і не коштує економіці жодної монети.
       */}
       {c.equipped ? (
-        <div className="mt-auto flex items-center gap-1 text-[13px] font-semibold text-[var(--color-accent)]">
-          <Check size={14} /> Активно
+        <div className="btn btn-primary pointer-events-none mt-auto w-full cursor-default py-2 text-[13px]">
+          <Check size={14} strokeWidth={2.5} /> Активно
         </div>
       ) : c.owned ? (
         <button
-          className="btn btn-ghost mt-auto w-full py-2 text-[13px]"
+          className="btn mt-auto w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] py-2 text-[13px] font-bold text-[var(--color-accent-100)]"
           disabled={equip.isPending}
           onClick={onEquip}
         >

@@ -60,7 +60,11 @@ export default function DashboardPage() {
             <Skeleton className="my-1.5 h-[250px] w-full rounded-[var(--radius-lg)]" />
           )
         ) : (
-          <CalorieHero consumed={today.totalCalories} target={user.targetCalories} />
+          <CalorieHero
+            consumed={today.totalCalories}
+            target={user.targetCalories}
+            frame={user.frame}
+          />
         )}
 
         {today ? (

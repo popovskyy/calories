@@ -211,6 +211,16 @@ export const FRAMES: CosmeticDef[] = [
     sortOrder: 30,
   },
   {
+    id: "neon",
+    kind: "frame",
+    nameUk: "Неон",
+    description:
+      "Ціано-маджентове світіння: пульсує на аватарі й підсвічує шкалу прогресу ккал неоновою обводкою",
+    unlock: { via: "shop", price: 300 },
+    swatch: "linear-gradient(135deg,#00F0FF,#FF2BD6,#7B61FF)",
+    sortOrder: 35,
+  },
+  {
     id: "traveler",
     kind: "frame",
     nameUk: "Мандрівник",
