@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { CalorieHero } from "@/components/hero/CalorieHero";
 import { DailyCardsRow } from "@/components/DailyCardsRow";
@@ -30,7 +31,7 @@ export default function DashboardPage() {
     <>
       <DashboardHeader />
 
-      {/* Кільце прогресу */}
+      {/* Кільце прогресу — герой першого viewport */}
       <section className="mcard flex flex-col items-center gap-3 p-[26px_20px_22px] shadow-[var(--shadow-card-lg)]">
         <div className="flex w-full items-center justify-between">
           <span className="lbl">Сьогодні · {humanDate(todayYMD())}</span>
@@ -86,29 +87,40 @@ export default function DashboardPage() {
       {/* Картки дня — щоденна дія має бути вище за тижневу */}
       <DailyCardsRow />
 
-      {/* Ціль по вазі */}
-      <WeightGoalCard />
-
-      {/* Квести тижня */}
-      <WeeklyQuestsCard />
-
-      {/* Активна хроніка */}
-      <ActiveEpic />
-
-      {/* Тижневий графік */}
-      <section className="mcard p-[18px_18px_16px]">
-        <div className="mb-3.5 flex items-baseline justify-between">
-          <span className="lbl">Останні 7 днів</span>
-          <span className="text-[14px] text-[var(--color-muted3)]">
-            ціль {user.targetCalories.toLocaleString("uk-UA")}
+      {/*
+        Вага / квести / хроніки / графік — поза першим екраном.
+        Інакше головна читається як дашборд SaaS.
+      */}
+      <details className="group">
+        <summary className="mcard flex cursor-pointer list-none items-center justify-between gap-2 px-[18px] py-3.5 [&::-webkit-details-marker]:hidden">
+          <span className="lbl !mb-0">Ще</span>
+          <span className="flex items-center gap-1.5 text-[14px] text-[var(--color-muted3)]">
+            вага · квести · графік
+            <ChevronDown
+              size={16}
+              className="shrink-0 transition-transform duration-[var(--duration-ui)] group-open:rotate-180"
+            />
           </span>
+        </summary>
+        <div className="mt-4 flex flex-col gap-4">
+          <WeightGoalCard />
+          <WeeklyQuestsCard />
+          <ActiveEpic />
+          <section className="mcard p-[18px_18px_16px]">
+            <div className="mb-3.5 flex items-baseline justify-between">
+              <span className="lbl">Останні 7 днів</span>
+              <span className="text-[14px] text-[var(--color-muted3)]">
+                ціль {user.targetCalories.toLocaleString("uk-UA")}
+              </span>
+            </div>
+            {dash.data ? (
+              <WeeklyChart days={dash.data.days} target={user.targetCalories} />
+            ) : (
+              <Skeleton className="h-[150px] w-full" />
+            )}
+          </section>
         </div>
-        {dash.data ? (
-          <WeeklyChart days={dash.data.days} target={user.targetCalories} />
-        ) : (
-          <Skeleton className="h-[150px] w-full" />
-        )}
-      </section>
+      </details>
     </>
   );
 }
@@ -141,7 +153,6 @@ function ActiveEpic() {
     );
   }
 
-  // Найближчий до завершення — саме там ефект градієнта цілі найсильніший.
   const epic = candidates.reduce((best, e) =>
     e.remaining < best.remaining ? e : best,
   );

@@ -85,6 +85,19 @@
   /* Ролі: display — заголовки, лейбли, числа; body — усе інше */
   --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Type scale — 4 кроки + title/hero */
+  --text-caption: 12px;
+  --text-secondary: 14px;
+  --text-body: 17px;
+  --text-title: 22px;
+  --text-hero: 28px;
+
+  /* Motion — один канонічний ease-out (як у sheet/dd) */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-press: 120ms;
+  --duration-ui: 180ms;
+  --duration-sheet: 260ms;
 }
 
 /* ============================================================
@@ -397,7 +410,7 @@ html[data-theme="minecraft"] .page-chrome {
   gap: 2px;
   padding: 4px 0;
   color: var(--color-nav-idle-fg);
-  transition: color 0.18s ease, background 0.18s ease;
+  transition: color var(--duration-ui) ease, background var(--duration-ui) ease;
 }
 .nav-tab[data-active="true"] {
   color: var(--color-nav-active-fg);
@@ -477,6 +490,10 @@ html[data-theme="minecraft"] .nav-tab-label {
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--color-accent-400), var(--color-accent-600));
   box-shadow: var(--shadow-fab);
+  transition: transform var(--duration-press) var(--ease-out), box-shadow var(--duration-ui) ease;
+}
+.fab-btn:active {
+  transform: scale(0.94);
 }
 .fab-btn-icon {
   width: 32px;
@@ -694,11 +711,19 @@ html[data-theme="minecraft"] .rounded-full {
 
 .lbl {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--color-muted3);
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text);
 }
 
 /* Tags */
@@ -728,13 +753,18 @@ html[data-theme="minecraft"] .rounded-full {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 17px;
+  min-height: 48px;
+  font-size: var(--text-body);
   font-weight: 600;
   border-radius: var(--radius-md);
   padding: 13px 18px;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: filter 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+  transition:
+    filter var(--duration-ui) ease,
+    opacity var(--duration-ui) ease,
+    background var(--duration-ui) ease,
+    transform var(--duration-press) var(--ease-out);
 }
 .btn:disabled {
   opacity: 0.55;
@@ -757,22 +787,15 @@ html[data-theme="minecraft"] .rounded-full {
 .btn-ghost:not(:disabled):hover {
   background: color-mix(in srgb, var(--color-text) 6%, transparent);
 }
-/* Компактна кнопка, що все одно лишається придатною для пальця (44px ціль) */
+/* Компактна кнопка, що все одно лишається придатною для пальця (40px ціль) */
 .btn-sm {
-  font-size: 14px;
+  font-size: var(--text-secondary);
   padding: 8px 12px;
   min-height: 40px;
 }
 /* Реакція на натиск, а не на відпускання — інтерфейс має відповідати миттєво */
 .btn:not(:disabled):active {
   transform: scale(0.97);
-}
-.btn {
-  transition:
-    filter 0.18s ease,
-    opacity 0.18s ease,
-    background 0.18s ease,
-    transform 0.12s ease-out;
 }
 
 /* Квадратна іконкова кнопка з повноцінною тач-ціллю */
@@ -785,9 +808,9 @@ html[data-theme="minecraft"] .rounded-full {
   border-radius: var(--radius-md);
   color: var(--color-muted3);
   transition:
-    color 0.18s ease,
-    background 0.18s ease,
-    transform 0.12s ease-out;
+    color var(--duration-ui) ease,
+    background var(--duration-ui) ease,
+    transform var(--duration-press) var(--ease-out);
 }
 .icon-btn:hover {
   background: color-mix(in srgb, var(--color-text) 6%, transparent);
@@ -1105,16 +1128,16 @@ html[data-theme="minecraft"] .rounded-full {
 }
 
 .dlg-overlay[data-state="open"] {
-  animation: overlay-in 0.2s ease forwards;
+  animation: overlay-in var(--duration-ui) ease forwards;
 }
 .dlg-overlay[data-state="closed"] {
-  animation: overlay-out 0.16s ease forwards;
+  animation: overlay-out var(--duration-press) ease forwards;
 }
 .dlg-content[data-state="open"] {
-  animation: sheet-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: sheet-in var(--duration-sheet) var(--ease-out) forwards;
 }
 .dlg-content[data-state="closed"] {
-  animation: sheet-out 0.18s ease forwards;
+  animation: sheet-out var(--duration-ui) ease forwards;
 }
 
 /* Dropdown / menu motion */
@@ -1130,10 +1153,10 @@ html[data-theme="minecraft"] .rounded-full {
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);
 }
 .dd-content[data-state="open"] {
-  animation: dd-in 0.16s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dd-in var(--duration-ui) var(--ease-out) forwards;
 }
 .dd-content[data-state="closed"] {
-  animation: dd-out 0.12s ease forwards;
+  animation: dd-out var(--duration-press) ease forwards;
 }
 
 /* ============================================================

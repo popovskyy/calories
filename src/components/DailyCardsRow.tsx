@@ -41,7 +41,7 @@ export function DailyCardsRow() {
           onClick={onReroll}
           disabled={rerollQty === 0 || useItem.isPending}
           className={cn(
-            "flex items-center gap-1 rounded-[var(--radius-pill)] border border-[var(--color-divider)] px-2 py-1 text-[12px] text-[var(--color-muted3)] transition-opacity",
+            "btn btn-ghost btn-sm gap-1 px-2.5",
             rerollQty === 0 && "opacity-40",
           )}
         >

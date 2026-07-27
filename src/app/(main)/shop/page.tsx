@@ -29,20 +29,16 @@ type ConfirmItem =
   | { kind: "skin"; item: ShopSkin }
   | { kind: "theme"; item: ShopTheme };
 
-type Tab = "look" | "stall" | "gear" | "status" | "evolution" | "wallet";
+type Tab = "look" | "stall" | "rest";
 
 /**
- * Порядок не випадковий: скіни й теми — те, по що приходять у магазин,
- * тому вони перша й дефолтна вкладка. Прилавок — гачок понеділка, але
- * ховати за ним основний асортимент не можна.
+ * Три входи замість шести: менше рішень на вході (Hick).
+ * Вигляд = скіни/теми/косметика; Прилавок = бокси+спорядження; Решта = еволюція+гаманець.
  */
 const TABS: { id: Tab; label: string }[] = [
-  { id: "look", label: "Скіни й теми" },
+  { id: "look", label: "Вигляд" },
   { id: "stall", label: "Прилавок" },
-  { id: "gear", label: "Спорядження" },
-  { id: "status", label: "Статус" },
-  { id: "evolution", label: "Еволюція" },
-  { id: "wallet", label: "Гаманець" },
+  { id: "rest", label: "Решта" },
 ];
 
 export default function ShopPage() {
@@ -100,10 +96,7 @@ export default function ShopPage() {
     <>
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="text-[24px] font-semibold text-[var(--color-text)]">Крамниця</h1>
-          <p className="mt-0.5 text-[14px] text-[var(--color-muted3)]">
-            Монети за дисципліну — спорядження, вигляд і статус
-          </p>
+          <h1 className="page-title">Крамниця</h1>
         </div>
         <div className="flex shrink-0 items-center gap-1 rounded-[var(--radius-pill)] border border-[color-mix(in_srgb,#FFC800_45%,transparent)] bg-[color-mix(in_srgb,#FFC800_12%,transparent)] px-2.5 py-1.5">
           <CoinIcon size={16} />
@@ -137,14 +130,14 @@ export default function ShopPage() {
             скролом половина розділів була невидима, і магазин здавався
             порожнім — саме так загубились скіни й теми.
           */}
-          <nav className="flex flex-wrap gap-1.5">
+          <nav className="grid grid-cols-3 gap-1.5">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "rounded-[var(--radius-pill)] border px-3 py-1.5 text-[13px] font-semibold transition-colors",
+                  "btn-sm min-h-10 rounded-[var(--radius-pill)] border px-3 font-semibold transition-colors",
                   tab === t.id
                     ? "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[var(--color-text)]"
                     : "border-[var(--color-divider)] text-[var(--color-muted3)]",
@@ -155,12 +148,18 @@ export default function ShopPage() {
             ))}
           </nav>
 
-          {tab === "stall" ? <StallSection shop={shop.data} /> : null}
-          {tab === "gear" ? <GearSection shop={shop.data} /> : null}
-          {tab === "evolution" ? (
-            <EvolutionSection shop={shop.data} user={user} />
+          {tab === "stall" ? (
+            <>
+              <StallSection shop={shop.data} />
+              <GearSection shop={shop.data} />
+            </>
           ) : null}
-          {tab === "wallet" ? <WalletSection /> : null}
+          {tab === "rest" ? (
+            <>
+              <EvolutionSection shop={shop.data} user={user} />
+              <WalletSection />
+            </>
+          ) : null}
 
           {tab === "look" ? (
             <>
@@ -198,10 +197,9 @@ export default function ShopPage() {
                 onBuy={() => {}}
                 equipping={equipSkin.isPending ? equipSkin.variables : null}
               />
+              <CosmeticsSection shop={shop.data} />
             </>
           ) : null}
-
-          {tab === "status" ? <CosmeticsSection shop={shop.data} /> : null}
         </>
       ) : null}
 
@@ -332,12 +330,12 @@ function ThemeCard({
       </div>
 
       {theme.equipped ? (
-        <div className="btn btn-primary pointer-events-none w-full cursor-default py-2 text-[13px]">
+        <div className="btn btn-primary btn-sm pointer-events-none w-full cursor-default">
           <Check size={14} strokeWidth={2.5} /> Активна
         </div>
       ) : theme.owned ? (
         <button
-          className="btn w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] py-2 text-[13px] font-bold text-[var(--color-accent-100)]"
+          className="btn btn-sm w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] font-bold text-[var(--color-accent-100)]"
           disabled={equipping}
           onClick={() => onEquip(theme)}
         >
@@ -346,7 +344,7 @@ function ThemeCard({
       ) : (
         <button
           className={cn(
-            "btn btn-primary flex w-full items-center justify-center gap-1 py-2 text-[13px]",
+            "btn btn-primary btn-sm flex w-full items-center justify-center gap-1",
             coins < theme.price && "opacity-60",
           )}
           onClick={() => onBuy(theme)}
@@ -455,12 +453,12 @@ function SkinCard({
       </div>
 
       {skin.equipped ? (
-        <div className="btn btn-primary pointer-events-none w-full cursor-default py-2 text-[13px]">
+        <div className="btn btn-primary btn-sm pointer-events-none w-full cursor-default">
           <Check size={14} strokeWidth={2.5} /> Вдягнено
         </div>
       ) : skin.owned ? (
         <button
-          className="btn w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] py-2 text-[13px] font-bold text-[var(--color-accent-100)]"
+          className="btn btn-sm w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] font-bold text-[var(--color-accent-100)]"
           disabled={equipping}
           onClick={() => onEquip(skin)}
         >
@@ -469,7 +467,7 @@ function SkinCard({
       ) : (
         <button
           className={cn(
-            "btn btn-primary flex w-full items-center justify-center gap-1 py-2 text-[13px]",
+            "btn btn-primary btn-sm flex w-full items-center justify-center gap-1",
             coins < skin.price && "opacity-60",
           )}
           onClick={() => onBuy(skin)}

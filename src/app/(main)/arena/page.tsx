@@ -31,7 +31,7 @@ export default function ArenaPage() {
     <>
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-[22px] font-semibold text-[var(--color-text)]">
+          <h1 className="page-title flex items-center gap-2">
             <Trophy size={22} className="text-[var(--color-accent)]" />
             Арена
           </h1>
@@ -117,7 +117,7 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
               {entry.title}
             </div>
           ) : null}
-          <div className="truncate text-[13px] text-[var(--color-muted3)]">
+          <div className="truncate text-[12px] text-[var(--color-muted3)] opacity-80">
             {entry.goalLabel} · {entry.todayCalories.toLocaleString("uk-UA")} /{" "}
             {entry.targetCalories.toLocaleString("uk-UA")} ккал
           </div>

@@ -96,12 +96,12 @@ export default function AddActivityPage() {
         <Link
           href="/"
           aria-label="Назад"
-          className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-surface)] text-[var(--color-muted)]"
+          className="icon-btn bg-[var(--color-surface)]"
         >
           <ChevronLeft size={18} />
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[22px] font-semibold text-[var(--color-text)]">
+          <h1 className="page-title">
             Активність
           </h1>
           {mounted ? (

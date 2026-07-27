@@ -183,12 +183,12 @@ export default function AddFoodPage() {
         <Link
           href="/"
           aria-label="Назад"
-          className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-surface)] text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
+          className="icon-btn bg-[var(--color-surface)]"
         >
           <ChevronLeft size={18} />
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[22px] font-semibold text-[var(--color-text)]">
+          <h1 className="page-title">
             Новий прийом їжі
           </h1>
           {mounted ? (
@@ -303,7 +303,7 @@ export default function AddFoodPage() {
               type="button"
               onClick={() => setImage(null)}
               aria-label="Прибрати фото"
-              className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-[var(--radius-pill)] bg-black/60 text-white"
+              className="icon-btn absolute right-2 top-2 bg-black/60 text-white hover:bg-black/70 hover:text-white"
             >
               <X size={15} />
             </button>

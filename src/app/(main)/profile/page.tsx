@@ -37,11 +37,12 @@ export default function ProfilePage() {
   return (
     <>
       <header className="flex items-center justify-between">
-        <h1 className="text-[22px] font-semibold text-[var(--color-text)]">Профіль</h1>
+        <h1 className="page-title">Профіль</h1>
         <button
+          type="button"
           onClick={() => logout.mutate()}
           disabled={logout.isPending}
-          className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--color-divider)] px-3 py-2 text-[15px] font-medium text-[var(--color-muted2)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
+          className="btn btn-ghost btn-sm gap-1.5"
         >
           <LogOut size={16} />
           Вийти
@@ -55,8 +56,10 @@ export default function ProfilePage() {
           <div className="text-[15px] text-[var(--color-muted3)]">@{user.username}</div>
           <div className="mt-1 text-[14px] text-[var(--color-muted2)]">
             {user.targetCalories.toLocaleString("uk-UA")} ккал ·{" "}
-            {GOAL_LABELS[user.goal].toLowerCase()} · {user.age} р · {user.weight} кг ·{" "}
-            {user.height} см
+            {GOAL_LABELS[user.goal].toLowerCase()}
+          </div>
+          <div className="text-[14px] text-[var(--color-muted3)]">
+            {user.age} р · {user.weight} кг · {user.height} см
           </div>
           {streakDays > 0 ? (
             <div className="mt-1.5 text-[13px] font-semibold text-[var(--color-accent-300)]">
@@ -66,9 +69,10 @@ export default function ProfilePage() {
           ) : null}
         </div>
         <button
+          type="button"
           onClick={() => setFormOpen(true)}
           aria-label="Редагувати"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted2)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-text)]"
+          className="icon-btn shrink-0"
         >
           <Pencil size={18} />
         </button>
@@ -76,7 +80,7 @@ export default function ProfilePage() {
 
       <Link
         href="/shop"
-        className="mcard flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
+        className="mcard flex w-full items-center gap-3 p-4 text-left transition-[transform,background-color] duration-[var(--duration-press)] active:scale-[0.98] hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
       >
         <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,#FFC800_15%,transparent)] text-[#FFC800]">
           <ShoppingBag size={18} />

@@ -33,10 +33,6 @@ export function WeeklyQuestsCard() {
           </span>
         ) : null}
       </div>
-      <p className="text-[13px] text-[var(--color-muted3)]">
-        Великі монети — за дисципліну ±5%. Точність рахується за підсумком дня, тож
-        монети падають наступного ранку.
-      </p>
 
       {q.isLoading || !q.data ? (
         <div className="flex flex-col gap-2">
@@ -81,11 +77,11 @@ export function WeeklyQuestsCard() {
                     {!quest.claimed && rerollQty > 0 ? (
                       <button
                         type="button"
-                        className="flex items-center gap-0.5 text-[11px] text-[var(--color-muted3)]"
+                        className="btn btn-ghost btn-sm h-8 min-h-8 gap-0.5 px-2 text-[12px]"
                         disabled={reroll.isPending}
                         onClick={() => onReroll(quest.code)}
                       >
-                        <Dices size={11} />
+                        <Dices size={12} />
                         міняти
                       </button>
                     ) : null}

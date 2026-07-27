@@ -157,7 +157,7 @@ export function AuthForm() {
   return (
     <div className="mx-auto flex w-full max-w-[420px] flex-col gap-4 px-[18px] pb-6 pt-6">
       <div>
-        <h1 className="text-[30px] font-semibold tracking-tight text-[var(--color-text)]">
+        <h1 className="text-[length:var(--text-hero)] font-semibold tracking-tight text-[var(--color-text)]">
           Калорії
         </h1>
         <p className="mt-1 text-[16px] text-[var(--color-muted2)]">

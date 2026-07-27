@@ -127,7 +127,7 @@ function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
         canUnequip ? (
           <button
             type="button"
-            className="btn btn-primary mt-auto w-full py-2 text-[13px]"
+            className="btn btn-primary btn-sm mt-auto w-full"
             disabled={equip.isPending}
             onClick={onUnequip}
             aria-label={`Зняти ${c.nameUk}`}
@@ -135,14 +135,14 @@ function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
             {equip.isPending ? "…" : "Зняти"}
           </button>
         ) : (
-          <div className="btn btn-primary pointer-events-none mt-auto w-full cursor-default py-2 text-[13px]">
+          <div className="btn btn-primary btn-sm pointer-events-none mt-auto w-full cursor-default">
             <Check size={14} strokeWidth={2.5} /> Активно
           </div>
         )
       ) : c.owned ? (
         <button
           type="button"
-          className="btn mt-auto w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] py-2 text-[13px] font-bold text-[var(--color-accent-100)]"
+          className="btn btn-sm mt-auto w-full border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_22%,var(--color-tile))] font-bold text-[var(--color-accent-100)]"
           disabled={equip.isPending}
           onClick={onEquip}
         >
@@ -156,7 +156,7 @@ function CosmeticCard({ c, coins }: { c: ShopCosmetic; coins: number }) {
         <button
           type="button"
           className={cn(
-            "btn btn-primary mt-auto flex w-full items-center justify-center gap-1 py-2 text-[13px]",
+            "btn btn-primary btn-sm mt-auto flex w-full items-center justify-center gap-1",
             coins < c.price && "opacity-60",
           )}
           disabled={buy.isPending}

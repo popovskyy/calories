@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { Dumbbell, UtensilsCrossed } from "lucide-react";
+import { Dumbbell, Trash2, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { DateSelector } from "@/components/DateSelector";
 import { ProgressBar } from "@/components/ProgressBar";
@@ -156,7 +156,8 @@ function LogPageInner() {
                     {a.status !== "cancelled" ? (
                       <button
                         type="button"
-                        className="text-[13px] text-[var(--color-muted3)]"
+                        className="icon-btn hover:text-[var(--color-red)]"
+                        aria-label="Видалити активність"
                         disabled={delAct.isPending}
                         onClick={() =>
                           setConfirm({
@@ -166,7 +167,7 @@ function LogPageInner() {
                           })
                         }
                       >
-                        ✕
+                        <Trash2 size={16} />
                       </button>
                     ) : null}
                   </div>

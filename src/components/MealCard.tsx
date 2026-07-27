@@ -79,7 +79,7 @@ export function MealCard({
                 onClick={() => onEdit(meal)}
                 disabled={deleting}
                 aria-label="Редагувати"
-                className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-accent)] disabled:opacity-50"
+                className="icon-btn"
               >
                 <Pencil size={16} />
               </button>
@@ -90,7 +90,7 @@ export function MealCard({
                 onClick={() => onDelete(meal.id)}
                 disabled={deleting}
                 aria-label="Видалити"
-                className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-pill)] text-[var(--color-muted3)] transition-colors hover:bg-[var(--color-tile)] hover:text-[var(--color-red)] disabled:opacity-50"
+                className="icon-btn hover:text-[var(--color-red)]"
               >
                 <Trash2 size={16} />
               </button>

@@ -76,7 +76,7 @@ export function GearSection({ shop }: { shop: ShopResponse }) {
               <div className="flex shrink-0 flex-col gap-1">
                 <button
                   className={cn(
-                    "btn btn-primary flex items-center justify-center gap-1 px-3 py-1.5 text-[13px]",
+                    "btn btn-primary btn-sm flex items-center justify-center gap-1",
                     (!affordable || item.full) && "opacity-60",
                   )}
                   disabled={buy.isPending || item.full}
@@ -88,7 +88,7 @@ export function GearSection({ shop }: { shop: ShopResponse }) {
 
                 {!item.passive && item.qty > 0 ? (
                   <button
-                    className="btn btn-ghost px-3 py-1.5 text-[12px]"
+                    className="btn btn-ghost btn-sm"
                     disabled={use.isPending}
                     onClick={() => onUse(item.id, item.nameUk)}
                   >
