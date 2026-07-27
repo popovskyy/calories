@@ -244,20 +244,32 @@ export default function AddFoodPage() {
           />
         </label>
 
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => cameraRef.current?.click()}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
+            className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] border-2 border-[var(--color-accent-500)] bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-tile))] px-3 py-3.5 text-[var(--color-text)] shadow-[0_3px_0_var(--color-accent-800)] transition-[transform,box-shadow,background-color] active:translate-y-[2px] active:shadow-[0_1px_0_var(--color-accent-800)]"
           >
-            <Camera size={18} /> Фото
+            <span className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] text-[#f5f4ff]">
+              <Camera size={22} strokeWidth={2.25} />
+            </span>
+            <span className="text-[15px] font-bold leading-none">Фото</span>
+            <span className="text-[11px] font-medium text-[var(--color-muted)]">
+              Зняти камерою
+            </span>
           </button>
           <button
             type="button"
             onClick={() => uploadRef.current?.click()}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[#595d6c] py-3 text-[15px] text-[var(--color-muted2)] transition-colors hover:border-[var(--color-accent-500)]"
+            className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] border-2 border-[var(--color-accent-400)] bg-[color-mix(in_srgb,var(--color-accent)_12%,var(--color-tile))] px-3 py-3.5 text-[var(--color-text)] shadow-[0_3px_0_var(--color-accent-800)] transition-[transform,box-shadow,background-color] active:translate-y-[2px] active:shadow-[0_1px_0_var(--color-accent-800)]"
           >
-            <Upload size={18} /> Файл
+            <span className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-300)] text-[var(--color-accent-800)]">
+              <Upload size={22} strokeWidth={2.25} />
+            </span>
+            <span className="text-[15px] font-bold leading-none">Файл</span>
+            <span className="text-[11px] font-medium text-[var(--color-muted)]">
+              З галереї
+            </span>
           </button>
           <input
             ref={cameraRef}
