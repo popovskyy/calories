@@ -3,8 +3,6 @@
 import { create } from "zustand";
 import { todayYMD } from "@/lib/date";
 
-const SOUND_KEY = "calories_sound";
-
 /**
  * Сигнал перерахунку калорій. Зводиться будь-якою мутацією, що змінює денний
  * підсумок (додавання / редагування / видалення їжі чи активності), і живе,
@@ -25,18 +23,6 @@ interface AppState {
   recalc: RecalcSignal | null;
   armRecalc: (delta: number) => void;
   consumeRecalc: () => void;
-
-  soundEnabled: boolean;
-  setSoundEnabled: (value: boolean) => void;
-}
-
-function readSound(): boolean {
-  if (typeof window === "undefined") return true;
-  try {
-    return window.localStorage.getItem(SOUND_KEY) !== "off";
-  } catch {
-    return true;
-  }
 }
 
 export const useAppStore = create<AppState>()((set) => ({
@@ -46,21 +32,4 @@ export const useAppStore = create<AppState>()((set) => ({
   recalc: null,
   armRecalc: (delta) => set({ recalc: { id: Date.now(), delta } }),
   consumeRecalc: () => set({ recalc: null }),
-
-  // Дефолт true і на сервері, і на клієнті — читання localStorage робить
-  // useSoundEnabled() після монтування, щоб не ловити hydration mismatch.
-  soundEnabled: true,
-  setSoundEnabled: (value) => {
-    try {
-      window.localStorage.setItem(SOUND_KEY, value ? "on" : "off");
-    } catch {
-      /* приватний режим — лишаємо стан лише в памʼяті */
-    }
-    set({ soundEnabled: value });
-  },
 }));
-
-/** Клієнтське підтягування збереженого вибору. Викликати один раз у Providers. */
-export function hydrateSoundPreference() {
-  useAppStore.setState({ soundEnabled: readSound() });
-}

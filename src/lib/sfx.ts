@@ -112,8 +112,8 @@ const FANFARE: Record<string, { wave: OscillatorType; notes: number[]; gain: num
  * Грає в будь-якій темі — на відміну від вогнища, яке живе лише у «лісі».
  * Саме завдяки цьому куплений саундпак чутно всім, а не тільки forest-гравцям.
  */
-export function playFinisher(enabled: boolean, pack = "default") {
-  if (!enabled || prefersReducedMotion()) return;
+export function playFinisher(pack = "default") {
+  if (prefersReducedMotion()) return;
   const ac = getContext();
   if (!ac) return;
 
@@ -139,11 +139,14 @@ export function playFinisher(enabled: boolean, pack = "default") {
 }
 
 /**
- * Дровина летить у вогонь: whoosh + тріск. Мовчить, якщо звук вимкнено.
- * Тембр залежить від вдягненого саундпака.
+ * Дровина летить у вогонь: whoosh + тріск. Тембр залежить від саундпака.
+ *
+ * Окремого вимикача звуку немає: він був частиною теми «ліс», але висів у
+ * Профілі для всіх. Тиха робота застосунку забезпечується інакше — системним
+ * prefers-reduced-motion і, звісно, беззвучним режимом самого телефона.
  */
-export function playLogToss(enabled: boolean, pack = "default") {
-  if (!enabled || prefersReducedMotion()) return;
+export function playLogToss(pack = "default") {
+  if (prefersReducedMotion()) return;
   const ac = getContext();
   if (!ac) return;
 

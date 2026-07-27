@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Flame } from "lucide-react";
 import { playFinisher } from "@/lib/sfx";
-import { useAppStore } from "@/store/useAppStore";
 
 interface SaveCelebrateProps {
   open: boolean;
@@ -90,15 +89,14 @@ export function SaveCelebrate({
   soundpack = "default",
 }: SaveCelebrateProps) {
   const reduce = useReducedMotion();
-  const soundEnabled = useAppStore((s) => s.soundEnabled);
 
   useEffect(() => {
     if (!open) return;
     // Акорд лише за влучний день — щоб звук лишався нагородою, а не фоном.
-    if (inTarget) playFinisher(soundEnabled, soundpack);
+    if (inTarget) playFinisher(soundpack);
     const t = window.setTimeout(onDone, reduce ? 400 : 1100);
     return () => window.clearTimeout(t);
-  }, [open, onDone, reduce, inTarget, soundEnabled, soundpack]);
+  }, [open, onDone, reduce, inTarget, soundpack]);
 
   // Фінішер — нагорода саме за влучний день; звичайний запис лишається скромним.
   const style = inTarget ? finisher : "confetti";

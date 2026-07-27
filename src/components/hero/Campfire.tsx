@@ -24,7 +24,6 @@ export function Campfire({ consumed, target }: HeroProps) {
 
   const recalc = useAppStore((s) => s.recalc);
   const consumeRecalc = useAppStore((s) => s.consumeRecalc);
-  const soundEnabled = useAppStore((s) => s.soundEnabled);
   const { user } = useCurrentUser();
   const pack = user?.soundpack ?? "default";
 
@@ -47,10 +46,10 @@ export function Campfire({ consumed, target }: HeroProps) {
 
   useEffect(() => {
     if (!recalc) return;
-    playLogToss(soundEnabled, pack);
+    playLogToss(pack);
     const t = window.setTimeout(consumeRecalc, 2600);
     return () => window.clearTimeout(t);
-  }, [recalc, consumeRecalc, soundEnabled, pack]);
+  }, [recalc, consumeRecalc, pack]);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[52px]" : "text-[62px]";

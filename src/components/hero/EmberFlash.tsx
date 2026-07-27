@@ -16,15 +16,14 @@ import { useThemeId } from "@/hooks/useThemeId";
  */
 export function EmberFlash() {
   const recalc = useAppStore((s) => s.recalc);
-  const soundEnabled = useAppStore((s) => s.soundEnabled);
   const { user } = useCurrentUser();
   const pack = user?.soundpack ?? "default";
   const forest = useThemeId() === "forest";
 
   useEffect(() => {
     if (!forest || !recalc) return;
-    playLogToss(soundEnabled, pack);
-  }, [recalc, forest, soundEnabled, pack]);
+    playLogToss(pack);
+  }, [recalc, forest, pack]);
 
   if (!forest || !recalc) return null;
 
