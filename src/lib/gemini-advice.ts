@@ -6,7 +6,7 @@ import {
 import OpenAI from "openai";
 import { AiError, gptApiKey } from "@/lib/ai-error";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 
 export type AdviceMood = "good" | "mixed" | "over";
 /** Частина доби визначає, про що взагалі можна говорити. */

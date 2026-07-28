@@ -22,7 +22,7 @@ CALORIES_DATABASE_URL=…?schema=calories
 CALORIES_DIRECT_URL=…&schema=calories
 AUTH_SECRET=…                          # мін. 16 символів
 GEMINI_API_KEY=…
-GEMINI_MODEL=gemini-flash-latest       # опційно
+GEMINI_MODEL=gemini-3.1-flash-lite     # дешевий flash-lite; flash-latest ≈ 3.6 (дорого)
 GPT_API_KEY=…                          # fallback
 AI_PROVIDER=gemini                     # або openai
 ```

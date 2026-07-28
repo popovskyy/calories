@@ -6,7 +6,7 @@ import {
 import { AiError, gptApiKey } from "@/lib/ai-error";
 import OpenAI from "openai";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 
 export interface AnalyzeActivityResult {
   caloriesBurned: number;
