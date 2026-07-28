@@ -4,6 +4,7 @@ import { TabBar } from "@/components/TabBar";
 import { Fab } from "@/components/Fab";
 import { RewardCelebrations } from "@/components/RewardCelebrations";
 import { GlobalClickFx } from "@/components/GlobalClickFx";
+import { RoutePrefetcher } from "@/components/RoutePrefetcher";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <TabBar />
       <RewardCelebrations />
       <GlobalClickFx />
+      <RoutePrefetcher />
     </AppFrame>
   );
 }

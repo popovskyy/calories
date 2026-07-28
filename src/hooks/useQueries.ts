@@ -253,6 +253,7 @@ export function useDeleteMeal(date: string) {
       qc.invalidateQueries({ queryKey: ["quests"] });
       qc.invalidateQueries({ queryKey: ["daily-cards"] });
       qc.invalidateQueries({ queryKey: ["epics"] });
+      qc.invalidateQueries({ queryKey: ["advice"] });
     },
   });
 }
@@ -280,6 +281,7 @@ export function useUpdateMeal(listDate: string) {
       qc.invalidateQueries({ queryKey: ["quests"] });
       qc.invalidateQueries({ queryKey: ["daily-cards"] });
       qc.invalidateQueries({ queryKey: ["epics"] });
+      qc.invalidateQueries({ queryKey: ["advice"] });
     },
   });
 }
@@ -404,20 +406,24 @@ export function useForecast() {
 }
 
 /**
- * Щоденний звіт. Сервер сам вирішує, чи вже час (частина доби, Kyiv) —
- * тут лише довгий staleTime, бо звіт за поточну частину дня незмінний,
- * поки користувач не натисне «Оновити» (force=1, окремою мутацією нижче).
+ * Звіт дня. Сервер сам тримає стан (locked / no_meals / requestable / ready)
+ * — поки він "locked", перепитуємо раз на хвилину, щоб кнопка сама розблокувалась
+ * рівно о 17:00 без перезавантаження сторінки. В решті станів опитування не
+ * потрібне: "ready" не зміниться до завтра, а "requestable"/"no_meals"
+ * інвалідується вручну при збереженні/видаленні їжі (див. useSaveMeal тощо).
  */
 export function useAdvice() {
   return useQuery({
     queryKey: ["advice"],
     queryFn: () => getAdvice(),
-    staleTime: 10 * 60_000,
+    staleTime: 60_000,
+    refetchInterval: (query) =>
+      query.state.data?.state === "locked" ? 60_000 : false,
     retry: false,
   });
 }
 
-/** Примусове оновлення звіту в обхід кешу — кнопка «Оновити» в картці. */
+/** Кнопка «Отримати фідбек» — просить ШІ згенерувати звіт саме зараз. */
 export function useForceAdvice() {
   const qc = useQueryClient();
   return useMutation({

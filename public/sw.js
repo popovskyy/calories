@@ -1,5 +1,5 @@
-/* App-shell service worker v2: offline shell + Web Push. */
-const CACHE = "calories-shell-v2";
+/* App-shell service worker v3: offline shell + Web Push. */
+const CACHE = "calories-shell-v3";
 const PRECACHE = ["/", "/manifest.webmanifest", "/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -40,13 +40,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: cache-first
+  // Все, що не є очевидно статичним асетом (JS/CSS чанки, іконки), лишаємо
+  // мережі як є — без event.respondWith(). Це критично для App Router: Next
+  // тягне RSC-пейлоади й дані клієнтських переходів звичайним GET на ті самі
+  // URL, БЕЗ mode:"navigate". Якщо піймати такий запит у cache-first нижче,
+  // Cache API може віддати старий закешований HTML-документ замість свіжого
+  // RSC-стріму (Cache.match звіряє в основному по URL, а не по заголовках
+  // запиту) — саме так компонент міг "зникати": React отримував протухлі дані.
+  const isStaticAsset =
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/") ||
+    url.pathname === "/manifest.webmanifest" ||
+    url.pathname === "/icon.svg";
+  if (!isStaticAsset) return;
+
+  // Статичні асети: cache-first (безпечно — ці URL завжди контентно-хешовані
+  // або міняються разом з версією SW).
   event.respondWith(
     caches.match(request).then(
       (cached) =>
         cached ||
         fetch(request).then((res) => {
-          if (res.ok && (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/"))) {
+          if (res.ok) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(request, copy));
           }

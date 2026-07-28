@@ -90,6 +90,7 @@ export function MealCard({
                 onClick={() => onDelete(meal.id)}
                 disabled={deleting}
                 aria-label="Видалити"
+                data-sfx="destructive"
                 className="icon-btn hover:text-[var(--color-red)]"
               >
                 <Trash2 size={16} />

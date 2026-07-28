@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { kyivHourNow, todayYMD } from "@/lib/date";
-import {
-  dayPartOfHour,
-  generateDayAdvice,
-  type AdviceMood,
-  type DayPart,
-} from "@/lib/gemini-advice";
+import { generateDayAdvice, type AdviceMood } from "@/lib/gemini-advice";
 import { AiError } from "@/lib/ai-error";
 import { GOAL_LABELS, calcMacroTargets, isGoal } from "@/lib/calories";
 import type { AdviceResponse } from "@/lib/types";
@@ -15,22 +10,23 @@ import type { AdviceResponse } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** mood/dayPart зберігаються рядками — звужуємо на читанні з БД. */
+/** Звіт відкривається лише після 17:00 за Києвом — день уже фактично закритий. */
+const UNLOCK_HOUR = 17;
+
+/** mood зберігається рядком — звужуємо на читанні з БД. */
 function toMood(v: string): AdviceMood {
   return v === "good" || v === "over" ? v : "mixed";
 }
-function toPart(v: string): DayPart {
-  return v === "morning" || v === "day" ? v : "evening";
-}
 
 /**
- * GET /api/advice — розбір раціону від ШІ, актуальний на момент відкриття.
+ * GET /api/advice — звіт дня від ШІ, один раз на добу, за запитом користувача.
  *
- * Порада живе весь день і змінюється разом із ним: зранку коментує сніданок,
- * увечері підбиває підсумок. Щоб не бити в платний API на кожне відкриття
- * Огляду, результат кешується в DailyAdvice і перегенеровується лише коли
- * змінилось те, що впливає на текст, — кількість записів або частина доби.
- * `?force=1` (кнопка «Оновити» в картці) ігнорує кеш і генерує наново.
+ * Це не фонова штука: до 17:00 звіт просто недоступний ("locked"), після —
+ * якщо за день є хоч один запис їжі, картка показує кнопку ("requestable") і
+ * чекає, поки користувач сам натисне й попросить фідбек (`?force=1`). Щойно
+ * ШІ відповів — результат назавжди кешується в DailyAdvice на цю дату:
+ * кнопка зникає, показується сам текст ("ready"). Наступного дня цикл
+ * починається знову.
  */
 export async function GET(request: Request) {
   const auth = await requireSession();
@@ -40,7 +36,24 @@ export async function GET(request: Request) {
 
   const userId = auth.session.userId;
   const date = todayYMD();
-  const dayPart = dayPartOfHour(kyivHourNow());
+
+  const cached = await prisma.dailyAdvice.findUnique({
+    where: { userId_date: { userId, date } },
+  });
+  if (cached) {
+    return NextResponse.json({
+      state: "ready",
+      date,
+      headline: cached.headline,
+      body: cached.body,
+      tip: cached.tip,
+      mood: toMood(cached.mood),
+    } satisfies AdviceResponse);
+  }
+
+  if (kyivHourNow() < UNLOCK_HOUR) {
+    return NextResponse.json({ state: "locked" } satisfies AdviceResponse);
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -72,24 +85,13 @@ export async function GET(request: Request) {
 
   // Порожній день — єдиний випадок, коли говорити нема про що.
   if (user.meals.length === 0) {
-    return NextResponse.json({ ready: false, reason: "no_meals" } satisfies AdviceResponse);
+    return NextResponse.json({ state: "no_meals" } satisfies AdviceResponse);
   }
 
-  const cached = await prisma.dailyAdvice.findUnique({
-    where: { userId_date: { userId, date } },
-  });
-  const fresh =
-    cached && cached.mealCount === user.meals.length && cached.dayPart === dayPart;
-  if (cached && fresh && !force) {
-    return NextResponse.json({
-      ready: true,
-      date,
-      headline: cached.headline,
-      body: cached.body,
-      tip: cached.tip,
-      mood: toMood(cached.mood),
-      dayPart: toPart(cached.dayPart),
-    } satisfies AdviceResponse);
+  // Дані вже є, час настав — але поки користувач сам не тисне кнопку,
+  // нічого фоном не генеруємо й не б'ємо в платний API.
+  if (!force) {
+    return NextResponse.json({ state: "requestable" } satisfies AdviceResponse);
   }
 
   const totals = user.meals.reduce(
@@ -114,7 +116,6 @@ export async function GET(request: Request) {
       proteinTarget: macros.protein,
       goalLabel: GOAL_LABELS[goal],
       name: user.name,
-      dayPart,
     });
 
     const row = {
@@ -123,7 +124,6 @@ export async function GET(request: Request) {
       tip: advice.tip,
       mood: advice.mood,
       mealCount: user.meals.length,
-      dayPart,
     };
     await prisma.dailyAdvice.upsert({
       where: { userId_date: { userId, date } },
@@ -132,28 +132,15 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({
-      ready: true,
+      state: "ready",
       date,
       ...advice,
-      dayPart,
     } satisfies AdviceResponse);
   } catch (e) {
-    // ШІ лежить — краще показати трохи застарілий розбір, ніж порожнечу.
-    if (cached) {
-      return NextResponse.json({
-        ready: true,
-        date,
-        headline: cached.headline,
-        body: cached.body,
-        tip: cached.tip,
-        mood: toMood(cached.mood),
-        dayPart: toPart(cached.dayPart),
-      } satisfies AdviceResponse);
-    }
     const status = e instanceof AiError ? e.status : 502;
     console.error("[advice]", e);
     return NextResponse.json(
-      { error: "Не вдалося зібрати розбір раціону" },
+      { error: "Не вдалося зібрати звіт дня" },
       { status },
     );
   }

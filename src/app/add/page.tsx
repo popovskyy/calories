@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
@@ -47,7 +47,6 @@ export default function AddFoodPage() {
   const dash = useDashboard();
 
   const [description, setDescription] = useState("");
-  const [descOpen, setDescOpen] = useState(false);
   const [image, setImage] = useState<ImageState | null>(null);
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [celebrate, setCelebrate] = useState(false);
@@ -59,14 +58,6 @@ export default function AddFoodPage() {
   const cameraRef = useRef<HTMLInputElement>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
-
-  // Фокус одразу в інпут, щоб не доводилось тапати по ньому вдруге —
-  // <details> ще не встиг розкритись у той самий тік, тож ловимо наступний кадр.
-  useEffect(() => {
-    if (!descOpen) return;
-    const raf = requestAnimationFrame(() => descriptionRef.current?.focus());
-    return () => cancelAnimationFrame(raf);
-  }, [descOpen]);
 
   const canAnalyze =
     (description.trim().length > 0 || !!image) && !analyze.isPending;
@@ -86,7 +77,6 @@ export default function AddFoodPage() {
 
   const applyRecent = (m: RecentMealDTO) => {
     setDescription(m.description);
-    setDescOpen(true);
     setResult({
       calories: m.calories,
       protein: m.protein,
@@ -291,16 +281,13 @@ export default function AddFoodPage() {
           />
         </div>
 
-        <details
-          className="group rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-tile)] open:bg-[var(--color-surface)]"
-          open={descOpen}
-          onToggle={(e) => setDescOpen((e.target as HTMLDetailsElement).open)}
-        >          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-3 text-[14px] font-semibold text-[var(--color-text)] [&::-webkit-details-marker]:hidden">
+        <div className="rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-surface)]">
+          <div className="flex items-center justify-between gap-2 px-3.5 py-3 text-[14px] font-semibold text-[var(--color-text)]">
             Описати текстом
-            <span className="text-[12px] font-normal text-[var(--color-muted3)] group-open:hidden">
+            <span className="text-[12px] font-normal text-[var(--color-muted3)]">
               за бажанням
             </span>
-          </summary>
+          </div>
           <div className="border-t border-[var(--color-divider)] px-3.5 pb-3.5 pt-2">
             <textarea
               ref={descriptionRef}
@@ -310,7 +297,7 @@ export default function AddFoodPage() {
               className={`${inputClass} min-h-[110px] resize-none`}
             />
           </div>
-        </details>
+        </div>
 
         {/* Під час аналізу фото вже показує сканер — тут воно було б удруге */}
         {image && !analyze.isPending ? (
@@ -351,6 +338,7 @@ export default function AddFoodPage() {
             <button
               type="button"
               className="btn btn-primary btn-block"
+              data-sfx="none"
               onClick={runSaveFromAi}
               disabled={save.isPending}
             >

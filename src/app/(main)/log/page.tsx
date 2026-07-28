@@ -238,6 +238,7 @@ function LogPageInner() {
                     type="button"
                     className="icon-btn hover:text-[var(--color-red)]"
                     aria-label="Видалити активність"
+                    data-sfx="destructive"
                     disabled={delAct.isPending}
                     onClick={() =>
                       setConfirm({

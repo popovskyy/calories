@@ -257,6 +257,7 @@ export default function AddActivityPage() {
           <button
             type="button"
             className="btn btn-primary btn-block"
+            data-sfx="none"
             disabled={save.isPending}
             onClick={onSave}
           >

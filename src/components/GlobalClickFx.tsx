@@ -7,6 +7,11 @@
  * розводити звук по сотнях окремих кнопок. Натиск, а не відпускання: той
  * самий принцип, що вже діє в CSS (`.btn:active`) і в CampDeer.
  *
+ * Звук не один-на-всі-випадки — `classify()` нижче обирає тембр за
+ * семантикою елемента (основна дія / навігація / деструктив / звичайний
+ * клік), а `data-sfx="none"` дає моментам із власним фінішером (збереження
+ * їжі тощо) лишитись беззвучними тут, щоб не забивати їхній звук.
+ *
  * Іскри — не canvas: 3–4 короткоживучі `motion.span` у портал-оверлеї,
  * як у SaveCelebrate. Дешево, вимикається разом з prefers-reduced-motion
  * і з перемикачем «Візуальні ефекти» в профілі.
@@ -14,7 +19,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { playUiClick } from "@/lib/sfx";
+import { playUiClick, playUiConfirm, playUiDestructive, playUiNav } from "@/lib/sfx";
 import { getSettings } from "@/lib/settings";
 import { useCurrentUser } from "@/hooks/useQueries";
 
@@ -29,6 +34,45 @@ interface Burst {
 
 const DOT_COUNT = 4;
 const MAX_BURSTS = 6;
+
+type SfxKind = "none" | "destructive" | "confirm" | "nav" | "click";
+
+/**
+ * Один клік — не один звук. `data-sfx` на елементі явно перевизначає
+ * категорію (напр. `data-sfx="none"` на кнопці «Зберегти в журнал» — той
+ * момент вже має власний фінішер/ритуал, генерик-клік лише заглушував би
+ * його). За відсутності атрибута класифікація йде від семантики елемента:
+ * основна дія (.btn-primary) звучить впевненіше, посилання-навігація —
+ * тихіше й нижче (перехід між сторінками не миттєвий, звук не повинен
+ * прикидатись «дію виконано»), решта — базовий клік.
+ */
+function classify(el: Element): SfxKind {
+  const explicit = el.closest("[data-sfx]")?.getAttribute("data-sfx");
+  if (explicit === "none" || explicit === "destructive" || explicit === "confirm" || explicit === "nav" || explicit === "click") {
+    return explicit;
+  }
+  if (el.closest(".btn-primary")) return "confirm";
+  if (el.matches("a[href]")) return "nav";
+  return "click";
+}
+
+function playForKind(kind: SfxKind, pack: string) {
+  switch (kind) {
+    case "none":
+      return;
+    case "destructive":
+      playUiDestructive();
+      return;
+    case "confirm":
+      playUiConfirm(pack);
+      return;
+    case "nav":
+      playUiNav(pack);
+      return;
+    default:
+      playUiClick(pack);
+  }
+}
 
 export function GlobalClickFx() {
   const reduce = useReducedMotion();
@@ -49,7 +93,10 @@ export function GlobalClickFx() {
       const hit = target.closest(INTERACTIVE_SELECTOR);
       if (!hit) return;
 
-      if (getSettings().sound) playUiClick(packRef.current);
+      const kind = classify(hit);
+      if (kind === "none") return;
+
+      if (getSettings().sound) playForKind(kind, packRef.current);
 
       if (!reduce && getSettings().vfx) {
         const id = ++seq.current;

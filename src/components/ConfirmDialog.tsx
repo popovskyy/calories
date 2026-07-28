@@ -35,6 +35,7 @@ export function ConfirmDialog({
           type="button"
           className="btn btn-primary btn-block"
           disabled={pending}
+          data-sfx={danger ? "destructive" : undefined}
           style={
             danger
               ? {

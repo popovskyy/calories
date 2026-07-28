@@ -223,17 +223,24 @@ export interface NotificationDTO {
  * Розбір раціону від ШІ. Не готовий лише тоді, коли за день ще нічого не
  * записано — тоді картка мовчить, бо коментувати нічого.
  */
+/**
+ * Звіт дня — один раз на добу, на прохання, а не фоном.
+ * - locked: ще не 17:00, кнопка недоступна.
+ * - no_meals: 17:00 настало, але за день нема жодного запису їжі.
+ * - requestable: 17:00 настало, є що аналізувати — кнопка активна, чекає тапу.
+ * - ready: користувач натиснув, ШІ відповів — показуємо текст, кнопки більше нема.
+ */
 export type AdviceResponse =
-  | { ready: false; reason: "no_meals" }
+  | { state: "locked" }
+  | { state: "no_meals" }
+  | { state: "requestable" }
   | {
-      ready: true;
+      state: "ready";
       date: string;
       headline: string;
       body: string;
       tip: string;
       mood: "good" | "mixed" | "over";
-      /** morning | day | evening — від цього залежать заголовок і підпис поради. */
-      dayPart: "morning" | "day" | "evening";
     };
 
 export interface ForecastResponse {

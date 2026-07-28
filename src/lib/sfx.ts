@@ -343,6 +343,87 @@ export function playDeerStartle() {
 }
 
 /**
+ * Тап по навігаційній посилці (таби внизу, лінки на інші сторінки).
+ *
+ * Навмисно тихіший і нижчий за базовий клік: перехід між сторінками не
+ * миттєвий (завантаження даних), тому звук не повинен звучати як
+ * «дію виконано» — радше як «тап прийнято, зачекай».
+ */
+export function playUiNav(pack = "default") {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  try {
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = pack === "retro" ? "square" : "sine";
+    osc.frequency.setValueAtTime(340, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.09);
+    gain.gain.setValueAtTime(0.035, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
+ * Тап по основній (btn-primary) дії — «Зберегти», «Розрахувати» тощо.
+ * Два висхідних тони замість одного: помітніше підтверджує вагому дію.
+ */
+export function playUiConfirm(pack = "default") {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  try {
+    const now = ac.currentTime;
+    const base = CLICK_HZ[pack] ?? CLICK_HZ.default!;
+    [base, base * 1.28].forEach((hz, i) => {
+      const at = now + i * 0.05;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = pack === "retro" ? "square" : "triangle";
+      osc.frequency.setValueAtTime(hz, at);
+      gain.gain.setValueAtTime(0.06, at);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.08);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(at);
+      osc.stop(at + 0.09);
+    });
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/** Тап по деструктивній дії (видалити) — короткий низький «снап». */
+export function playUiDestructive() {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  try {
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(90, now + 0.08);
+    gain.gain.setValueAtTime(0.07, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
  * Тик по ліхтарю маяка — короткий скляний «дзінь», відмінний від фогхорна
  * (той зарезервований за ритуалом перерахунку).
  */

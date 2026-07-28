@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Flame } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { CoinsPill } from "@/components/CoinsPill";
@@ -13,7 +14,11 @@ export function DashboardHeader() {
 
   return (
     <div className="flex items-center justify-between gap-2">
-      <div className="flex min-w-0 items-center gap-2.5 rounded-[var(--radius-pill)] bg-[var(--color-surface)] py-1.5 pl-1.5 pr-3 shadow-[var(--shadow-card)]">
+      <Link
+        href="/profile"
+        aria-label="Профіль"
+        className="flex min-w-0 items-center gap-2.5 rounded-[var(--radius-pill)] bg-[var(--color-surface)] py-1.5 pl-1.5 pr-3 shadow-[var(--shadow-card)] transition-transform duration-[var(--duration-press)] active:scale-[0.97]"
+      >
         {/* frame передаємо і тут: куплену рамку власник має бачити в себе,
             а не лише інші в арені */}
         <Avatar
@@ -32,7 +37,7 @@ export function DashboardHeader() {
               : "Не обрано"}
           </span>
         </span>
-      </div>
+      </Link>
 
       <div className="flex shrink-0 items-center gap-1.5">
         {days > 0 ? (

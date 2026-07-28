@@ -2,29 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronDown, RefreshCw, Sparkles, Sun, Sunrise, Moon } from "lucide-react";
+import { ChevronDown, RefreshCw, Sparkles } from "lucide-react";
 import { useAdvice, useForceAdvice } from "@/hooks/useQueries";
 import { todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
+import { Skeleton } from "@/components/ui/Skeleton";
 import type { AdviceResponse } from "@/lib/types";
 
-type Ready = Extract<AdviceResponse, { ready: true }>;
-
-/** Підписи міняються разом із днем: зранку це не «підсумок», а погляд уперед. */
-const PART_UI = {
-  morning: { label: "Ранковий звіт", tip: "Далі сьогодні", Icon: Sunrise },
-  day: { label: "Звіт дня", tip: "До вечора", Icon: Sun },
-  evening: { label: "Вечірній звіт", tip: "Завтра", Icon: Moon },
-} as const;
+type Ready = Extract<AdviceResponse, { state: "ready" }>;
 
 /**
- * Щоденний звіт від ШІ-дієтолога на Огляді.
- *
- * На відміну від попередньої версії, картка присутня завжди — навіть до
- * першого запису їжі вона показує стан «Збираємо дані…» замість того, щоб
- * мовчки зникати (мовчання читалось як «фічі немає»). Готовий звіт можна
- * примусово перегенерувати кнопкою «Оновити», а не чекати наступної зміни
- * кількості записів.
+ * Звіт дня від ШІ-дієтолога на Огляді — не фонова картка, а кнопка з чітким
+ * циклом: до 17:00 задісейблена ("звіт готується…"), після 17:00 активна й
+ * чекає тапу ("Отримати фідбек"). Один тап — один запит до ШІ на весь день:
+ * щойно відповідь прийшла, кнопка зникає назавжди й лишається сам текст
+ * ("Фідбек по сьогоднішньому дню від ШІ"). Наступного дня цикл з нуля.
  */
 export function DietAdvice() {
   const q = useAdvice();
@@ -37,7 +29,7 @@ export function DietAdvice() {
           <Sparkles size={17} />
         </span>
         <div className="min-w-0 flex-1">
-          <span className="lbl !mb-0">Щоденний звіт</span>
+          <span className="lbl !mb-0">Звіт дня</span>
           <p className="mt-0.5 text-[13px] text-[var(--color-muted3)]">
             Не вдалося зібрати — ШІ не відповів
           </p>
@@ -56,68 +48,130 @@ export function DietAdvice() {
 
   const data = q.data;
 
-  if (!data || !data.ready) {
-    return <CollectingCard onRefresh={() => void q.refetch()} pending={q.isFetching} />;
+  // Поки перший запит ще в польоті — нейтральний скелетон, а не «locked».
+  // Раніше тут одразу малювався стан «locked» як дефолт, і якщо реальна
+  // відповідь (уже після 17:00) виявлялась іншою — «Звіт готується» встигав
+  // блимнути й миттю замінитись, що читалось як «звіт зник».
+  if (!data) return <LoadingCard />;
+
+  if (data.state === "ready") return <AdviceCard advice={data} />;
+
+  if (data.state === "requestable") {
+    return (
+      <StatusCard
+        state="requestable"
+        onRequest={() => force.mutate()}
+        pending={force.isPending}
+        error={force.isError}
+      />
+    );
   }
 
-  // key за частиною доби — щоб оновлений текст «в'їхав», а не підмінився мовчки
-  return (
-    <AdviceCard
-      key={data.dayPart}
-      advice={data}
-      onForceRefresh={() => force.mutate()}
-      refreshing={force.isPending}
-    />
-  );
+  if (data.state === "no_meals") return <StatusCard state="no_meals" />;
+
+  // "locked" і будь-яка невідома форма відповіді (напр. застарілий кеш зі
+  // старої версії API під час hot-reload) — той самий безпечний дефолт.
+  return <StatusCard state="locked" />;
 }
 
-function CollectingCard({
-  onRefresh,
-  pending,
-}: {
-  onRefresh: () => void;
-  pending: boolean;
-}) {
+function LoadingCard() {
   return (
-    <section className="mcard flex items-center gap-3 p-[18px]">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-accent)_16%,transparent)] text-[var(--color-accent)]">
-        <Sparkles size={17} className={pending ? "spark-pulse" : undefined} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <span className="lbl !mb-0">Щоденний звіт</span>
-        <p className="mt-1 text-[14px] leading-snug text-[var(--color-muted)]">
-          Збираємо дані… Звіт зʼявиться, щойно запишеш перший прийом їжі сьогодні.
-        </p>
+    <section className="mcard flex flex-col gap-3 p-[18px]" aria-hidden>
+      <div className="flex items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-tile)] text-[var(--color-muted3)]">
+          <Sparkles size={17} className="spark-pulse" />
+        </span>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-2.5 w-20" />
+          <Skeleton className="h-3 w-full max-w-[240px]" />
+        </div>
       </div>
-      <button
-        type="button"
-        className="icon-btn shrink-0"
-        aria-label="Перевірити ще раз"
-        onClick={onRefresh}
-        disabled={pending}
-      >
-        <RefreshCw size={15} className={pending ? "animate-spin" : undefined} />
-      </button>
+      <Skeleton className="h-11 w-full" />
     </section>
   );
 }
 
-function AdviceCard({
-  advice: data,
-  onForceRefresh,
-  refreshing,
+const STATUS_COPY = {
+  locked: {
+    text: "Звіт готується… Стане доступним після 17:00 — коли день вже фактично закритий.",
+    button: "Звіт готується…",
+  },
+  no_meals: {
+    text: "Сьогодні ще нема жодного запису їжі — поки що нема що аналізувати.",
+    button: "Немає даних за день",
+  },
+  requestable: {
+    text: "День зібрано. Готовий дізнатись вердикт від ШІ-дієтолога?",
+    button: "Отримати фідбек",
+  },
+} as const;
+
+function StatusCard({
+  state,
+  onRequest,
+  pending = false,
+  error = false,
 }: {
-  advice: Ready;
-  onForceRefresh: () => void;
-  refreshing: boolean;
+  state: "locked" | "no_meals" | "requestable";
+  onRequest?: () => void;
+  pending?: boolean;
+  error?: boolean;
 }) {
+  const copy = STATUS_COPY[state];
+  const active = state === "requestable";
+
+  return (
+    <section className="mcard flex flex-col gap-3 p-[18px]">
+      <div className="flex items-center gap-3">
+        <span
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)]",
+            active
+              ? "bg-[color-mix(in_srgb,var(--color-accent)_16%,transparent)] text-[var(--color-accent)]"
+              : "bg-[var(--color-tile)] text-[var(--color-muted3)]",
+          )}
+        >
+          <Sparkles size={17} className={pending ? "spark-pulse" : undefined} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <span className="lbl !mb-0">Звіт дня</span>
+          <p className="mt-1 text-[14px] leading-snug text-[var(--color-muted)]">
+            {copy.text}
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="btn btn-primary btn-block btn-sm"
+        data-sfx={active ? "confirm" : "none"}
+        disabled={!active || pending}
+        onClick={onRequest}
+      >
+        {pending ? (
+          <>
+            <RefreshCw size={14} className="animate-spin" /> Готуємо звіт…
+          </>
+        ) : (
+          copy.button
+        )}
+      </button>
+
+      {error ? (
+        <p className="text-center text-[12px] text-[var(--color-red)]">
+          ШІ не відповів — спробуй натиснути ще раз
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function AdviceCard({ advice: data }: { advice: Ready }) {
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
-  const ui = PART_UI[data.dayPart] ?? PART_UI.evening;
 
-  // Позначка «вже бачив» — своя на кожну частину доби, тож оновлений
-  // звіт знову ловить око, а той самий — ні.
-  const seenKey = `advice-seen:${todayYMD()}:${data.dayPart}`;
+  // Позначка «вже бачив» — раз на добу, бо звіт за сьогодні більше не зміниться.
+  const seenKey = `advice-seen:${todayYMD()}`;
   const [seen] = useState(() => {
     try {
       return sessionStorage.getItem(seenKey) !== null;
@@ -155,7 +209,7 @@ function AdviceCard({
             color: accent,
           }}
         >
-          <ui.Icon size={17} />
+          <Sparkles size={17} />
         </span>
 
         <button
@@ -165,7 +219,7 @@ function AdviceCard({
           className="min-w-0 flex-1 text-left"
         >
           <div className="flex items-center gap-1.5">
-            <span className="lbl !mb-0">{ui.label}</span>
+            <span className="lbl !mb-0">Фідбек по сьогоднішньому дню від ШІ</span>
             <ChevronDown
               size={14}
               className={cn(
@@ -184,16 +238,6 @@ function AdviceCard({
             {data.body}
           </p>
         </button>
-
-        <button
-          type="button"
-          className="icon-btn mt-0.5 shrink-0"
-          aria-label="Оновити звіт"
-          disabled={refreshing}
-          onClick={onForceRefresh}
-        >
-          <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
-        </button>
       </div>
 
       <AnimatePresence initial={false}>
@@ -207,7 +251,7 @@ function AdviceCard({
             className="overflow-hidden"
           >
             <div className="border-t border-[var(--color-divider)] px-[18px] py-3.5">
-              <span className="lbl">{ui.tip}</span>
+              <span className="lbl">Завтра</span>
               <p className="mt-1 text-[14px] leading-snug text-[var(--color-text)]">
                 {data.tip}
               </p>
