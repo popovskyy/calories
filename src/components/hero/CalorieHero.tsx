@@ -6,12 +6,15 @@ import { Campfire } from "@/components/hero/Campfire";
 import { LighthouseHero } from "@/components/hero/LighthouseHero";
 import { PolonynaHero } from "@/components/hero/PolonynaHero";
 import { useThemeId } from "@/hooks/useThemeId";
+import type { Goal } from "@/lib/calories";
 
 export interface HeroProps {
   consumed: number;
   target: number;
   /** Рамка аватара — «neon» підсвічує кільце прогресу. */
   frame?: string | null;
+  /** Ціль користувача: від неї залежить асиметрична зона «в нормі». */
+  goal?: Goal;
 }
 
 /**

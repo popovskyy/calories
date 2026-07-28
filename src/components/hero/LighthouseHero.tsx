@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import type { HeroProps } from "@/components/hero/CalorieHero";
+import { isInTargetFor } from "@/lib/economy";
 import { playFoghorn } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
@@ -20,14 +21,14 @@ import { useCurrentUser } from "@/hooks/useQueries";
  * промінь спалахує через усю воду, лампа розгорається, з темряви виходить
  * корабель, здалеку чути фогхорн. Кіт доглядача проводжає промінь поглядом.
  */
-export function LighthouseHero({ consumed, target, frame }: HeroProps) {
+export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: HeroProps) {
   const reduce = useReducedMotion();
   const neon = frame === "neon";
   const safeTarget = target > 0 ? target : 1;
   const progress = Math.min(Math.max(consumed / safeTarget, 0), 1);
   const remaining = target - consumed;
   const over = remaining < 0;
-  const inTarget = !over && Math.abs(remaining) <= safeTarget * 0.05 && consumed > 0;
+  const inTarget = consumed > 0 && isInTargetFor(consumed, safeTarget, goal);
 
   const recalc = useAppStore((s) => s.recalc);
   const consumeRecalc = useAppStore((s) => s.consumeRecalc);

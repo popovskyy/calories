@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { GOAL_LABELS, isGoal } from "@/lib/calories";
+import { GOAL_LABELS, isGoal, type Goal } from "@/lib/calories";
 import { getCosmetic } from "@/lib/cosmetics";
-import { computeEvolutionStage } from "@/lib/economy";
+import { computeEvolutionStage, inTargetBand } from "@/lib/economy";
 import type { ArenaEntry } from "@/lib/types";
 
 export type RankedEntry = Omit<ArenaEntry, "isMe">;
@@ -9,11 +9,12 @@ export type RankedEntry = Omit<ArenaEntry, "isMe">;
 /**
  * Очки дня (0–100) — рейтинг арени.
  *
- * Голий |net − ціль| протягом дня вироджувався в «хто більше наїв до норми,
- * той вищий»: перебір на +100 обганяв чесні 60% норми. Формула чинить інакше:
- *  • до норми очки ростуть з прогресом (0…70 за наближення до цілі);
- *  • перебір тане вдвічі швидше, ніж ріс недобір: +10% над нормою ≈ 80% норми,
- *    +50% — нуль базових очок;
+ * Голий |net − ціль| вироджувався в «хто більше наїв, той вищий», а ще карав
+ * недобір нарівні з перебором. Формула чинить інакше:
+ *  • день у зоні цілі (асиметричній!) — повні 70 базових;
+ *  • недобір нижче зони тане пропорційно з'їденому — щоб голодування не
+ *    виглядало перемогою;
+ *  • перебір тане втричі швидше: саме він ламає ціль;
  *  • бонуси за чесне ведення журналу, а не за «влучання числа»:
  *    2+ прийоми їжі +10, 3+ ще +5, активність +10, снайперське ±5% +5.
  * Один «магічний» запис рівно в норму більше не виграє в реального журналу.
@@ -24,11 +25,24 @@ export function dayScore(e: {
   mealsCount: number;
   activitiesCount: number;
   absError: number;
+  goal: Goal;
 }): number {
   if (e.targetCalories <= 0) return 0;
-  const ratio = e.dayCalories / e.targetCalories;
+
+  /*
+   * Точність рахуємо від АСИМЕТРИЧНОЇ зони цілі, а не від самого числа норми:
+   * недобір у межах зони — не помилка (на дефіциті це навіть по дорозі до
+   * мети), тож він дає повний бал. Нижче зони бал падає пропорційно з'їденому
+   * — голодування не має виглядати перемогою. Вище зони падає втричі швидше:
+   * саме перебір ламає ціль.
+   */
+  const band = inTargetBand(e.targetCalories, e.goal);
   const acc =
-    ratio <= 1 ? Math.max(0, ratio) : Math.max(0, 1 - 2 * (ratio - 1));
+    e.dayCalories >= band.min && e.dayCalories <= band.max
+      ? 1
+      : e.dayCalories < band.min
+        ? Math.max(0, e.dayCalories / band.min)
+        : Math.max(0, 1 - 3 * ((e.dayCalories - band.max) / e.targetCalories));
   let score = 70 * acc;
   if (e.mealsCount >= 2) score += 10;
   if (e.mealsCount >= 3) score += 5;
@@ -38,7 +52,7 @@ export function dayScore(e: {
 }
 
 /**
- * Рейтинг за очками дня; призовий гейт (±15% на закритті) живе в rewards.ts.
+ * Рейтинг за очками дня; призовий гейт на закритті живе в rewards.ts.
  * Скасовані адміном записи не рахуються.
  */
 export async function computeRanking(date: string): Promise<RankedEntry[]> {
@@ -79,6 +93,7 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
       mealsCount: u.meals.length,
       activitiesCount: u.activities.length,
       absError: Math.abs(difference),
+      goal,
     });
     return {
       userId: u.id,

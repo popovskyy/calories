@@ -10,6 +10,8 @@
  * тобто річ за 400 монет — це приблизно півтора тижні гри.
  */
 
+import type { Goal } from "@/lib/calories";
+
 // ─────────────────────────── Шар 1: ритуал (щодня) ───────────────────────────
 
 /** Перший запис їжі за день. */
@@ -48,8 +50,21 @@ export const STREAK_DIVIDEND_COINS = 25;
  * кращому 350 монет/тиждень, тобто половину всієї економіки за одну механіку.
  */
 export const ARENA_PRIZES = [20, 12, 8];
-/** Приз лише тим, хто реально близько до норми. */
-export const ARENA_MAX_ERROR = 0.15;
+/**
+ * Приз лише тим, хто реально тримався норми. Зона ширша за «день у цілі»,
+ * але так само асиметрична: недобрати можна помітно, перебрати — ні.
+ */
+export const ARENA_MAX_OVER = 0.1;
+export const ARENA_MAX_UNDER = 0.25;
+
+/** Чи заслуговує день на приз арени. */
+export function isArenaPayable(net: number, targetCalories: number): boolean {
+  if (targetCalories <= 0) return false;
+  return (
+    net >= targetCalories * (1 - ARENA_MAX_UNDER) &&
+    net <= targetCalories * (1 + ARENA_MAX_OVER)
+  );
+}
 /** Раніше 4-ї ранку вчорашній день ще не вважається закритим. */
 export const ARENA_SETTLE_HOUR = 4;
 
@@ -79,8 +94,48 @@ export const RELIEF_AMOUNT = 50;
 
 /** Скільки закритих днів добиваємо назад, якщо гравець не заходив. */
 export const SETTLE_LOOKBACK_DAYS = 3;
-/** Жорстка зона «в цілі». */
-export const QUEST_TARGET_TOLERANCE = 0.05;
+/**
+ * Зона «день у цілі» — навмисно АСИМЕТРИЧНА.
+ *
+ * Перебір і недобір не рівноцінні. Ціль ламає саме перебір (на дефіциті —
+ * особливо), а помірний недобір їй не шкодить: з'їсти 1700 із 1900 нормально,
+ * з'їсти 2100 — ні. Симетричні ±5% карали обидва випадки однаково, і гравець
+ * на дефіциті лишався без монети за чесний день.
+ *
+ * Нижня межа все одно існує: голодування — не успіх. День на 1000 ккал із
+ * 1900 у ціль не зараховується, і в арені його бал падає пропорційно.
+ */
+export const TARGET_OVER_TOLERANCE = 0.05;
+export const TARGET_UNDER_TOLERANCE: Record<Goal, number> = {
+  deficit: 0.15,
+  maintain: 0.1,
+};
+
+/** Межі зони «в цілі» в ккал. */
+export function inTargetBand(
+  targetCalories: number,
+  goal: Goal,
+): { min: number; max: number } {
+  const under = TARGET_UNDER_TOLERANCE[goal] ?? TARGET_UNDER_TOLERANCE.maintain;
+  return {
+    min: targetCalories * (1 - under),
+    max: targetCalories * (1 + TARGET_OVER_TOLERANCE),
+  };
+}
+
+/** Єдине правило «день у цілі»: і для монети за день, і для квестів, і для UI. */
+export function isInTargetFor(
+  net: number,
+  targetCalories: number,
+  goal: Goal,
+): boolean {
+  if (targetCalories <= 0) return false;
+  const { min, max } = inTargetBand(targetCalories, goal);
+  return net >= min && net <= max;
+}
+
+/** @deprecated лишилось для старих викликів — зона тепер асиметрична. */
+export const QUEST_TARGET_TOLERANCE = TARGET_OVER_TOLERANCE;
 /** «Вибух» калорій — день зіпсував дисципліну. */
 export const BLOWOUT_OVER = 0.15;
 

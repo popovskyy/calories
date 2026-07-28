@@ -1,5 +1,7 @@
 "use client";
 
+import { isInTargetFor } from "@/lib/economy";
+import type { Goal } from "@/lib/calories";
 import { useEffect } from "react";
 import {
   animate,
@@ -19,9 +21,16 @@ interface ProgressRingProps {
   target: number;
   /** Куплена рамка — «neon» додає неонову обводку й світіння. */
   frame?: string | null;
+  /** Ціль користувача: від неї залежить асиметрична зона «в нормі». */
+  goal?: Goal;
 }
 
-export function ProgressRing({ consumed, target, frame }: ProgressRingProps) {
+export function ProgressRing({
+  consumed,
+  target,
+  frame,
+  goal = "maintain",
+}: ProgressRingProps) {
   const reduce = useReducedMotion();
   const neon = frame === "neon";
   const safeTarget = target > 0 ? target : 1;
@@ -29,7 +38,7 @@ export function ProgressRing({ consumed, target, frame }: ProgressRingProps) {
   const remaining = target - consumed;
   const over = remaining < 0;
   const nearTarget =
-    !over && consumed > 0 && Math.abs(remaining) <= safeTarget * 0.05;
+    consumed > 0 && isInTargetFor(consumed, safeTarget, goal);
 
   const offset = useMotionValue(C);
   const count = useMotionValue(0);

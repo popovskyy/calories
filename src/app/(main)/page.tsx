@@ -94,6 +94,7 @@ export default function DashboardPage() {
             consumed={today.totalCalories}
             target={user.targetCalories}
             frame={user.frame}
+            goal={user.goal}
           />
         )}
 

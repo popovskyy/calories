@@ -9,10 +9,11 @@ import {
 } from "@/lib/streak";
 import { computeRanking } from "@/lib/arena";
 import { isInTarget, settleRecentQuests } from "@/lib/quests";
+import { isGoal, type Goal } from "@/lib/calories";
 import { settleDailyCards } from "@/lib/daily-cards";
 import { grant, type GrantedReward } from "@/lib/reward-grant";
 import {
-  ARENA_MAX_ERROR,
+  isArenaPayable,
   ARENA_PRIZES,
   ARENA_SETTLE_HOUR,
   DAILY_LOG_COINS,
@@ -48,14 +49,15 @@ async function settleClosedDay(
   date: string,
   totals: DayTotals,
   targetCalories: number,
+  goal: Goal,
   out: GrantedReward[],
 ): Promise<void> {
   if (totals.mealCount === 0) return;
 
   await grant(userId, `daily_log:${date}`, DAILY_LOG_COINS, "Запис їжі", out);
 
-  if (isInTarget(totals.net, targetCalories)) {
-    await grant(userId, `in_target:${date}`, IN_TARGET_COINS, "День у цілі ±5%", out);
+  if (isInTarget(totals.net, targetCalories, goal)) {
+    await grant(userId, `in_target:${date}`, IN_TARGET_COINS, "День у цілі", out);
   }
 }
 
@@ -71,9 +73,10 @@ export async function evaluateMealRewards(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { targetCalories: true },
+    select: { targetCalories: true, goal: true },
   });
   const target = user?.targetCalories ?? 0;
+  const goal: Goal = isGoal(user?.goal ?? "") ? (user!.goal as Goal) : "maintain";
 
   // Сьогодні — лише дрібна монета за сам факт запису.
   const totals = await dayNetCalories(userId, today);
@@ -87,7 +90,7 @@ export async function evaluateMealRewards(
     pending.map((d) => dayNetCalories(userId, d)),
   );
   for (const [i, d] of pending.entries()) {
-    await settleClosedDay(userId, d, pendingTotals[i]!, target, out);
+    await settleClosedDay(userId, d, pendingTotals[i]!, target, goal, out);
   }
 
   await settleStreakRewards(userId, out);
@@ -164,8 +167,7 @@ async function settleArenaDay(
   const idx = field.findIndex((e) => e.userId === userId);
   const me = idx >= 0 ? field[idx]! : null;
 
-  const accurate =
-    !!me && me.targetCalories > 0 && me.absError <= me.targetCalories * ARENA_MAX_ERROR;
+  const accurate = !!me && isArenaPayable(me.todayCalories, me.targetCalories);
   const coins = accurate && idx < slots ? ARENA_PRIZES[idx]! : 0;
 
   await grant(

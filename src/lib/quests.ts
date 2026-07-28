@@ -9,15 +9,22 @@ import {
 import { dayNetCalories } from "@/lib/day-totals";
 import { calcMacroTargets } from "@/lib/calories";
 import { grant, type GrantedReward } from "@/lib/reward-grant";
-import { BLOWOUT_OVER, QUEST_TARGET_TOLERANCE } from "@/lib/economy";
+import { BLOWOUT_OVER, QUEST_TARGET_TOLERANCE, isInTargetFor } from "@/lib/economy";
+import { isGoal, type Goal } from "@/lib/calories";
 import { QUEST_REROLL_ITEM_ID } from "@/lib/items";
 
 export { BLOWOUT_OVER, QUEST_TARGET_TOLERANCE };
 
-/** Єдине джерело правди «день у цілі»: і для квестів, і для денної монети. */
-export function isInTarget(net: number, targetCalories: number): boolean {
-  if (targetCalories <= 0) return false;
-  return Math.abs(net - targetCalories) <= targetCalories * QUEST_TARGET_TOLERANCE;
+/**
+ * Єдине джерело правди «день у цілі»: і для квестів, і для денної монети.
+ * Зона асиметрична й залежить від цілі — див. isInTargetFor в economy.ts.
+ */
+export function isInTarget(
+  net: number,
+  targetCalories: number,
+  goal: Goal,
+): boolean {
+  return isInTargetFor(net, targetCalories, goal);
 }
 
 export type QuestKind =
@@ -245,6 +252,7 @@ async function weekSnapshots(
   weekStart: string,
   targetCalories: number,
   proteinTarget: number,
+  goal: Goal,
 ): Promise<DaySnap[]> {
   const today = todayYMD();
   const days = weekDays(weekStart).filter((d) => d <= today);
@@ -276,7 +284,7 @@ async function weekSnapshots(
     const t = totals[i]!;
     const act = byDate.get(date) ?? { mins: 0, burned: 0 };
     const hasMeal = t.mealCount > 0;
-    const inTarget = hasMeal && isInTarget(t.net, targetCalories);
+    const inTarget = hasMeal && isInTarget(t.net, targetCalories, goal);
     const blowout = hasMeal && t.net > blow;
     snaps.push({
       date,
@@ -470,9 +478,10 @@ export async function listQuestStatus(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { targetCalories: true, weight: true },
+    select: { targetCalories: true, weight: true, goal: true },
   });
   const target = user?.targetCalories ?? 0;
+  const goal: Goal = isGoal(user?.goal ?? "") ? (user!.goal as Goal) : "maintain";
   const proteinTarget = user ? calcMacroTargets(target, user.weight).protein : 0;
 
   const rows = await prisma.weeklyQuest.findMany({
@@ -484,7 +493,7 @@ export async function listQuestStatus(
   // заміна живе окремо — у застосуваннях ре-ролу цього гравця.
   const quests = await applyRerolls(userId, ws, rows);
 
-  const snaps = await weekSnapshots(userId, ws, target, proteinTarget);
+  const snaps = await weekSnapshots(userId, ws, target, proteinTarget, goal);
   const finalSnaps = snaps.filter((s) => s.final);
   const granted: GrantedReward[] = [];
 

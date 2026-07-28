@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
 import { shiftYMD, todayYMD } from "@/lib/date";
 import { computeRanking } from "@/lib/arena";
-import { ARENA_MAX_ERROR, ARENA_PRIZES } from "@/lib/economy";
+import { ARENA_PRIZES, isArenaPayable } from "@/lib/economy";
 import type { ArenaEntry, ArenaYesterdayEntry } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -31,8 +31,7 @@ export async function GET() {
   const field = yRanked.filter((e) => e.hasMeal);
   const slots = Math.min(ARENA_PRIZES.length, Math.floor(field.length / 2));
   const yesterday: ArenaYesterdayEntry[] = field.slice(0, 3).map((e, i) => {
-    const accurate =
-      e.targetCalories > 0 && e.absError <= e.targetCalories * ARENA_MAX_ERROR;
+    const accurate = isArenaPayable(e.todayCalories, e.targetCalories);
     return {
       rank: i + 1,
       userId: e.userId,
