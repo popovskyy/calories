@@ -9,6 +9,7 @@ import {
   type AnimationPlaybackControls,
 } from "framer-motion";
 import { Deer, type DeerGait } from "@/components/ambient/Deer";
+import { playDeerStartle } from "@/lib/sfx";
 
 /**
  * Олень біля вогнища: патруль із паузами (не марширує стоячи) і
@@ -178,7 +179,10 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       style={{ x, scaleX, opacity }}
       aria-hidden
       onPointerDown={() => {
-        if (!fleeing) setStartled(true);
+        if (!fleeing) {
+          setStartled(true);
+          playDeerStartle();
+        }
       }}
     >
       <Deer variant="camp" width={58} height={82} scared={scared} gait={gait} />

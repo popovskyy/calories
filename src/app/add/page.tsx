@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
@@ -58,6 +58,15 @@ export default function AddFoodPage() {
 
   const cameraRef = useRef<HTMLInputElement>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+
+  // Фокус одразу в інпут, щоб не доводилось тапати по ньому вдруге —
+  // <details> ще не встиг розкритись у той самий тік, тож ловимо наступний кадр.
+  useEffect(() => {
+    if (!descOpen) return;
+    const raf = requestAnimationFrame(() => descriptionRef.current?.focus());
+    return () => cancelAnimationFrame(raf);
+  }, [descOpen]);
 
   const canAnalyze =
     (description.trim().length > 0 || !!image) && !analyze.isPending;
@@ -294,6 +303,7 @@ export default function AddFoodPage() {
           </summary>
           <div className="border-t border-[var(--color-divider)] px-3.5 pb-3.5 pt-2">
             <textarea
+              ref={descriptionRef}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="2 яйця, 100 г авокадо, шматок цільнозернового хліба"

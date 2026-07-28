@@ -330,8 +330,9 @@ export const getWallet = (limit = 60) =>
 // --- Forecast ---
 export const getForecast = () => req<ForecastResponse>("/api/stats/forecast");
 
-// --- Вечірній розбір дня ---
-export const getAdvice = () => req<AdviceResponse>("/api/advice");
+// --- Щоденний звіт ---
+export const getAdvice = (force = false) =>
+  req<AdviceResponse>(force ? "/api/advice?force=1" : "/api/advice");
 
 // --- Notifications ---
 export interface NotificationsResponse {

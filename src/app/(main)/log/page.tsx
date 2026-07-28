@@ -34,6 +34,8 @@ type ConfirmState =
   | { kind: "activity"; id: string; label: string }
   | null;
 
+type LogTab = "food" | "activity";
+
 function LogPageInner() {
   const mounted = useMounted();
   const { user, isLoading } = useCurrentUser();
@@ -46,6 +48,7 @@ function LogPageInner() {
   const delAct = useDeleteActivity(selectedDate);
   const [editMeal, setEditMeal] = useState<MealDTO | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const [tab, setTab] = useState<LogTab>("food");
 
   useEffect(() => {
     const d = searchParams.get("date");
@@ -125,103 +128,132 @@ function LogPageInner() {
         </div>
       </section>
 
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setTab("food")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2.5 text-[14px] font-semibold transition-colors",
+            tab === "food"
+              ? "bg-[var(--color-accent)] text-[#f5f4ff]"
+              : "bg-[var(--color-tile)] text-[var(--color-muted2)]",
+          )}
+        >
+          <UtensilsCrossed size={16} /> Харчування
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("activity")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2.5 text-[14px] font-semibold transition-colors",
+            tab === "activity"
+              ? "bg-[var(--color-accent)] text-[#f5f4ff]"
+              : "bg-[var(--color-tile)] text-[var(--color-muted2)]",
+          )}
+        >
+          <Dumbbell size={16} /> Активність
+        </button>
+      </div>
+
       {meals.isLoading || activities.isLoading ? (
         <div className="flex flex-col gap-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[88px] w-full rounded-[var(--radius-lg)]" />
           ))}
         </div>
-      ) : list.length === 0 && acts.length === 0 ? (
+      ) : tab === "food" ? (
+        list.length === 0 ? (
+          <EmptyState
+            icon={UtensilsCrossed}
+            context="log"
+            action={
+              <Link href="/add" className="btn btn-primary btn-sm">
+                Додати запис
+              </Link>
+            }
+          />
+        ) : (
+          <section className="flex flex-col">
+            <AnimatePresence initial={false}>
+              {list.map((m, i) => (
+                <MealCard
+                  key={m.id}
+                  meal={m}
+                  index={i}
+                  onEdit={m.status === "cancelled" ? undefined : setEditMeal}
+                  onDelete={
+                    m.status === "cancelled"
+                      ? undefined
+                      : (id) =>
+                          setConfirm({
+                            kind: "meal",
+                            id,
+                            label: `«${m.description}» — ${m.calories} ккал. Дію не можна скасувати.`,
+                          })
+                  }
+                  deleting={del.isPending && del.variables === m.id}
+                />
+              ))}
+            </AnimatePresence>
+          </section>
+        )
+      ) : acts.length === 0 ? (
         <EmptyState
-          icon={UtensilsCrossed}
+          icon={Dumbbell}
           context="log"
           action={
-            <Link href="/add" className="btn btn-primary btn-sm">
+            <Link href="/add/activity" className="btn btn-primary btn-sm">
               Додати запис
             </Link>
           }
         />
       ) : (
-        <div className="flex flex-col gap-4">
-          {acts.length > 0 ? (
-            <section className="flex flex-col gap-2">
-              <span className="lbl flex items-center gap-1.5">
-                <Dumbbell size={14} /> Активність
-              </span>
-              {acts.map((a) => (
-                <div
-                  key={a.id}
-                  className={cn(
-                    "mcard flex items-center justify-between gap-3 p-3",
-                    a.status === "cancelled" && "opacity-50 line-through",
-                  )}
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-[15px] font-semibold text-[var(--color-text)]">
-                      {a.description}
-                    </div>
-                    <div className="text-[13px] text-[var(--color-muted3)]">
-                      {a.status === "cancelled"
-                        ? "Скасовано адміном"
-                        : a.durationMin
-                          ? `${a.durationMin} хв`
-                          : "активність"}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-[18px] font-semibold text-[var(--color-green)]">
-                      −{a.caloriesBurned}
-                    </span>
-                    {a.status !== "cancelled" ? (
-                      <button
-                        type="button"
-                        className="icon-btn hover:text-[var(--color-red)]"
-                        aria-label="Видалити активність"
-                        disabled={delAct.isPending}
-                        onClick={() =>
-                          setConfirm({
-                            kind: "activity",
-                            id: a.id,
-                            label: `«${a.description}» — −${a.caloriesBurned} ккал. Дію не можна скасувати.`,
-                          })
-                        }
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    ) : null}
-                  </div>
+        <section className="flex flex-col gap-2">
+          {acts.map((a) => (
+            <div
+              key={a.id}
+              className={cn(
+                "mcard flex items-center justify-between gap-3 p-3",
+                a.status === "cancelled" && "opacity-50 line-through",
+              )}
+            >
+              <div className="min-w-0">
+                <div className="truncate text-[15px] font-semibold text-[var(--color-text)]">
+                  {a.description}
                 </div>
-              ))}
-            </section>
-          ) : null}
-
-          {list.length > 0 ? (
-            <section className="flex flex-col">
-              <span className="lbl mb-2">Їжа</span>
-              <AnimatePresence initial={false}>
-                {list.map((m, i) => (
-                  <MealCard
-                    key={m.id}
-                    meal={m}
-                    index={i}
-                    onEdit={m.status === "cancelled" ? undefined : setEditMeal}
-                    onDelete={
-                      m.status === "cancelled"
-                        ? undefined
-                        : (id) =>
-                            setConfirm({
-                              kind: "meal",
-                              id,
-                              label: `«${m.description}» — ${m.calories} ккал. Дію не можна скасувати.`,
-                            })
+                <div className="text-[13px] text-[var(--color-muted3)]">
+                  {a.status === "cancelled"
+                    ? "Скасовано адміном"
+                    : a.durationMin
+                      ? `${a.durationMin} хв`
+                      : "активність"}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-[18px] font-semibold text-[var(--color-green)]">
+                  −{a.caloriesBurned}
+                </span>
+                {a.status !== "cancelled" ? (
+                  <button
+                    type="button"
+                    className="icon-btn hover:text-[var(--color-red)]"
+                    aria-label="Видалити активність"
+                    disabled={delAct.isPending}
+                    onClick={() =>
+                      setConfirm({
+                        kind: "activity",
+                        id: a.id,
+                        label: `«${a.description}» — −${a.caloriesBurned} ккал. Дію не можна скасувати.`,
+                      })
                     }
-                    deleting={del.isPending && del.variables === m.id}
-                  />
-                ))}
-              </AnimatePresence>
-            </section>
-          ) : null}
-        </div>
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </section>
       )}
 
       <EditMealDialog

@@ -30,10 +30,13 @@ function toPart(v: string): DayPart {
  * увечері підбиває підсумок. Щоб не бити в платний API на кожне відкриття
  * Огляду, результат кешується в DailyAdvice і перегенеровується лише коли
  * змінилось те, що впливає на текст, — кількість записів або частина доби.
+ * `?force=1` (кнопка «Оновити» в картці) ігнорує кеш і генерує наново.
  */
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireSession();
   if (!auth.ok) return auth.response;
+
+  const force = new URL(request.url).searchParams.get("force") === "1";
 
   const userId = auth.session.userId;
   const date = todayYMD();
@@ -77,7 +80,7 @@ export async function GET() {
   });
   const fresh =
     cached && cached.mealCount === user.meals.length && cached.dayPart === dayPart;
-  if (cached && fresh) {
+  if (cached && fresh && !force) {
     return NextResponse.json({
       ready: true,
       date,

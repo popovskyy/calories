@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
   }
   const meals = await prisma.mealLog.findMany({
     where: { userId: auth.session.userId, date },
-    orderBy: { createdAt: "asc" },
+    // Найновіші зверху — так журнал читають частіше, ніж хронологічно.
+    orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(meals);
 }

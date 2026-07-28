@@ -7,6 +7,7 @@ import { Avatar } from "@/components/Avatar";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { ReminderToggle } from "@/components/ReminderToggle";
+import { SoundSettingsCard } from "@/components/SoundSettingsCard";
 import { UserFormDialog } from "@/components/UserFormDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
@@ -113,6 +114,8 @@ export default function ProfilePage() {
       </Link>
 
       <ReminderToggle />
+
+      <SoundSettingsCard />
 
       <button
         type="button"

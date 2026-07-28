@@ -404,15 +404,25 @@ export function useForecast() {
 }
 
 /**
- * Вечірній розбір раціону. Сервер сам вирішує, чи вже час (20:00 Kyiv) —
- * тут лише довгий staleTime, бо порада за день незмінна.
+ * Щоденний звіт. Сервер сам вирішує, чи вже час (частина доби, Kyiv) —
+ * тут лише довгий staleTime, бо звіт за поточну частину дня незмінний,
+ * поки користувач не натисне «Оновити» (force=1, окремою мутацією нижче).
  */
 export function useAdvice() {
   return useQuery({
     queryKey: ["advice"],
-    queryFn: getAdvice,
+    queryFn: () => getAdvice(),
     staleTime: 10 * 60_000,
     retry: false,
+  });
+}
+
+/** Примусове оновлення звіту в обхід кешу — кнопка «Оновити» в картці. */
+export function useForceAdvice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => getAdvice(true),
+    onSuccess: (data) => qc.setQueryData(["advice"], data),
   });
 }
 

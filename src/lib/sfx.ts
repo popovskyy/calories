@@ -9,6 +9,8 @@
  * взагалі не потрібен.
  */
 
+import { getSettings } from "@/lib/settings";
+
 let ctx: AudioContext | null = null;
 
 function getContext(): AudioContext | null {
@@ -32,6 +34,11 @@ function getContext(): AudioContext | null {
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined" || !window.matchMedia) return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Спільна брама для всіх звуків: системний reduced-motion І перемикач у профілі. */
+function soundAllowed(): boolean {
+  return !prefersReducedMotion() && getSettings().sound;
 }
 
 /**
@@ -113,7 +120,7 @@ const FANFARE: Record<string, { wave: OscillatorType; notes: number[]; gain: num
  * Саме завдяки цьому куплений саундпак чутно всім, а не тільки forest-гравцям.
  */
 export function playFinisher(pack = "default") {
-  if (prefersReducedMotion()) return;
+  if (!soundAllowed()) return;
   const ac = getContext();
   if (!ac) return;
 
@@ -146,7 +153,7 @@ export function playFinisher(pack = "default") {
  * а не тембр саундпака (саундпак чутно у finisher).
  */
 export function playFoghorn(pack = "default") {
-  if (prefersReducedMotion()) return;
+  if (!soundAllowed()) return;
   const ac = getContext();
   if (!ac) return;
 
@@ -186,7 +193,7 @@ export function playFoghorn(pack = "default") {
  * а не музична нота. Легке гойдання робимо трьома ударами, що тихішають.
  */
 export function playSheepBell(pack = "default") {
-  if (prefersReducedMotion()) return;
+  if (!soundAllowed()) return;
   const ac = getContext();
   if (!ac) return;
 
@@ -217,13 +224,9 @@ export function playSheepBell(pack = "default") {
 
 /**
  * Дровина летить у вогонь: whoosh + тріск. Тембр залежить від саундпака.
- *
- * Окремого вимикача звуку немає: він був частиною теми «ліс», але висів у
- * Профілі для всіх. Тиха робота застосунку забезпечується інакше — системним
- * prefers-reduced-motion і, звісно, беззвучним режимом самого телефона.
  */
 export function playLogToss(pack = "default") {
-  if (prefersReducedMotion()) return;
+  if (!soundAllowed()) return;
   const ac = getContext();
   if (!ac) return;
 
@@ -272,6 +275,95 @@ export function playLogToss(pack = "default") {
       osc.start(now + offset);
       osc.stop(now + offset + 0.08);
     });
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
+ * Універсальний «тік» на будь-який тап по кнопці чи посиланню.
+ *
+ * Найчастіший звук у застосунку, тому найдешевший: один короткий синус
+ * (~40 мс) без шуму й без ланцюжка ударів. Тембр трохи різний по пакетах,
+ * щоб куплений саундпак відчувався і тут, а не лише у фінішері.
+ */
+const CLICK_HZ: Record<string, number> = {
+  default: 720,
+  blocky: 540,
+  retro: 880,
+  cinema: 360,
+};
+
+export function playUiClick(pack = "default") {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  try {
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = pack === "retro" ? "square" : "sine";
+    osc.frequency.setValueAtTime(CLICK_HZ[pack] ?? CLICK_HZ.default!, now);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
+ * Тик по оленю (без ритуалу дровини) — коротке «хрусь» гілки під копитом.
+ * Тихіший і різкіший за logToss, щоб не плутався з ним.
+ */
+export function playDeerStartle() {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  try {
+    const now = ac.currentTime;
+    [0, 0.05].forEach((offset, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(300 - i * 60, now + offset);
+      gain.gain.setValueAtTime(0.1, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.06);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.07);
+    });
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
+ * Тик по ліхтарю маяка — короткий скляний «дзінь», відмінний від фогхорна
+ * (той зарезервований за ритуалом перерахунку).
+ */
+export function playLighthouseDing() {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  try {
+    const now = ac.currentTime;
+    for (const hz of [1400, 2100]) {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(hz, now);
+      gain.gain.setValueAtTime(0.045, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + 0.36);
+    }
   } catch {
     /* звук ніколи не має ламати навігацію */
   }

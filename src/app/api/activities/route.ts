@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
 
   const rows = await prisma.activityLog.findMany({
     where: { userId: auth.session.userId, date },
-    orderBy: { createdAt: "asc" },
+    // Найновіші зверху — так журнал читають частіше, ніж хронологічно.
+    orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(rows);
 }

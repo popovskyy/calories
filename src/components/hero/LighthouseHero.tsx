@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { isInTargetFor } from "@/lib/economy";
-import { playFoghorn } from "@/lib/sfx";
+import { playFoghorn, playLighthouseDing } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 
@@ -37,6 +37,17 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
 
   const ritualActive = recalc !== null;
   const ritualKey = recalc?.id ?? "idle";
+
+  // Тик по ліхтарю — та сама ідея, що й тик по оленю в Forest: коротка
+  // самостійна реакція, не привʼязана до ритуалу перерахунку.
+  const [tapFlash, setTapFlash] = useState(false);
+  const onLampTap = () => {
+    if (ritualActive) return;
+    playLighthouseDing();
+    if (reduce) return;
+    setTapFlash(true);
+    window.setTimeout(() => setTapFlash(false), 650);
+  };
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -188,32 +199,40 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
         <path d="M240.2 192 L259.8 192 L259.4 187 L240.6 187 Z" fill="#c9435a" opacity=".55" />
         <path d="M241 181 L259 181 L258.7 177 L241.3 177 Z" fill="#c9435a" opacity=".4" />
 
-        {/* галерея + ліхтарна кімната */}
-        <ellipse cx="250" cy="162" rx="36" ry="28" fill="url(#lh-halo)" />
-        <rect x="236" y="168" width="28" height="4" rx="1.5" fill="#2a3848" />
-        {/* скло ліхтаря: тепле ядро + ребра рами, а не білий брусок */}
-        <rect
-          x="242"
-          y="155"
-          width="16"
-          height="13"
-          rx="2.5"
-          fill={lampColor}
-          style={{
-            animation: reduce
-              ? undefined
-              : ritualActive
-                ? "lhLampFlare 1.7s ease-out"
-                : inTarget
-                  ? "lighthousePulse 2.4s ease-in-out infinite"
-                  : undefined,
-          }}
-        />
-        <g opacity=".5" stroke="#8a5a22" strokeWidth=".9">
-          <path d="M246.5 155 v13 M253.5 155 v13" />
+        {/* галерея + ліхтарна кімната — тап тут дзенькає й ненадовго спалахує лампу */}
+        <g
+          onPointerDown={onLampTap}
+          style={{ cursor: "pointer" }}
+          className="touch-manipulation"
+        >
+          <ellipse cx="250" cy="162" rx="36" ry="28" fill="url(#lh-halo)" />
+          <rect x="236" y="168" width="28" height="4" rx="1.5" fill="#2a3848" />
+          {/* скло ліхтаря: тепле ядро + ребра рами, а не білий брусок */}
+          <rect
+            x="242"
+            y="155"
+            width="16"
+            height="13"
+            rx="2.5"
+            fill={lampColor}
+            style={{
+              animation: reduce
+                ? undefined
+                : ritualActive
+                  ? "lhLampFlare 1.7s ease-out"
+                  : tapFlash
+                    ? "lhLampFlare 0.6s ease-out"
+                    : inTarget
+                      ? "lighthousePulse 2.4s ease-in-out infinite"
+                      : undefined,
+            }}
+          />
+          <g opacity=".5" stroke="#8a5a22" strokeWidth=".9">
+            <path d="M246.5 155 v13 M253.5 155 v13" />
+          </g>
+          <path d="M241 155 L250 146 L259 155 Z" fill="#31445a" stroke="#3d5169" strokeWidth="1" />
+          <circle cx="250" cy="146" r="1.6" fill="#ffd58a" />
         </g>
-        <path d="M241 155 L250 146 L259 155 Z" fill="#31445a" stroke="#3d5169" strokeWidth="1" />
-        <circle cx="250" cy="146" r="1.6" fill="#ffd58a" />
 
         {/* кіт доглядача на скелі біля вежі */}
         <g

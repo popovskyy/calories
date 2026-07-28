@@ -3,6 +3,7 @@ import { AmbientLayer } from "@/components/ambient/AmbientLayer";
 import { TabBar } from "@/components/TabBar";
 import { Fab } from "@/components/Fab";
 import { RewardCelebrations } from "@/components/RewardCelebrations";
+import { GlobalClickFx } from "@/components/GlobalClickFx";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <Fab />
       <TabBar />
       <RewardCelebrations />
+      <GlobalClickFx />
     </AppFrame>
   );
 }

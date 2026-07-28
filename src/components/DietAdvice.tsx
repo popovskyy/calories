@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, RefreshCw, Sparkles, Sun, Sunrise, Moon } from "lucide-react";
-import { useAdvice } from "@/hooks/useQueries";
+import { useAdvice, useForceAdvice } from "@/hooks/useQueries";
 import { todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
 import type { AdviceResponse } from "@/lib/types";
@@ -12,23 +12,23 @@ type Ready = Extract<AdviceResponse, { ready: true }>;
 
 /** Підписи міняються разом із днем: зранку це не «підсумок», а погляд уперед. */
 const PART_UI = {
-  morning: { label: "Ранковий розбір", tip: "Далі сьогодні", Icon: Sunrise },
-  day: { label: "Розбір дня", tip: "До вечора", Icon: Sun },
-  evening: { label: "Вечірній розбір", tip: "Завтра", Icon: Moon },
+  morning: { label: "Ранковий звіт", tip: "Далі сьогодні", Icon: Sunrise },
+  day: { label: "Звіт дня", tip: "До вечора", Icon: Sun },
+  evening: { label: "Вечірній звіт", tip: "Завтра", Icon: Moon },
 } as const;
 
 /**
- * Розбір раціону від ШІ на Огляді.
+ * Щоденний звіт від ШІ-дієтолога на Огляді.
  *
- * З'являється щойно за день є хоч один запис їжі й оновлюється разом із днем
- * (сніданок → «гарний початок», вечеря → підсумок). Порожній день — єдиний
- * випадок, коли картки немає взагалі: коментувати нічого.
- *
- * Помилку показуємо явно з кнопкою повтору: мовчазне зникнення картки читалось
- * як «фічі немає» — саме на це й скаржились.
+ * На відміну від попередньої версії, картка присутня завжди — навіть до
+ * першого запису їжі вона показує стан «Збираємо дані…» замість того, щоб
+ * мовчки зникати (мовчання читалось як «фічі немає»). Готовий звіт можна
+ * примусово перегенерувати кнопкою «Оновити», а не чекати наступної зміни
+ * кількості записів.
  */
 export function DietAdvice() {
   const q = useAdvice();
+  const force = useForceAdvice();
 
   if (q.isError) {
     return (
@@ -37,7 +37,7 @@ export function DietAdvice() {
           <Sparkles size={17} />
         </span>
         <div className="min-w-0 flex-1">
-          <span className="lbl !mb-0">Розбір раціону</span>
+          <span className="lbl !mb-0">Щоденний звіт</span>
           <p className="mt-0.5 text-[13px] text-[var(--color-muted3)]">
             Не вдалося зібрати — ШІ не відповів
           </p>
@@ -55,18 +55,68 @@ export function DietAdvice() {
   }
 
   const data = q.data;
-  if (!data || !data.ready) return null;
+
+  if (!data || !data.ready) {
+    return <CollectingCard onRefresh={() => void q.refetch()} pending={q.isFetching} />;
+  }
+
   // key за частиною доби — щоб оновлений текст «в'їхав», а не підмінився мовчки
-  return <AdviceCard key={data.dayPart} advice={data} />;
+  return (
+    <AdviceCard
+      key={data.dayPart}
+      advice={data}
+      onForceRefresh={() => force.mutate()}
+      refreshing={force.isPending}
+    />
+  );
 }
 
-function AdviceCard({ advice: data }: { advice: Ready }) {
+function CollectingCard({
+  onRefresh,
+  pending,
+}: {
+  onRefresh: () => void;
+  pending: boolean;
+}) {
+  return (
+    <section className="mcard flex items-center gap-3 p-[18px]">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-accent)_16%,transparent)] text-[var(--color-accent)]">
+        <Sparkles size={17} className={pending ? "spark-pulse" : undefined} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <span className="lbl !mb-0">Щоденний звіт</span>
+        <p className="mt-1 text-[14px] leading-snug text-[var(--color-muted)]">
+          Збираємо дані… Звіт зʼявиться, щойно запишеш перший прийом їжі сьогодні.
+        </p>
+      </div>
+      <button
+        type="button"
+        className="icon-btn shrink-0"
+        aria-label="Перевірити ще раз"
+        onClick={onRefresh}
+        disabled={pending}
+      >
+        <RefreshCw size={15} className={pending ? "animate-spin" : undefined} />
+      </button>
+    </section>
+  );
+}
+
+function AdviceCard({
+  advice: data,
+  onForceRefresh,
+  refreshing,
+}: {
+  advice: Ready;
+  onForceRefresh: () => void;
+  refreshing: boolean;
+}) {
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
   const ui = PART_UI[data.dayPart] ?? PART_UI.evening;
 
   // Позначка «вже бачив» — своя на кожну частину доби, тож оновлений
-  // розбір знову ловить око, а те саме — ні.
+  // звіт знову ловить око, а той самий — ні.
   const seenKey = `advice-seen:${todayYMD()}:${data.dayPart}`;
   const [seen] = useState(() => {
     try {
@@ -97,12 +147,7 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className={cn("mcard overflow-hidden", !seen && "advice-fresh")}
     >
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-start gap-3 p-[18px] text-left"
-      >
+      <div className="flex items-start gap-3 p-[18px]">
         <span
           className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)]"
           style={{
@@ -113,7 +158,12 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
           <ui.Icon size={17} />
         </span>
 
-        <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="min-w-0 flex-1 text-left"
+        >
           <div className="flex items-center gap-1.5">
             <span className="lbl !mb-0">{ui.label}</span>
             <ChevronDown
@@ -133,8 +183,18 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
           <p className="mt-1 text-[14px] leading-snug text-[var(--color-muted)]">
             {data.body}
           </p>
-        </div>
-      </button>
+        </button>
+
+        <button
+          type="button"
+          className="icon-btn mt-0.5 shrink-0"
+          aria-label="Оновити звіт"
+          disabled={refreshing}
+          onClick={onForceRefresh}
+        >
+          <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
+        </button>
+      </div>
 
       <AnimatePresence initial={false}>
         {open ? (
