@@ -61,24 +61,28 @@ model User {
 }
 
 /**
- * Вечірній розбір раціону від ШІ — одна порада на день на користувача.
+ * Розбір раціону від ШІ — оновлюється протягом дня.
  *
  * Кешуємо в БД, бо генерація коштує виклику до Gemini: без кешу кожне
- * відкриття Огляду після 20:00 било б у платний API, а порада за той самий
- * день усе одно та сама.
+ * відкриття Огляду било б у платний API. Перегенеровуємо лише коли змінилось
+ * те, що впливає на текст: додався запис їжі (mealCount) або настала інша
+ * частина доби (dayPart) — «гарний сніданок» увечері звучало б безглуздо.
  */
 model DailyAdvice {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      String // YYYY-MM-DD
-  headline  String // короткий вердикт дня
+  headline  String // короткий вердикт
   body      String // 1–2 речення розбору
-  tip       String // що зробити завтра
+  tip       String // що зробити далі сьогодні / завтра
   mood      String // good | mixed | over
-  /** Скільки записів їжі було на момент генерації — щоб оновити після нової вечері. */
+  /** Скільки записів їжі було на момент генерації. */
   mealCount Int      @default(0)
+  /** morning | day | evening — частина доби, на яку писався текст. */
+  dayPart   String   @default("evening")
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([userId, date])
   @@index([userId, date])

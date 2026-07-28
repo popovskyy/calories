@@ -4,6 +4,7 @@ import { ProgressRing } from "@/components/ProgressRing";
 import { BlockHero } from "@/components/hero/BlockHero";
 import { Campfire } from "@/components/hero/Campfire";
 import { LighthouseHero } from "@/components/hero/LighthouseHero";
+import { PolonynaHero } from "@/components/hero/PolonynaHero";
 import { useThemeId } from "@/hooks/useThemeId";
 
 export interface HeroProps {
@@ -15,7 +16,8 @@ export interface HeroProps {
 
 /**
  * Головна метафора Огляду. Єдине місце, де тема міняє не оформлення, а форму:
- * Nocturne — кільце, Forest — вогнище, Minecraft — блок, Маяк — промінь.
+ * Nocturne — кільце, Forest — вогнище, Minecraft — блок, Маяк — промінь,
+ * Полонина — схід сонця над хребтом.
  */
 export function CalorieHero(props: HeroProps) {
   const theme = useThemeId();
@@ -23,5 +25,6 @@ export function CalorieHero(props: HeroProps) {
   if (theme === "forest") return <Campfire {...props} />;
   if (theme === "minecraft") return <BlockHero {...props} />;
   if (theme === "lighthouse") return <LighthouseHero {...props} />;
+  if (theme === "polonyna") return <PolonynaHero {...props} />;
   return <ProgressRing {...props} />;
 }

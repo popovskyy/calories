@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { BellRing, Share2, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/Avatar";
@@ -7,6 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
+import { PlayerCard } from "@/components/arena/PlayerCard";
 import { useArena, useCurrentUser, useNudge } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { humanDate } from "@/lib/date";
@@ -17,6 +20,8 @@ export default function ArenaPage() {
   const mounted = useMounted();
   const arena = useArena();
   const { user } = useCurrentUser();
+  // Обраний учасник — модалка з повним зрізом його дня.
+  const [picked, setPicked] = useState<ArenaEntry | null>(null);
 
   if (mounted && arena.isError) {
     return (
@@ -100,7 +105,7 @@ export default function ArenaPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {podium.length > 0 ? <Podium entries={podium} /> : null}
+          {podium.length > 0 ? <Podium entries={podium} onPick={setPicked} /> : null}
 
           {me && me.rank > 3 ? (
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[color-mix(in_srgb,var(--color-accent)_35%,transparent)] shadow-[var(--shadow-card)]">
@@ -108,7 +113,7 @@ export default function ArenaPage() {
                 Ви зараз
               </div>
               <ul>
-                <ArenaRow entry={me} />
+                <ArenaRow entry={me} onPick={setPicked} />
               </ul>
             </div>
           ) : null}
@@ -123,7 +128,7 @@ export default function ArenaPage() {
               </div>
               <ul className="divide-y divide-[var(--color-divider)] bg-[var(--color-bg)]">
                 {rest.map((e) => (
-                  <ArenaRow key={e.userId} entry={e} />
+                  <ArenaRow key={e.userId} entry={e} onPick={setPicked} />
                 ))}
               </ul>
             </div>
@@ -143,6 +148,8 @@ export default function ArenaPage() {
           ) : null}
         </div>
       )}
+
+      <PlayerCard entry={picked} onOpenChange={(o) => !o && setPicked(null)} />
     </>
   );
 }
@@ -283,7 +290,13 @@ function Yesterday({ entries }: { entries: ArenaYesterdayEntry[] }) {
   );
 }
 
-function Podium({ entries }: { entries: ArenaEntry[] }) {
+function Podium({
+  entries,
+  onPick,
+}: {
+  entries: ArenaEntry[];
+  onPick: (e: ArenaEntry) => void;
+}) {
   // Візуальний порядок: 2 · 1 · 3
   const first = entries[0];
   const second = entries[1];
@@ -300,15 +313,21 @@ function Podium({ entries }: { entries: ArenaEntry[] }) {
         <div key={place} className="flex flex-col items-center gap-2">
           {entry ? (
             <>
-              <ProgressHalo entry={entry} size={place === 1 ? 48 : 40}>
-                <Avatar
-                  name={entry.name}
-                  avatarUrl={entry.avatarUrl}
-                  size={place === 1 ? 48 : 40}
-                  stage={entry.stage}
-                  frame={entry.frame}
-                />
-              </ProgressHalo>
+              <button
+                type="button"
+                onClick={() => onPick(entry)}
+                aria-label={`Картка гравця ${entry.name}`}
+              >
+                <ProgressHalo entry={entry} size={place === 1 ? 48 : 40}>
+                  <Avatar
+                    name={entry.name}
+                    avatarUrl={entry.avatarUrl}
+                    size={place === 1 ? 48 : 40}
+                    stage={entry.stage}
+                    frame={entry.frame}
+                  />
+                </ProgressHalo>
+              </button>
               <div className="flex w-full items-center justify-center gap-1">
                 <span className="min-w-0 truncate text-[13px] font-semibold text-[var(--color-text)]">
                   {entry.name}
@@ -340,7 +359,13 @@ function Podium({ entries }: { entries: ArenaEntry[] }) {
   );
 }
 
-function ArenaRow({ entry }: { entry: ArenaEntry }) {
+function ArenaRow({
+  entry,
+  onPick,
+}: {
+  entry: ArenaEntry;
+  onPick: (e: ArenaEntry) => void;
+}) {
   const over = entry.difference < 0;
   const exact = entry.hasLog && entry.absError === 0;
   const label = !entry.hasLog
@@ -361,7 +386,12 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
       <span className="text-[16px] font-semibold tabular-nums text-[var(--color-muted2)]">
         {entry.rank}
       </span>
-      <div className="flex min-w-0 items-center gap-2.5">
+      <button
+        type="button"
+        onClick={() => onPick(entry)}
+        aria-label={`Картка гравця ${entry.name}`}
+        className="flex min-w-0 items-center gap-2.5 text-left"
+      >
         <ProgressHalo entry={entry} size={36}>
           <Avatar
             name={entry.name}
@@ -390,7 +420,7 @@ function ArenaRow({ entry }: { entry: ArenaEntry }) {
             {entry.targetCalories.toLocaleString("uk-UA")} ккал
           </div>
         </div>
-      </div>
+      </button>
       <div className="text-right">
         <div
           className={cn(

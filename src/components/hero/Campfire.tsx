@@ -11,6 +11,32 @@ import { useCurrentUser } from "@/hooks/useQueries";
 const FLAME_RADIUS = "50% 50% 46% 46% / 66% 66% 34% 34%";
 
 /**
+ * Палітра вогню. Куплена рамка «Неон» не просто ховалась у лісовій темі —
+ * Campfire узагалі не читав frame, тож преміум-тема з'їдала покупку. Тепер
+ * неон перефарбовує саме вогнище: холодне ціано-маджентове полум'я.
+ */
+const FIRE = {
+  warm: {
+    big: "linear-gradient(#ffb347,#ff6a1f)",
+    mid: "linear-gradient(#fff3c4,#ffd166)",
+    tip: "#ffe9a8",
+    side: "linear-gradient(#ff9c3a,#e0561a)",
+    glow: "rgba(255,138,61,.34)",
+    halo: "rgba(255,138,61,.55)",
+    spark: ["#ffd166", "#fff3c4", "#ffb347"],
+  },
+  neon: {
+    big: "linear-gradient(#00f0ff,#7b61ff)",
+    mid: "linear-gradient(#eafeff,#00f0ff)",
+    tip: "#eafeff",
+    side: "linear-gradient(#ff2bd6,#7b61ff)",
+    glow: "rgba(0,240,255,.34)",
+    halo: "rgba(0,240,255,.6)",
+    spark: ["#00f0ff", "#eafeff", "#ff2bd6"],
+  },
+} as const;
+
+/**
  * Forest-герой: вогнище замість кільця прогресу.
  *
  * Ритуал «підкидання дровини» запускається сигналом перерахунку зі стора
@@ -18,9 +44,10 @@ const FLAME_RADIUS = "50% 50% 46% 46% / 66% 66% 34% 34%";
  * навігацію, тож ритуал відпрацює й тоді, коли користувач збереже їжу на
  * /add і повернеться на Огляд лише за кілька екранів.
  */
-export function Campfire({ consumed, target }: HeroProps) {
+export function Campfire({ consumed, target, frame }: HeroProps) {
   const remaining = target - consumed;
   const over = remaining < 0;
+  const fire = frame === "neon" ? FIRE.neon : FIRE.warm;
 
   const recalc = useAppStore((s) => s.recalc);
   const consumeRecalc = useAppStore((s) => s.consumeRecalc);
@@ -62,7 +89,7 @@ export function Campfire({ consumed, target }: HeroProps) {
           className={`${numSize} leading-none text-white`}
           style={{
             fontFamily: "var(--font-display)",
-            textShadow: "0 0 26px rgba(255,138,61,.55)",
+            textShadow: `0 0 26px ${fire.halo}`,
           }}
         >
           {rounded}
@@ -85,7 +112,7 @@ export function Campfire({ consumed, target }: HeroProps) {
         className="fire-glow pointer-events-none absolute -bottom-2.5 left-1/2 h-[150px] w-[230px] -translate-x-1/2"
         style={{
           background:
-            "radial-gradient(50% 60% at 50% 80%, rgba(255,138,61,.34), rgba(255,138,61,0) 70%)",
+            `radial-gradient(50% 60% at 50% 80%, ${fire.glow}, transparent 70%)`,
           animation: "fireGlow 3.6s ease-in-out infinite",
         }}
       />
@@ -107,7 +134,7 @@ export function Campfire({ consumed, target }: HeroProps) {
           className="flame absolute bottom-[14px] left-1/2 -ml-[13px] h-[74px] w-[26px]"
           style={{
             borderRadius: FLAME_RADIUS,
-            background: "linear-gradient(#ffb347,#ff6a1f)",
+            background: fire.big,
             filter: "blur(.4px)",
             animation: "flameBig 1.5s ease-in-out infinite",
           }}
@@ -116,14 +143,14 @@ export function Campfire({ consumed, target }: HeroProps) {
           className="flame absolute bottom-4 left-1/2 -ml-[7px] h-12 w-[15px]"
           style={{
             borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-            background: "linear-gradient(#fff3c4,#ffd166)",
+            background: fire.mid,
             animation: "flameMid 1.1s ease-in-out infinite",
           }}
         />
         <div
           className="flame absolute bottom-[74px] left-1/2 -ml-[4px] h-4 w-2 rounded-full"
           style={{
-            background: "#ffe9a8",
+            background: fire.tip,
             filter: "blur(1px)",
             animation: "flameTip 1.7s ease-in-out infinite",
           }}
@@ -132,7 +159,7 @@ export function Campfire({ consumed, target }: HeroProps) {
           className="flame absolute bottom-3 left-[38%] h-[34px] w-[14px]"
           style={{
             borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-            background: "linear-gradient(#ff9c3a,#e0561a)",
+            background: fire.side,
             animation: "flameMid 1.35s ease-in-out .3s infinite",
           }}
         />
@@ -140,7 +167,7 @@ export function Campfire({ consumed, target }: HeroProps) {
           className="flame absolute bottom-3 left-[58%] h-[30px] w-3"
           style={{
             borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-            background: "linear-gradient(#ff9c3a,#e0561a)",
+            background: fire.side,
             animation: "flameMid 1.5s ease-in-out .6s infinite",
           }}
         />
@@ -233,16 +260,16 @@ export function Campfire({ consumed, target }: HeroProps) {
           <div
             className="fire-spark absolute bottom-20 left-1/2 z-[2] h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#ffd166",
-              boxShadow: "0 0 10px #ff8a3d",
+              background: fire.spark[0],
+              boxShadow: `0 0 10px ${fire.spark[0]}`,
               animation: "sparkBurst 1.1s ease-out .5s forwards",
             }}
           />
           <div
             className="fire-spark absolute bottom-20 left-[46%] z-[2] h-[5px] w-[5px] rounded-full"
             style={{
-              background: "#ffb347",
-              boxShadow: "0 0 10px #ff8a3d",
+              background: fire.spark[2],
+              boxShadow: `0 0 10px ${fire.spark[2]}`,
               ["--dx" as string]: "-18px",
               animation: "sparkBurst 1.3s ease-out .55s forwards",
             }}
@@ -250,8 +277,8 @@ export function Campfire({ consumed, target }: HeroProps) {
           <div
             className="fire-spark absolute bottom-[78px] left-[55%] z-[2] h-1 w-1 rounded-full"
             style={{
-              background: "#fff3c4",
-              boxShadow: "0 0 10px #ffd166",
+              background: fire.spark[1],
+              boxShadow: `0 0 10px ${fire.spark[1]}`,
               ["--dx" as string]: "16px",
               animation: "sparkBurst 1.2s ease-out .65s forwards",
             }}

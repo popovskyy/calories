@@ -137,15 +137,33 @@ function Art({ id, accent }: { id: string; accent: string }) {
     case "polonyna":
       return (
         <>
-          <svg className="absolute bottom-0 left-0 h-14 w-full" viewBox="0 0 120 56" fill="none">
-            <path d="M0 56 L28 22 L48 40 L72 12 L120 56 Z" fill="#2f5d4a" opacity="0.9" />
-            <path d="M0 56 L28 22 L36 30 L20 56 Z" fill="#f0d9a0" opacity="0.55" />
-            <path d="M64 56 L72 12 L84 28 L76 56 Z" fill="#f0d9a0" opacity="0.45" />
-          </svg>
+          {/* сонце сходить над хребтом — та сама метафора, що в героєві */}
           <span
-            className="absolute left-3 top-2.5 h-2 w-2 rounded-full opacity-80"
-            style={{ background: accent, boxShadow: `0 0 10px ${accent}` }}
+            className="absolute right-6 top-4 h-5 w-5 rounded-full"
+            style={{ background: accent, boxShadow: `0 0 18px ${accent}` }}
           />
+          <svg className="absolute bottom-0 left-0 h-14 w-full" viewBox="0 0 120 56" fill="none">
+            <path d="M0 40 L22 24 L44 36 L68 18 L96 34 L120 26 L120 56 L0 56 Z" fill="#8f8fae" opacity="0.55" />
+            <path d="M0 48 L26 36 L54 46 L82 34 L110 46 L120 42 L120 56 L0 56 Z" fill="#4c6b4f" />
+            <path d="M0 52 Q40 47 76 52 Q104 56 120 50 L120 56 L0 56 Z" fill="#7ba05b" />
+            <ellipse cx="34" cy="53" rx="5" ry="2.6" fill="#fdf6ec" />
+            <ellipse cx="52" cy="54" rx="4" ry="2.2" fill="#fdf6ec" opacity=".9" />
+          </svg>
+        </>
+      );
+    case "abyss":
+      return (
+        <>
+          {/* батискаф у промені + планктон */}
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 120 80" fill="none">
+            <ellipse cx="60" cy="34" rx="11" ry="9" fill="#123a4a" stroke={accent} strokeWidth="1.4" />
+            <circle cx="60" cy="34" r="4" fill={accent} opacity=".8" />
+            <path d="M60 43 L52 72 L68 72 Z" fill={accent} opacity=".12" />
+            <circle cx="26" cy="20" r="1.6" fill={accent} opacity=".7" />
+            <circle cx="96" cy="30" r="1.2" fill={accent} opacity=".55" />
+            <circle cx="34" cy="60" r="1.4" fill={accent} opacity=".5" />
+            <circle cx="88" cy="62" r="1" fill={accent} opacity=".45" />
+          </svg>
         </>
       );
     default:

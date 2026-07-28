@@ -16,7 +16,58 @@ export function AmbientLayer() {
   if (theme === "forest") return <ForestAmbient />;
   if (theme === "minecraft") return <MinecraftAmbient />;
   if (theme === "lighthouse") return <LighthouseAmbient />;
+  if (theme === "polonyna") return <PolonynaAmbient />;
   return <NocturneAmbient />;
+}
+
+/**
+ * Полонина: ранкове світло згори, туман у долині й самотній орел.
+ * Вівці живуть у героєві — тут лише повітря, щоб фон не сперечався з ним.
+ */
+function PolonynaAmbient() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+      {/* косе ранкове проміння */}
+      <div
+        className="absolute -right-10 -top-24 h-[260px] w-[260px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,180,84,.22), rgba(255,180,84,0) 70%)",
+          animation: "plSunPulse 9s ease-in-out infinite",
+        }}
+      />
+      {/* смуги туману в долині */}
+      <div
+        className="pl-fog absolute inset-x-0 bottom-[120px] h-[70px]"
+        style={{
+          background:
+            "linear-gradient(180deg, transparent, rgba(253,243,230,.5) 45%, transparent)",
+        }}
+      />
+      <div
+        className="pl-fog absolute inset-x-0 bottom-[186px] h-[46px]"
+        style={{
+          background:
+            "linear-gradient(180deg, transparent, rgba(253,243,230,.34) 50%, transparent)",
+          animationDelay: "-14s",
+        }}
+      />
+      {/* орел високо над хребтом */}
+      <svg
+        className="ambient-mob absolute left-0 top-[16%] h-3 w-6 text-[#5c4a3a]"
+        viewBox="0 0 24 12"
+        style={{ animation: "plEagle 26s linear infinite" }}
+      >
+        <path
+          d="M1 7 q5 -6 11 -1 q6 -5 11 1"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  );
 }
 
 function NocturneAmbient() {

@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Inter, Handjet, Nunito, Russo_One } from "next/font/google";
+import {
+  DM_Sans,
+  Inter,
+  Handjet,
+  Nunito,
+  Russo_One,
+  Alegreya,
+} from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/PwaRegister";
@@ -42,7 +49,15 @@ const dmSans = DM_Sans({
   preload: false,
 });
 
-const APPLE_TOUCH_SIZES = [57, 60, 72, 76, 114, 120, 144, 152, 167, 180] as const;
+/* Полонина: тепла книжкова антиква — гуцульська оповідь, а не інтерфейс. */
+const alegreya = Alegreya({
+  variable: "--font-alegreya",
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "700"],
+  preload: false,
+});
+
+const APPLE_TOUCH_SIZES =[57, 60, 72, 76, 114, 120, 144, 152, 167, 180] as const;
 
 export const metadata: Metadata = {
   applicationName: "Калорії",
@@ -105,7 +120,7 @@ export default function RootLayout({
   return (
     <html
       lang="uk"
-      className={`${inter.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable} ${dmSans.variable}`}
+      className={`${inter.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable} ${dmSans.variable} ${alegreya.variable}`}
       suppressHydrationWarning
     >
       <head>

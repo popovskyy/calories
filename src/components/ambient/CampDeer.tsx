@@ -13,6 +13,10 @@ import { Deer, type DeerGait } from "@/components/ambient/Deer";
 /**
  * Олень біля вогнища: патруль із паузами (не марширує стоячи) і
  * interruptible втеча з поточної позиції — без remount на `key`.
+ *
+ * Тікає з двох причин: у вогонь підкинули дровину (ritualActive) або по ньому
+ * тицьнули пальцем. Обидві йдуть через один і той самий сценарій втечі, тож
+ * олень ніколи не опиняється у двох станах водночас.
  */
 export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
   const reduce = useReducedMotion();
@@ -21,8 +25,12 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
   const opacity = useMotionValue(0);
   const [gait, setGait] = useState<DeerGait>("idle");
   const [scared, setScared] = useState(false);
+  const [startled, setStartled] = useState(false);
   const ctrls = useRef<AnimationPlaybackControls[]>([]);
   const gen = useRef(0);
+
+  // Спільний тригер: дровина або тик по оленю.
+  const fleeing = ritualActive || startled;
 
   const stopCtrls = () => {
     for (const c of ctrls.current) c.stop();
@@ -44,7 +52,7 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       setScared(false);
       return;
     }
-    if (ritualActive) return;
+    if (fleeing) return;
 
     const my = ++gen.current;
     let cancelled = false;
@@ -99,11 +107,11 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       stopCtrls();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- motion values stable
-  }, [ritualActive, reduce]);
+  }, [fleeing, reduce]);
 
   // Втеча: alert → flee з поточної x/scaleX
   useEffect(() => {
-    if (!ritualActive || reduce) return;
+    if (!fleeing || reduce) return;
 
     const my = ++gen.current;
     stopCtrls();
@@ -116,8 +124,9 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       });
 
     const flee = async () => {
-      // Чекаємо дровину (~.56s), як раніше в CSS — не тікає одразу
-      await sleep(480);
+      // На дровину олень реагує з затримкою (~.56s, поки вона летить), а на
+      // дотик — миттєво: інакше тап відчувається як «не спрацював».
+      await sleep(startled ? 0 : 480);
       if (gen.current !== my) return;
       // Anticipation: крок назад, розворот, потім біг
       const cur = x.get();
@@ -145,6 +154,12 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
           ease: [0.4, 0, 1, 1],
         }),
       );
+
+      // Втечу від дотику знімаємо самі — ритуал гасить свій сигнал у Campfire.
+      if (startled) {
+        await sleep(1400);
+        if (gen.current === my) setStartled(false);
+      }
     };
 
     void flee();
@@ -152,14 +167,19 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       /* gen bump cancels */
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ritualActive, reduce]);
+  }, [fleeing, reduce]);
 
   if (reduce) return null;
 
   return (
     <motion.div
-      className="ambient-mob pointer-events-none absolute bottom-[26px] left-10 z-[1]"
+      // pointer-events-auto лише тут: решта ambient-шару лишається наскрізною
+      className="ambient-mob absolute bottom-[26px] left-10 z-[1] cursor-pointer touch-manipulation"
       style={{ x, scaleX, opacity }}
+      aria-hidden
+      onPointerDown={() => {
+        if (!fleeing) setStartled(true);
+      }}
     >
       <Deer variant="camp" width={58} height={82} scared={scared} gait={gait} />
     </motion.div>

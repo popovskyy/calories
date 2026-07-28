@@ -14,7 +14,14 @@ export function DashboardHeader() {
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-2.5 rounded-[var(--radius-pill)] bg-[var(--color-surface)] py-1.5 pl-1.5 pr-3 shadow-[var(--shadow-card)]">
-        <Avatar name={user?.name ?? "?"} avatarUrl={user?.avatarUrl} size={32} />
+        {/* frame передаємо і тут: куплену рамку власник має бачити в себе,
+            а не лише інші в арені */}
+        <Avatar
+          name={user?.name ?? "?"}
+          avatarUrl={user?.avatarUrl}
+          size={32}
+          frame={user?.frame}
+        />
         <span className="min-w-0 text-left leading-tight">
           <span className="block truncate text-[16px] font-semibold text-[var(--color-text)]">
             {user?.name ?? "Профіль"}

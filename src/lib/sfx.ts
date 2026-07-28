@@ -180,6 +180,42 @@ export function playFoghorn(pack = "default") {
 }
 
 /**
+ * Дзвіночок вівці — голос теми «Полонина» на ритуалі перерахунку.
+ *
+ * Два розстроєні високі тони з швидким загасанням: бляшаний дзвоник,
+ * а не музична нота. Легке гойдання робимо трьома ударами, що тихішають.
+ */
+export function playSheepBell(pack = "default") {
+  if (prefersReducedMotion()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  const gainScale = pack === "cinema" ? 1.2 : 1;
+
+  try {
+    const now = ac.currentTime;
+    const strikes = [0, 0.16, 0.34];
+    strikes.forEach((offset, i) => {
+      const decay = 0.9 - i * 0.28;
+      // Дві близькі, навмисно розстроєні частоти дають «бляшаний» тембр
+      for (const hz of [1180, 1247]) {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(hz, now + offset);
+        gain.gain.setValueAtTime(0.055 * decay * gainScale, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.5);
+        osc.connect(gain).connect(ac.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.55);
+      }
+    });
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
  * Дровина летить у вогонь: whoosh + тріск. Тембр залежить від саундпака.
  *
  * Окремого вимикача звуку немає: він був частиною теми «ліс», але висів у

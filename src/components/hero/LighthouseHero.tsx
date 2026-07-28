@@ -8,13 +8,17 @@ import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 
 /**
- * Маяк: дуга променя = прогрес до цілі.
- * Перебір — «перегрів» ліхтаря (тепліший акцент).
+ * Маяк: цифри зверху, прогрес — смуга світла на воді, сцена — знизу.
+ *
+ * Попередній варіант ставив промінь і вежу просто за цифрами на темно-синьому:
+ * читати було нічого, а статус зеленим текстом зливався з фоном. Тому тепер
+ * жорсткий розподіл зон — текст ніколи не перетинається зі сценою, статус
+ * винесено в контрастну пігулку, а прогрес читається смугою, а не кутом
+ * променя (кут на 250px просто не зчитувався).
  *
  * Ритуал перерахунку (той самий сигнал, що жбурляє дровину в Forest):
- * промінь робить один швидкий повний оберт, на воді зблискує корабель,
- * лампа спалахує, здалеку — фогхорн. Кіт доглядача на галереї проводжає
- * промінь поглядом.
+ * промінь спалахує через усю воду, лампа розгорається, з темряви виходить
+ * корабель, здалеку чути фогхорн. Кіт доглядача проводжає промінь поглядом.
  */
 export function LighthouseHero({ consumed, target, frame }: HeroProps) {
   const reduce = useReducedMotion();
@@ -30,25 +34,22 @@ export function LighthouseHero({ consumed, target, frame }: HeroProps) {
   const { user } = useCurrentUser();
   const pack = user?.soundpack ?? "default";
 
-  // Як у Campfire: таймлайн — CSS forwards з key-рестартом, React лише
-  // грає звук і гасить сигнал у кінці.
   const ritualActive = recalc !== null;
   const ritualKey = recalc?.id ?? "idle";
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
-  const sweep = useMotionValue(0);
-  const beamDeg = useTransform(sweep, (v) => `${8 + v * 64}deg`);
-  const beamDegMirror = useTransform(sweep, (v) => `${-(8 + v * 64)}deg`);
+  const fill = useMotionValue(0);
+  const fillPct = useTransform(fill, (v) => `${v * 100}%`);
 
   useEffect(() => {
     const a1 = animate(count, consumed, { duration: 1.0, ease: [0.22, 1, 0.36, 1] });
-    const a2 = animate(sweep, progress, { duration: 1.15, ease: [0.22, 1, 0.36, 1] });
+    const a2 = animate(fill, progress, { duration: 1.15, ease: [0.22, 1, 0.36, 1] });
     return () => {
       a1.stop();
       a2.stop();
     };
-  }, [consumed, progress, count, sweep]);
+  }, [consumed, progress, count, fill]);
 
   useEffect(() => {
     if (!recalc) return;
@@ -58,35 +59,146 @@ export function LighthouseHero({ consumed, target, frame }: HeroProps) {
   }, [recalc, consumeRecalc, pack]);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
-  const numSize = digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[52px]" : "text-[62px]";
+  const numSize = digits >= 5 ? "text-[44px]" : digits >= 4 ? "text-[52px]" : "text-[58px]";
+
+  // Куплена рамка «Неон» перефарбовує світло маяка — інакше преміум-тема
+  // просто з'їдала покупку (рамки не було видно взагалі).
+  const barColor = neon
+    ? over
+      ? "#ff2bd6"
+      : "#00f0ff"
+    : over
+      ? "#ff9a6c"
+      : inTarget
+        ? "#7fe3bd"
+        : "#ffc878";
+  const lampColor = neon ? (over ? "#ff2bd6" : "#aefaff") : over ? "#ff9a6c" : "#ffe0a8";
+  const beamFrom = neon ? "#8df3ff" : "#ffd9a0";
+  const beamTo = neon ? "#00f0ff" : "#ffb35c";
 
   return (
     <div className="relative my-1 h-[250px] w-full shrink-0 overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[55%]"
-        style={{
-          background:
-            "radial-gradient(50% 80% at 50% 0%, rgba(255,179,92,.22), transparent 70%)",
-        }}
-      />
-
-      <div className="absolute bottom-[28px] left-1/2 z-[1] h-[118px] w-[54px] -translate-x-1/2">
-        <div
-          className="absolute inset-x-1 bottom-0 top-8 rounded-t-[4px]"
+      {/* ── Зона тексту: сцена сюди не заходить ── */}
+      <div className="absolute inset-x-0 top-1 z-[2] flex flex-col items-center">
+        <motion.div
+          className={`${numSize} font-semibold leading-none text-[#fff6e6]`}
           style={{
-            background: "linear-gradient(90deg, #1a2430, #2a3848 45%, #15202c)",
-            boxShadow: neon ? "0 0 16px rgba(0,240,255,.35)" : "0 8px 20px rgba(0,0,0,.35)",
+            fontFamily: "var(--font-display)",
+            textShadow: "0 2px 16px rgba(0,0,0,.6)",
           }}
-        />
+        >
+          {rounded}
+        </motion.div>
+        <div className="mt-1.5 text-[12px] font-medium text-[#a9c0d4]">
+          із {target.toLocaleString("uk-UA")} ккал
+        </div>
         <div
-          className="absolute left-1/2 top-0 h-10 w-16 -translate-x-1/2 rounded-[3px]"
+          className="mt-2 rounded-[var(--radius-pill)] px-3 py-1 text-[13px] font-bold"
           style={{
             background: over
-              ? "linear-gradient(#ff8a5c, #ffb35c)"
-              : "linear-gradient(#ffe0a8, #ffb35c)",
-            boxShadow: inTarget
-              ? "0 0 22px rgba(255,179,92,.65)"
-              : "0 0 14px rgba(255,179,92,.4)",
+              ? "color-mix(in srgb, #ff7a5c 30%, rgba(7,12,18,.9))"
+              : inTarget
+                ? "color-mix(in srgb, #5ec8a0 30%, rgba(7,12,18,.9))"
+                : "color-mix(in srgb, #ffb35c 26%, rgba(7,12,18,.9))",
+            color: over ? "#ffd9cc" : inTarget ? "#c9f5e4" : "#ffe6bd",
+            boxShadow: "inset 0 0 0 1px rgba(255,255,255,.14)",
+          }}
+        >
+          {over
+            ? `Перебір ${Math.abs(remaining).toLocaleString("uk-UA")}`
+            : inTarget
+              ? "У нормі"
+              : `Ще ${remaining.toLocaleString("uk-UA")} ккал`}
+        </div>
+
+        {/* Прогрес — смуга світла: читається миттєво, на відміну від кута променя */}
+        <div className="relative mt-3.5 h-1.5 w-[76%] overflow-hidden rounded-full bg-[#1b2836]">
+          <motion.div
+            className="h-full rounded-full"
+            style={{
+              width: fillPct,
+              background: `linear-gradient(90deg, color-mix(in srgb, ${barColor} 45%, transparent), ${barColor})`,
+              boxShadow: `0 0 10px ${barColor}80`,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* ── Зона сцени: нижні 44% ── */}
+      <svg
+        aria-hidden
+        viewBox="0 0 320 250"
+        preserveAspectRatio="xMidYMax meet"
+        className="absolute inset-0 h-full w-full"
+      >
+        <defs>
+          <linearGradient id="lh-beam" x1="1" y1="0" x2="0" y2="0">
+            <stop offset="0" stopColor={beamFrom} stopOpacity=".3" />
+            <stop offset=".45" stopColor={beamTo} stopOpacity=".12" />
+            <stop offset="1" stopColor={beamTo} stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="lh-tower" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#16202c" />
+            <stop offset=".42" stopColor="#31445a" />
+            <stop offset="1" stopColor="#111925" />
+          </linearGradient>
+          <linearGradient id="lh-water" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#12202e" />
+            <stop offset="1" stopColor="#080e15" />
+          </linearGradient>
+          <radialGradient id="lh-halo" cx="50%" cy="50%" r="50%">
+            <stop offset="0" stopColor={beamTo} stopOpacity=".42" />
+            <stop offset="1" stopColor={beamTo} stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {/* зорі — високо, поза текстом */}
+        <circle cx="26" cy="150" r="1.4" fill="#dbe8f5" opacity=".45" />
+        <circle cx="62" cy="132" r="1" fill="#dbe8f5" opacity=".3" />
+        <circle cx="292" cy="140" r="1.2" fill="#dbe8f5" opacity=".35" />
+
+        {/* промінь над водою, від ліхтаря вліво */}
+        <polygon points="246,168 252,168 8,224 8,196" fill="url(#lh-beam)" />
+        {ritualActive && !reduce ? (
+          <polygon
+            key={`sweep-${ritualKey}`}
+            points="246,168 252,168 8,232 8,188"
+            fill="url(#lh-beam)"
+            style={{ animation: "lhBeamSweep 1.7s cubic-bezier(.22,1,.36,1) forwards" }}
+          />
+        ) : null}
+
+        {/* вода */}
+        <rect x="0" y="212" width="320" height="38" fill="url(#lh-water)" />
+        <g strokeLinecap="round" fill="none">
+          <path d="M8 219 h34 M58 219 h22 M96 219 h40 M154 219 h26 M198 219 h34" stroke="#4c6885" strokeWidth="1.1" opacity=".55" />
+          <path d="M20 229 h28 M64 229 h34 M116 229 h22 M158 229 h40 M226 229 h34" stroke="#3a5670" strokeWidth="1.1" opacity=".45" />
+          <path d="M42 240 h26 M86 240 h32 M138 240 h38 M196 240 h28 M242 240 h36" stroke="#2c4258" strokeWidth="1.1" opacity=".38" />
+        </g>
+        {/* відблиск ліхтаря на воді */}
+        <ellipse cx="249" cy="224" rx="9" ry="18" fill={beamTo} opacity=".2" />
+
+        {/* скеля з підсвіченим гребенем — інакше зливається з водою */}
+        <path d="M218 214 L228 200 L272 200 L282 214 Z" fill="#0e1721" />
+        <path d="M228 200 L272 200" stroke="#3c5063" strokeWidth="1.2" opacity=".8" />
+
+        {/* вежа: струнка, з двома тонкими смугами */}
+        <path d="M239 200 L241.5 172 L258.5 172 L261 200 Z" fill="url(#lh-tower)" stroke={neon ? "#00f0ff" : "#3d5169"} strokeWidth="1.2" />
+        <path d="M240.2 192 L259.8 192 L259.4 187 L240.6 187 Z" fill="#c9435a" opacity=".55" />
+        <path d="M241 181 L259 181 L258.7 177 L241.3 177 Z" fill="#c9435a" opacity=".4" />
+
+        {/* галерея + ліхтарна кімната */}
+        <ellipse cx="250" cy="162" rx="36" ry="28" fill="url(#lh-halo)" />
+        <rect x="236" y="168" width="28" height="4" rx="1.5" fill="#2a3848" />
+        {/* скло ліхтаря: тепле ядро + ребра рами, а не білий брусок */}
+        <rect
+          x="242"
+          y="155"
+          width="16"
+          height="13"
+          rx="2.5"
+          fill={lampColor}
+          style={{
             animation: reduce
               ? undefined
               : ritualActive
@@ -96,128 +208,47 @@ export function LighthouseHero({ consumed, target, frame }: HeroProps) {
                   : undefined,
           }}
         />
+        <g opacity=".5" stroke="#8a5a22" strokeWidth=".9">
+          <path d="M246.5 155 v13 M253.5 155 v13" />
+        </g>
+        <path d="M241 155 L250 146 L259 155 Z" fill="#31445a" stroke="#3d5169" strokeWidth="1" />
+        <circle cx="250" cy="146" r="1.6" fill="#ffd58a" />
 
-        {/* Кіт доглядача: сидить на галереї, махає хвостом, кліпає.
-            На ритуалі повертається за променем (scaleX-фліп). */}
-        <svg
+        {/* кіт доглядача на скелі біля вежі */}
+        <g
           key={`cat-${ritualKey}`}
-          aria-hidden
-          viewBox="0 0 24 18"
-          className="lh-cat absolute -top-[15px] left-[-12px] h-[18px] w-[24px]"
+          className="lh-cat"
+          transform="translate(219 186)"
           style={{
             animation:
               ritualActive && !reduce ? "lhCatWatch 2.4s ease-in-out forwards" : undefined,
           }}
         >
-          <ellipse cx="13" cy="14" rx="7" ry="4" fill="#0b1016"/>
-          <circle cx="7" cy="9" r="4.5" fill="#0b1016"/>
-          <path d="M3.5 6.5 L4.5 2.5 L7 5.5 Z" fill="#0b1016"/>
-          <path d="M10.5 6.5 L9.5 2.5 L7.5 5.5 Z" fill="#0b1016"/>
-          <path
-            className="lh-cat-tail"
-            d="M19 14 q4 -1 3.5 -6"
-            stroke="#0b1016"
-            strokeWidth="2"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <circle className="lh-cat-eye" cx="5.4" cy="9" r=".9" fill="#ffd58a"/>
-          <circle className="lh-cat-eye" cx="8.6" cy="9" r=".9" fill="#ffd58a"/>
-        </svg>
+          {/* Тепла обвідка з боку ліхтаря — без неї силует тоне в темряві */}
+          <g stroke="#c99a5c" strokeWidth=".9" strokeOpacity=".85">
+            <ellipse cx="8" cy="12" rx="8" ry="3.4" fill="#0a0f16" />
+            <circle cx="4" cy="7.6" r="4.4" fill="#0a0f16" />
+            <path d="M0.8 5 L1.6 1 L4.2 4 Z" fill="#0a0f16" />
+            <path d="M7.2 5 L6.4 1 L3.8 4 Z" fill="#0a0f16" />
+          </g>
+          <path className="lh-cat-tail" d="M15 12 q4.5 -1 4 -6.5" stroke="#8a6a40" strokeWidth="2.1" strokeLinecap="round" fill="none" />
+          <circle className="lh-cat-eye" cx="2.4" cy="7.4" r=".95" fill="#ffd58a" />
+          <circle className="lh-cat-eye" cx="5.6" cy="7.4" r=".95" fill="#ffd58a" />
+        </g>
 
-        {/* Ритуальний оберт променя */}
+        {/* корабель, який промінь вихоплює з темряви на ритуалі */}
         {ritualActive && !reduce ? (
-          <div
-            key={`sweep-${ritualKey}`}
-            className="absolute left-1/2 top-2 origin-top"
-            style={{
-              width: 3,
-              height: 172,
-              marginLeft: -1.5,
-              background:
-                "linear-gradient(180deg, rgba(255,224,168,.95), rgba(255,179,92,0))",
-              animation: "lhBeamSweep 1.7s cubic-bezier(.22,1,.36,1) forwards",
-            }}
-          />
+          <g
+            key={`ship-${ritualKey}`}
+            opacity="0"
+            style={{ animation: "lhShipReveal 2.2s ease-out forwards" }}
+          >
+            <path d="M52 214 L88 214 L82 221 L58 221 Z" fill="#0a0f16" />
+            <rect x="68" y="203" width="1.8" height="11" fill="#0a0f16" />
+            <circle cx="62" cy="209" r="1.7" fill="#ffd58a" />
+          </g>
         ) : null}
-
-        <motion.div
-          className="absolute left-1/2 top-2 origin-top"
-          style={{
-            width: 2,
-            height: 160,
-            marginLeft: -1,
-            background:
-              "linear-gradient(180deg, rgba(255,179,92,.55), rgba(255,179,92,0))",
-            rotate: beamDeg,
-          }}
-        />
-        <motion.div
-          className="absolute left-1/2 top-2 origin-top"
-          style={{
-            width: 2,
-            height: 160,
-            marginLeft: -1,
-            background:
-              "linear-gradient(180deg, rgba(255,179,92,.35), rgba(255,179,92,0))",
-            rotate: beamDegMirror,
-          }}
-        />
-      </div>
-
-      {/* Корабель, який промінь вихоплює з темряви на ритуалі */}
-      {ritualActive && !reduce ? (
-        <div
-          key={`ship-${ritualKey}`}
-          className="pointer-events-none absolute bottom-[30px] right-[36px] h-[16px] w-[34px]"
-          style={{ animation: "lhShipReveal 2.2s ease-out forwards", opacity: 0 }}
-        >
-          <div
-            className="absolute bottom-0 h-[7px] w-full"
-            style={{
-              background: "#0b1016",
-              clipPath: "polygon(6% 0, 94% 0, 78% 100%, 22% 100%)",
-            }}
-          />
-          <div className="absolute bottom-[6px] left-[46%] h-[10px] w-[2px] bg-[#0b1016]" />
-          <div
-            className="absolute bottom-[10px] left-[30%] h-[2px] w-[5px] rounded-full"
-            style={{ background: "#ffd58a", boxShadow: "0 0 6px #ffb35c" }}
-          />
-        </div>
-      ) : null}
-
-      <div className="pointer-events-none absolute inset-x-0 top-3 z-[2] flex flex-col items-center gap-0.5">
-        <motion.div
-          className={`${numSize} leading-none text-white`}
-          style={{
-            fontFamily: "var(--font-display)",
-            textShadow: "0 0 22px rgba(255,179,92,.45)",
-          }}
-        >
-          {rounded}
-        </motion.div>
-        <div className="text-[12px] text-[var(--color-muted)]">
-          із {target.toLocaleString("uk-UA")} ккал
-        </div>
-        <div
-          className="text-[13px] font-black"
-          style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
-        >
-          {over
-            ? `Перебір ${Math.abs(remaining).toLocaleString("uk-UA")}`
-            : `Ще ${remaining.toLocaleString("uk-UA")}`}
-        </div>
-      </div>
-
-      <div
-        className="absolute inset-x-0 bottom-0 h-7"
-        style={{
-          background:
-            "linear-gradient(180deg, transparent, rgba(14,20,28,.9)), repeating-linear-gradient(90deg, #1a2838 0 8px, #15202c 8px 16px)",
-          opacity: 0.9,
-        }}
-      />
+      </svg>
     </div>
   );
 }

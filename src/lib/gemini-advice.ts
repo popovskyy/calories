@@ -9,6 +9,8 @@ import { AiError, gptApiKey } from "@/lib/ai-error";
 const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
 export type AdviceMood = "good" | "mixed" | "over";
+/** Частина доби визначає, про що взагалі можна говорити. */
+export type DayPart = "morning" | "day" | "evening";
 
 export interface DayAdvice {
   headline: string;
@@ -18,7 +20,7 @@ export interface DayAdvice {
 }
 
 export interface AdviceInput {
-  /** Що з'їдено за день — опис + макроси кожного прийому. */
+  /** Що з'їдено від початку дня — опис + макроси кожного прийому. */
   meals: {
     description: string;
     calories: number;
@@ -32,27 +34,45 @@ export interface AdviceInput {
   proteinTarget: number;
   goalLabel: string;
   name: string;
+  dayPart: DayPart;
+}
+
+/** Kyiv-година → частина доби. Межі під побутовий ритм, не астрономічний. */
+export function dayPartOfHour(hour: number): DayPart {
+  if (hour < 12) return "morning";
+  if (hour < 17) return "day";
+  return "evening";
 }
 
 /**
- * Тон навмисно не «дієтологічний»: застосунок — вечірній ритуал у компанії
- * друзів, а не медичний коучинг. Тому — коротко, по-людськи, без діагнозів,
- * без калорійних приписів на завтра і без сорому за перебір.
+ * Тон навмисно не «дієтологічний»: застосунок — ритуал у компанії друзів,
+ * а не медичний коучинг. Тому — коротко, по-людськи, без діагнозів,
+ * без калорійних приписів і без сорому за перебір.
+ *
+ * Головне правило — доречність у часі: зранку коментуємо сніданок і
+ * підказуємо, як провести решту дня; увечері підбиваємо підсумок.
  */
-const SYSTEM = `Ти — уважний друг, який ввечері дивиться на журнал їжі й коротко коментує день.
+const SYSTEM = `Ти — уважний друг, який дивиться на журнал їжі й коротко коментує його.
 Пиши українською, тепло і без моралізаторства. Ніколи не став діагнозів, не згадуй хвороби,
 не приписуй суворих дієт і не соромь за перебір.
 
-Відповідай СУВОРО JSON:
-- headline: 2–5 слів, вердикт дня (напр. "Білка малувато", "Рівний день")
-- body: 1–2 речення про те, ЩО саме з'їдено — згадай конкретні страви з журналу,
-  а не абстракції. Це головне: людина має впізнати свій день.
-- tip: одна конкретна дія на завтра, пов'язана з цим раціоном (напр. "Додай яйця
-  чи сир на сніданок — учора білок був лише у вечері")
-- mood: "good" якщо день збалансований, "mixed" якщо є перекос у макросах або
-  недобір, "over" якщо помітний перебір калорій
+КРИТИЧНО — враховуй частину доби:
+- morning (ранок): це лише початок дня. Коментуй те, що вже з'їдено (сніданок, перекус),
+  і підкажи, як провести решту дня. НЕ підбивай підсумків дня, НЕ кажи "сьогодні вийшло".
+- day (день): половина дня позаду. Скажи, як іде, і скільки простору лишилось до норми.
+- evening (вечір): день фактично закритий. Підбий підсумок і дай пораду на завтра.
 
-Без емодзі. Без звертання на "Ви" — тільки на "ти".`;
+Відповідай СУВОРО JSON:
+- headline: 2–5 слів, вердикт (напр. "Солодкий сніданок", "Рівний день", "Білка малувато")
+- body: 1–2 речення про те, ЩО саме з'їдено — згадай конкретні страви з журналу,
+  а не абстракції. Людина має впізнати свій день.
+- tip: одна конкретна дія. Для morning/day — що зробити ДАЛІ СЬОГОДНІ
+  (напр. "На обід візьми щось білкове — яйця чи курку, бо поки що самі вуглеводи").
+  Для evening — що зробити ЗАВТРА.
+- mood: "good" якщо все збалансовано, "mixed" якщо є перекос у макросах або недобір,
+  "over" якщо помітний перебір калорій
+
+Без емодзі. Звертайся на "ти".`;
 
 const schema: ResponseSchema = {
   type: SchemaType.OBJECT,
@@ -63,6 +83,12 @@ const schema: ResponseSchema = {
     mood: { type: SchemaType.STRING },
   },
   required: ["headline", "body", "tip", "mood"],
+};
+
+const PART_HINT: Record<DayPart, string> = {
+  morning: "Зараз РАНОК — попереду майже весь день.",
+  day: "Зараз ДЕНЬ — попереду ще вечеря.",
+  evening: "Зараз ВЕЧІР — день фактично закритий.",
 };
 
 function buildPrompt(input: AdviceInput): string {
@@ -77,18 +103,23 @@ function buildPrompt(input: AdviceInput): string {
         .map((a) => `- ${a.description}: −${a.caloriesBurned} ккал`)
         .join("\n")
     : "- немає";
-  const diff = input.totals.calories - input.targetCalories;
+  const left = input.targetCalories - input.totals.calories;
 
-  return `Гравець: ${input.name}. Ціль: ${input.goalLabel}.
+  return `${PART_HINT[input.dayPart]}
+Частина доби: ${input.dayPart}.
+
+Гравець: ${input.name}. Ціль: ${input.goalLabel}.
 Норма: ${input.targetCalories} ккал, орієнтир білка: ${input.proteinTarget} г.
 
-Що з'їдено сьогодні:
+З'їдено дотепер:
 ${meals}
 
 Активність:
 ${acts}
 
-Разом: ${input.totals.calories} ккал (${diff >= 0 ? "+" : ""}${diff} до норми),
+Разом дотепер: ${input.totals.calories} ккал, ${
+    left >= 0 ? `лишається ${left}` : `перебір на ${Math.abs(left)}`
+  } ккал,
 білок ${input.totals.protein} г, жири ${input.totals.fats} г, вуглеводи ${input.totals.carbs} г.`;
 }
 

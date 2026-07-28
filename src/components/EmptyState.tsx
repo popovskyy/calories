@@ -47,6 +47,16 @@ const COPY: Record<
       subtitle: "Поклич друзів — хто ближче до норми.",
     },
   },
+  polonyna: {
+    log: {
+      title: "Розпали ватру",
+      subtitle: "Перший запис — і полонина прокинеться.",
+    },
+    arena: {
+      title: "Полонина порожня",
+      subtitle: "Клич ґазд — разом веселіше тримати норму.",
+    },
+  },
   nocturne: {
     log: {
       title: "Ще немає записів",
@@ -89,7 +99,9 @@ export function EmptyState({
                 ? "radial-gradient(60% 50% at 50% 30%, rgba(128,255,32,.1), transparent 70%)"
                 : theme === "lighthouse"
                   ? "radial-gradient(55% 45% at 50% 20%, rgba(255,179,92,.14), transparent 68%)"
-                  : "radial-gradient(55% 45% at 50% 25%, rgba(145,132,217,.1), transparent 70%)",
+                  : theme === "polonyna"
+                    ? "radial-gradient(60% 50% at 50% 25%, rgba(255,180,84,.2), transparent 70%)"
+                    : "radial-gradient(55% 45% at 50% 25%, rgba(145,132,217,.1), transparent 70%)",
         }}
       />
       <div className="relative flex h-14 w-14 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-tile)] text-[var(--color-muted2)]">

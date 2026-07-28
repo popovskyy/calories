@@ -219,9 +219,12 @@ export interface NotificationDTO {
   createdAt: string;
 }
 
-/** Вечірній розбір раціону: або порада, або причина, чому її ще нема. */
+/**
+ * Розбір раціону від ШІ. Не готовий лише тоді, коли за день ще нічого не
+ * записано — тоді картка мовчить, бо коментувати нічого.
+ */
 export type AdviceResponse =
-  | { ready: false; reason: "early" | "not_enough" }
+  | { ready: false; reason: "no_meals" }
   | {
       ready: true;
       date: string;
@@ -229,6 +232,8 @@ export type AdviceResponse =
       body: string;
       tip: string;
       mood: "good" | "mixed" | "over";
+      /** morning | day | evening — від цього залежать заголовок і підпис поради. */
+      dayPart: "morning" | "day" | "evening";
     };
 
 export interface ForecastResponse {
@@ -262,6 +267,15 @@ export interface ArenaEntry {
   absError: number;
   /** Очки дня 0–100 — основа рейтингу (див. dayScore в lib/arena.ts). */
   score: number;
+  /** Макроси за день — показуємо в картці гравця. */
+  protein: number;
+  fats: number;
+  carbs: number;
+  /** Скільки прийомів їжі записано сьогодні. */
+  mealsCount: number;
+  /** Досягнення: рекорд серії і скільки днів закрито в ±5%. */
+  maxStreak: number;
+  inTargetDays: number;
   hasLog: boolean;
   /** Чи є хоч один запис їжі — лише такі дні беруть участь у призах арени. */
   hasMeal: boolean;

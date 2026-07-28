@@ -66,16 +66,27 @@ export const THEMES: ThemeDef[] = [
     previewAccent: "#ffb35c",
   },
   {
-    // Ціна виставлена ще до релізу: buy-роут перевіряє лише tier, тож
-    // premium-тема з price 0 роздавалася б безкоштовно, щойно зникне comingSoon.
+    // Єдина «денна» тема: світанок у Карпатах як контраст до трьох нічних.
     id: "polonyna",
     nameUk: "Полонина",
     tier: "premium",
     price: 460,
-    swatch: "#f0d9a0",
-    vibe: "світанок · сосна · іній",
-    previewBg: "linear-gradient(160deg, #1a2430 0%, #243044 50%, #2f5d4a 100%)",
-    previewAccent: "#f0d9a0",
+    swatch: "#ff9e6b",
+    vibe: "світанок · вівці · трембіта",
+    previewBg: "linear-gradient(170deg, #2b3550 0%, #6b5570 42%, #e8875f 78%, #ffc48a 100%)",
+    previewAccent: "#ff9e6b",
+  },
+  {
+    // Наступний тизер на місце Полонини — ціна виставлена одразу, щоб
+    // premium-тема не роздавалась безкоштовно в мить зняття comingSoon.
+    id: "abyss",
+    nameUk: "Глибина",
+    tier: "premium",
+    price: 500,
+    swatch: "#4de8c2",
+    vibe: "батискаф · планктон · тиша",
+    previewBg: "linear-gradient(170deg, #06131f 0%, #0a2233 55%, #103c4a 100%)",
+    previewAccent: "#4de8c2",
     comingSoon: true,
   },
 ];

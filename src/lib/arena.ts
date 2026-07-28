@@ -56,7 +56,7 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
       totalInTargetDays: true,
       meals: {
         where: { date, status: { not: "cancelled" } },
-        select: { calories: true },
+        select: { calories: true, protein: true, fats: true, carbs: true },
       },
       activities: {
         where: { date, status: { not: "cancelled" } },
@@ -92,6 +92,12 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
       difference,
       absError: Math.abs(difference),
       score,
+      protein: Math.round(u.meals.reduce((s, m) => s + m.protein, 0)),
+      fats: Math.round(u.meals.reduce((s, m) => s + m.fats, 0)),
+      carbs: Math.round(u.meals.reduce((s, m) => s + m.carbs, 0)),
+      mealsCount: u.meals.length,
+      maxStreak: u.maxStreak,
+      inTargetDays: u.totalInTargetDays,
       hasLog,
       hasMeal,
       // Статусні речі: у грі на кілька друзів саме вони — головна нагорода.

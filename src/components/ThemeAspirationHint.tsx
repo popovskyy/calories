@@ -33,9 +33,12 @@ export function ThemeAspirationHint() {
 
   if (!show || !shop.data) return null;
 
-  const target =
-    shop.data.themes.find((t) => t.id === "lighthouse" && !t.owned) ??
-    shop.data.themes.find((t) => t.tier === "premium" && !t.comingSoon && !t.owned);
+  // Показуємо найновішу неволодіну тему (останню в каталозі), а не прибиту
+  // цвяхами конкретну: інакше кожен реліз теми вимагав би правки тут.
+  const buyable = shop.data.themes.filter(
+    (t) => t.tier === "premium" && !t.comingSoon && !t.owned,
+  );
+  const target = buyable[buyable.length - 1] ?? null;
 
   if (!target) return null;
 

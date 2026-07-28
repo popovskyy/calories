@@ -2,32 +2,34 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { kyivHourNow, todayYMD } from "@/lib/date";
-import { generateDayAdvice } from "@/lib/gemini-advice";
+import {
+  dayPartOfHour,
+  generateDayAdvice,
+  type AdviceMood,
+  type DayPart,
+} from "@/lib/gemini-advice";
 import { AiError } from "@/lib/ai-error";
 import { GOAL_LABELS, calcMacroTargets, isGoal } from "@/lib/calories";
-import type { AdviceMood } from "@/lib/gemini-advice";
 import type { AdviceResponse } from "@/lib/types";
-
-/** mood зберігається рядком у БД — звужуємо на читанні. */
-function toMood(v: string): AdviceMood {
-  return v === "good" || v === "over" ? v : "mixed";
-}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** З якої години за Києвом день вважається «підбитим». */
-const ADVICE_HOUR = 20;
-/** Менше двох записів — розбирати нема чого. */
-const MIN_MEALS = 2;
+/** mood/dayPart зберігаються рядками — звужуємо на читанні з БД. */
+function toMood(v: string): AdviceMood {
+  return v === "good" || v === "over" ? v : "mixed";
+}
+function toPart(v: string): DayPart {
+  return v === "morning" || v === "day" ? v : "evening";
+}
 
 /**
- * GET /api/advice — вечірній розбір раціону від ШІ.
+ * GET /api/advice — розбір раціону від ШІ, актуальний на момент відкриття.
  *
- * Гейт по годині (20:00 Kyiv) стоїть на сервері, а не лише в UI: інакше
- * будь-хто міг би смикати платний ШІ-виклик хоч зранку. Результат кешується
- * в DailyAdvice — одна порада на день; перегенерація лише коли після неї
- * з'явились нові записи їжі (вечеря після поради).
+ * Порада живе весь день і змінюється разом із ним: зранку коментує сніданок,
+ * увечері підбиває підсумок. Щоб не бити в платний API на кожне відкриття
+ * Огляду, результат кешується в DailyAdvice і перегенеровується лише коли
+ * змінилось те, що впливає на текст, — кількість записів або частина доби.
  */
 export async function GET() {
   const auth = await requireSession();
@@ -35,10 +37,7 @@ export async function GET() {
 
   const userId = auth.session.userId;
   const date = todayYMD();
-
-  if (kyivHourNow() < ADVICE_HOUR) {
-    return NextResponse.json({ ready: false, reason: "early" } satisfies AdviceResponse);
-  }
+  const dayPart = dayPartOfHour(kyivHourNow());
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -68,14 +67,17 @@ export async function GET() {
     return NextResponse.json({ error: "Користувача не знайдено" }, { status: 404 });
   }
 
-  if (user.meals.length < MIN_MEALS) {
-    return NextResponse.json({ ready: false, reason: "not_enough" } satisfies AdviceResponse);
+  // Порожній день — єдиний випадок, коли говорити нема про що.
+  if (user.meals.length === 0) {
+    return NextResponse.json({ ready: false, reason: "no_meals" } satisfies AdviceResponse);
   }
 
   const cached = await prisma.dailyAdvice.findUnique({
     where: { userId_date: { userId, date } },
   });
-  if (cached && cached.mealCount >= user.meals.length) {
+  const fresh =
+    cached && cached.mealCount === user.meals.length && cached.dayPart === dayPart;
+  if (cached && fresh) {
     return NextResponse.json({
       ready: true,
       date,
@@ -83,6 +85,7 @@ export async function GET() {
       body: cached.body,
       tip: cached.tip,
       mood: toMood(cached.mood),
+      dayPart: toPart(cached.dayPart),
     } satisfies AdviceResponse);
   }
 
@@ -108,31 +111,31 @@ export async function GET() {
       proteinTarget: macros.protein,
       goalLabel: GOAL_LABELS[goal],
       name: user.name,
+      dayPart,
     });
 
+    const row = {
+      headline: advice.headline,
+      body: advice.body,
+      tip: advice.tip,
+      mood: advice.mood,
+      mealCount: user.meals.length,
+      dayPart,
+    };
     await prisma.dailyAdvice.upsert({
       where: { userId_date: { userId, date } },
-      create: {
-        userId,
-        date,
-        headline: advice.headline,
-        body: advice.body,
-        tip: advice.tip,
-        mood: advice.mood,
-        mealCount: user.meals.length,
-      },
-      update: {
-        headline: advice.headline,
-        body: advice.body,
-        tip: advice.tip,
-        mood: advice.mood,
-        mealCount: user.meals.length,
-      },
+      create: { userId, date, ...row },
+      update: row,
     });
 
-    return NextResponse.json({ ready: true, date, ...advice } satisfies AdviceResponse);
+    return NextResponse.json({
+      ready: true,
+      date,
+      ...advice,
+      dayPart,
+    } satisfies AdviceResponse);
   } catch (e) {
-    // ШІ лежить — віддаємо вчорашній кеш, якщо він є, інакше просто мовчимо.
+    // ШІ лежить — краще показати трохи застарілий розбір, ніж порожнечу.
     if (cached) {
       return NextResponse.json({
         ready: true,
@@ -141,12 +144,13 @@ export async function GET() {
         body: cached.body,
         tip: cached.tip,
         mood: toMood(cached.mood),
+        dayPart: toPart(cached.dayPart),
       } satisfies AdviceResponse);
     }
     const status = e instanceof AiError ? e.status : 502;
     console.error("[advice]", e);
     return NextResponse.json(
-      { error: "Не вдалося зібрати розбір дня" },
+      { error: "Не вдалося зібрати розбір раціону" },
       { status },
     );
   }

@@ -60,7 +60,12 @@ export default function ProfilePage() {
       </header>
 
       <div className="mcard flex items-center gap-3 p-4">
-        <Avatar name={user.name} avatarUrl={user.avatarUrl} size={64} />
+        <Avatar
+          name={user.name}
+          avatarUrl={user.avatarUrl}
+          size={64}
+          frame={user.frame}
+        />
         <div className="min-w-0 flex-1">
           <div className="text-[20px] font-semibold text-[var(--color-text)]">{user.name}</div>
           <div className="text-[15px] text-[var(--color-muted3)]">@{user.username}</div>

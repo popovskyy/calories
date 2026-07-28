@@ -7,7 +7,7 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { CalorieHero } from "@/components/hero/CalorieHero";
 import { DailyCardsRow } from "@/components/DailyCardsRow";
 import { EpicCard } from "@/components/EpicCard";
-import { EveningAdvice } from "@/components/EveningAdvice";
+import { DietAdvice } from "@/components/DietAdvice";
 import { MacroTiles } from "@/components/MacroTiles";
 import { QuestChip } from "@/components/QuestChip";
 import { ThemeAspirationHint } from "@/components/ThemeAspirationHint";
@@ -121,8 +121,8 @@ export default function DashboardPage() {
       {/* Один квест тижня видимий без dump списку на home */}
       <QuestChip onOpen={openQuests} />
 
-      {/* Підсумок дня — з'являється лише ввечері, коли є що розбирати */}
-      <EveningAdvice />
+      {/* Розбір раціону — оновлюється разом із днем, мовчить лише на порожньому */}
+      <DietAdvice />
 
       {/*
         Вага / квести / хроніки / графік — поза першим екраном.
