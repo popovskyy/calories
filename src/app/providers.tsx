@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { ThemeSync } from "@/components/ThemeSync";
 import { ThemeEquipFlash } from "@/components/ThemeEquipFlash";
-import { PendingApprovalGate } from "@/components/PendingApprovalGate";
+import { AccessGate } from "@/components/AccessGate";
 
 /** Екрани без сесії користувача — там /api/auth/me лише дав би зайвий 401. */
 function isSignedOutRoute(pathname: string): boolean {
@@ -34,7 +34,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {signedOut ? null : <ThemeSync />}
       {children}
-      {signedOut ? null : <PendingApprovalGate />}
+      {signedOut ? null : <AccessGate />}
       <ThemeEquipFlash />
       <Toaster
         position="top-center"

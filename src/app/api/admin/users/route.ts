@@ -19,11 +19,24 @@ export async function GET() {
     include: {
       skins: { select: { skinId: true } },
       themes: { select: { themeId: true } },
+      // Останній запис їжі — без нього «блокувати того, хто не займається»
+      // перетворюється на гадання: в списку не видно, хто взагалі закинув.
+      meals: {
+        where: { status: { not: "cancelled" } },
+        orderBy: { date: "desc" },
+        take: 1,
+        select: { date: true },
+      },
     },
   });
   // Непідтверджені зверху — щоб адмін одразу бачив чергу.
   const sorted = [...users].sort((a, b) => Number(a.approved) - Number(b.approved));
-  return NextResponse.json(sorted.map(toUserDTO));
+  return NextResponse.json(
+    sorted.map((u) => ({
+      ...toUserDTO(u),
+      lastEntryDate: u.meals[0]?.date ?? null,
+    })),
+  );
 }
 
 const currentYear = new Date().getFullYear();
@@ -52,6 +65,10 @@ const updateSchema = z.object({
   avatarUrl: z.string().nullable().optional(),
   coins: z.number().int().min(0).max(10_000_000).optional(),
   approved: z.boolean().optional(),
+  /** true — призупинити доступ, false — повернути. */
+  blocked: z.boolean().optional(),
+  /** Причина; порожній рядок = без пояснення (юзер побачить дефолтний текст). */
+  blockReason: z.string().trim().max(300).nullable().optional(),
   recalcTarget: z.boolean().optional(),
 });
 
@@ -75,6 +92,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const wasApproved = existing.approved;
+  const wasBlocked = existing.blockedAt != null;
 
   if (rest.username && rest.username.toLowerCase() !== existing.username) {
     const clash = await prisma.user.findUnique({
@@ -118,6 +136,19 @@ export async function PATCH(req: NextRequest) {
       ...(rest.avatarUrl !== undefined ? { avatarUrl: rest.avatarUrl } : {}),
       ...(rest.coins !== undefined ? { coins: rest.coins } : {}),
       ...(rest.approved !== undefined ? { approved: rest.approved } : {}),
+      // blockedAt — і прапорець, і дата події: розблокування чистить обидва
+      // поля, щоб у базі не лишалось «привидів» старої причини.
+      ...(rest.blocked === true
+        ? {
+            blockedAt: existing.blockedAt ?? new Date(),
+            blockReason: rest.blockReason?.trim() || null,
+          }
+        : {}),
+      ...(rest.blocked === false ? { blockedAt: null, blockReason: null } : {}),
+      // Правка самої причини без зміни статусу (уточнити формулювання).
+      ...(rest.blocked === undefined && rest.blockReason !== undefined
+        ? { blockReason: rest.blockReason?.trim() || null }
+        : {}),
       targetCalories,
     },
     include: {
@@ -148,6 +179,29 @@ export async function PATCH(req: NextRequest) {
       title: "Монети нараховано",
       body: `Адмін нарахував +${delta.toLocaleString("uk-UA")} монет. Баланс: ${rest.coins.toLocaleString("uk-UA")}.`,
       url: "/shop",
+      dedupeKey: null,
+    }).catch(console.error);
+  }
+
+  // Пуш про блокування дійде лише на вже підписані пристрої й тільки якщо
+  // юзер не в додатку — але це єдиний спосіб пояснити зникнення доступу тому,
+  // хто зараз не дивиться на екран. Сам оверлей покаже причину при вході.
+  if (rest.blocked === true && !wasBlocked) {
+    void notifyUser(id, {
+      kind: "system",
+      title: "Доступ призупинено",
+      body: rest.blockReason?.trim() || "Адмін тимчасово закрив доступ до акаунта.",
+      url: "/",
+      dedupeKey: null,
+    }).catch(console.error);
+  }
+
+  if (rest.blocked === false && wasBlocked) {
+    void notifyUser(id, {
+      kind: "system",
+      title: "Доступ відновлено",
+      body: "Акаунт знову відкритий — можна вести щоденник далі.",
+      url: "/",
       dedupeKey: null,
     }).catch(console.error);
   }

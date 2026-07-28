@@ -83,8 +83,12 @@ export function useMe() {
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    // Поки чекаємо апрув — підтягуємо статус без перезавантаження.
-    refetchInterval: (q) => (q.state.data && !q.state.data.approved ? 8_000 : false),
+    // Поки доступ закритий (черга на апрув або блокування) — підтягуємо
+    // статус самі, щоб оверлей зник без перезавантаження сторінки.
+    refetchInterval: (q) => {
+      const u = q.state.data;
+      return u && (!u.approved || u.blocked) ? 8_000 : false;
+    },
   });
 }
 
@@ -423,7 +427,7 @@ export function useAdvice() {
   });
 }
 
-/** Кнопка «Отримати фідбек» — просить ШІ згенерувати звіт саме зараз. */
+/** Кнопка «Дізнатись вердикт» — просить ШІ згенерувати звіт саме зараз. */
 export function useForceAdvice() {
   const qc = useQueryClient();
   return useMutation({

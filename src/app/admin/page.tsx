@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, RefreshCw, Save, Trash2 } from "lucide-react";
+import { LogOut, RefreshCw, Save, ShieldBan, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/Avatar";
 import { AdminEditor } from "@/components/admin/AdminEditor";
@@ -13,7 +13,8 @@ import { Field, inputClass } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { GOAL_LABELS, type Goal, type Sex } from "@/lib/calories";
-import type { UserDTO } from "@/lib/types";
+import { fromYMD, humanDate, todayYMD } from "@/lib/date";
+import type { AdminUserDTO, UserDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
 type Tab = "users" | "skins" | "quests" | "entries";
@@ -28,9 +29,10 @@ const TABS: ReadonlyArray<readonly [Tab, string]> = [
 export default function AdminPage() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("users");
-  const [users, setUsers] = useState<UserDTO[]>([]);
+  const [users, setUsers] = useState<AdminUserDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<UserDTO | null>(null);
+  const [blockReason, setBlockReason] = useState("");
   const [draft, setDraft] = useState<Partial<UserDTO> & { password?: string }>({});
   const [saving, setSaving] = useState(false);
   const [recalcing, setRecalcing] = useState(false);
@@ -61,11 +63,13 @@ export default function AdminPage() {
   const openEdit = (u: UserDTO) => {
     setSelected(u);
     setDraft({ ...u, password: "" });
+    setBlockReason(u.blockReason ?? "");
   };
 
   const closeEdit = () => {
     setSelected(null);
     setDraft({});
+    setBlockReason("");
   };
 
   const save = async () => {
@@ -168,6 +172,40 @@ export default function AdminPage() {
     }
   };
 
+  /**
+   * Блокування — окрема дія, а не частина «Зберегти»: воно миттєво вибиває
+   * людину з додатка, тож не має їхати причепом до правки ваги чи монет.
+   */
+  const setBlocked = async (blocked: boolean) => {
+    if (!selected) return;
+    if (blocked && !confirm(`Заблокувати «${selected.name}»? Доступ закриється одразу.`)) {
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selected.id,
+          blocked,
+          blockReason: blocked ? blockReason.trim() || null : null,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Помилка");
+      toast.success(blocked ? "Доступ заблоковано" : "Доступ відновлено");
+      setSelected(body);
+      setDraft({ ...body, password: "" });
+      setBlockReason(body.blockReason ?? "");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Помилка");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const remove = async (u: UserDTO) => {
     if (!confirm(`Видалити «${u.name}» та всі його записи?`)) return;
     setRemovingId(u.id);
@@ -191,6 +229,12 @@ export default function AdminPage() {
     await fetch("/api/admin/logout", { method: "POST" });
     router.replace("/admin/login");
   };
+
+  // Активність обраного юзера — прямо в блоці доступу, щоб рішення «блокувати
+  // чи ні» не вимагало гортати список назад.
+  const selectedIdle = idleHint(
+    selected ? (users.find((u) => u.id === selected.id)?.lastEntryDate ?? null) : null,
+  );
 
   const subtitle =
     tab === "users"
@@ -308,11 +352,17 @@ export default function AdminPage() {
                             @{u.username} · {GOAL_LABELS[u.goal]}
                           </span>
                           <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {u.blocked ? (
+                              <span className="tag bg-[color-mix(in_srgb,var(--color-red)_18%,transparent)] text-[var(--color-red)]">
+                                заблокований
+                              </span>
+                            ) : null}
                             {u.approved ? null : (
                               <span className="tag bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[var(--color-accent)]">
                                 очікує
                               </span>
                             )}
+                            <IdleTag lastEntryDate={u.lastEntryDate} />
                             <span className="tag tag-accent tabular-nums">
                               {u.coins} монет
                             </span>
@@ -496,26 +546,73 @@ export default function AdminPage() {
                     </Field>
                   </div>
 
-                  <div className="flex flex-col gap-2 pt-1">
+                  {/*
+                    Доступ окремою секцією від полів профілю: тут дії, що
+                    вмикають/вимикають людину, і вони не мають виглядати як
+                    ще одне поле форми, яке зберігається кнопкою «Зберегти».
+                  */}
+                  <div className="mt-1 flex flex-col gap-2 rounded-[var(--radius-md)] bg-[var(--color-tile)] p-3">
+                    <span className="lbl !mb-0">Доступ</span>
+
                     {draft.approved === false ? (
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-block"
-                        disabled={saving}
-                        onClick={() => void setApproved(true)}
-                      >
-                        Підтвердити доступ
-                      </button>
+                      <>
+                        <p className="text-[13px] leading-snug text-[var(--color-muted3)]">
+                          Акаунт ще не підтверджений — чекає на твоє рішення.
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-block btn-sm"
+                          disabled={saving}
+                          onClick={() => void setApproved(true)}
+                        >
+                          Підтвердити доступ
+                        </button>
+                      </>
+                    ) : draft.blocked ? (
+                      <>
+                        <p className="text-[13px] leading-snug text-[var(--color-red)]">
+                          Заблокований. Юзер бачить причину при спробі входу.
+                        </p>
+                        {draft.blockReason ? (
+                          <p className="text-[13px] leading-snug text-[var(--color-muted2)]">
+                            «{draft.blockReason}»
+                          </p>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-block btn-sm"
+                          disabled={saving}
+                          onClick={() => void setBlocked(false)}
+                        >
+                          <ShieldCheck size={15} /> Розблокувати
+                        </button>
+                      </>
                     ) : (
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-block"
-                        disabled={saving}
-                        onClick={() => void setApproved(false)}
-                      >
-                        Закрити доступ
-                      </button>
+                      <>
+                        <p className="text-[13px] leading-snug text-[var(--color-muted3)]">
+                          {selectedIdle ??
+                            "Доступ відкритий. Заблокований юзер не зайде, але всі його записи лишаються."}
+                        </p>
+                        <input
+                          className={inputClass}
+                          placeholder="Причина (побачить юзер): напр. «Тиждень без записів»"
+                          maxLength={300}
+                          value={blockReason}
+                          onChange={(e) => setBlockReason(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-block btn-sm text-[var(--color-red)]"
+                          disabled={saving}
+                          onClick={() => void setBlocked(true)}
+                        >
+                          <ShieldBan size={15} /> Заблокувати
+                        </button>
+                      </>
                     )}
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-1">
                     <SubmitButton loading={saving} icon={<Save size={16} />}>
                       Зберегти
                     </SubmitButton>
@@ -537,5 +634,47 @@ export default function AdminPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Днів від останнього запису їжі до сьогодні. */
+function idleDays(lastEntryDate: string): number {
+  return Math.floor(
+    (fromYMD(todayYMD()).getTime() - fromYMD(lastEntryDate).getTime()) / 86_400_000,
+  );
+}
+
+/** Рядок про активність для блоку доступу в редакторі. */
+function idleHint(lastEntryDate: string | null): string | null {
+  if (!lastEntryDate) return "Жодного запису їжі — акаунт порожній.";
+  const days = idleDays(lastEntryDate);
+  if (days <= 0) return "Останній запис — сьогодні.";
+  return `Останній запис ${humanDate(lastEntryDate)} — ${days} дн. тому.`;
+}
+
+/**
+ * «Мовчить N днів» у списку — щоб рішення про блокування спиралось на факт, а
+ * не на пам'ять адміна. Мовчання до 3 днів не показуємо: це просто життя, а не
+ * закинутий щоденник.
+ */
+function IdleTag({ lastEntryDate }: { lastEntryDate: string | null }) {
+  if (!lastEntryDate) {
+    return <span className="tag tag-outline">жодного запису</span>;
+  }
+
+  const days = idleDays(lastEntryDate);
+  if (days < 4) return null;
+
+  return (
+    <span
+      className={cn(
+        "tag",
+        days >= 14
+          ? "bg-[color-mix(in_srgb,var(--color-red)_16%,transparent)] text-[var(--color-red)]"
+          : "tag-outline",
+      )}
+    >
+      мовчить {days} дн.
+    </span>
   );
 }

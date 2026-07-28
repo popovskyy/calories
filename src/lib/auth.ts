@@ -67,6 +67,10 @@ export async function getSessionUser(): Promise<UserDTO | null> {
   return toUserDTO(user);
 }
 
+/** Причина за замовчуванням — коли адмін заблокував без пояснення. */
+export const BLOCKED_FALLBACK_REASON =
+  "Адміністратор призупинив доступ до акаунта";
+
 export async function requireSession(opts?: {
   /** Дозволити сесію без апруву (logout / me / password). */
   allowPending?: boolean;
@@ -84,12 +88,26 @@ export async function requireSession(opts?: {
   if (!opts?.allowPending) {
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
-      select: { approved: true },
+      select: { approved: true, blockedAt: true, blockReason: true },
     });
     if (!user) {
       return {
         ok: false,
         response: NextResponse.json({ error: "Потрібен вхід" }, { status: 401 }),
+      };
+    }
+    // Блокування перевіряємо першим: якщо адмін закрив доступ уже після
+    // підтвердження, людині треба сказати саме це, а не «очікуйте апруву».
+    if (user.blockedAt) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          {
+            error: user.blockReason?.trim() || BLOCKED_FALLBACK_REASON,
+            code: "BLOCKED",
+          },
+          { status: 403 },
+        ),
       };
     }
     if (!user.approved) {

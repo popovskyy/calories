@@ -14,9 +14,12 @@ type Ready = Extract<AdviceResponse, { state: "ready" }>;
 /**
  * Звіт дня від ШІ-дієтолога на Огляді — не фонова картка, а кнопка з чітким
  * циклом: до 17:00 задісейблена ("звіт готується…"), після 17:00 активна й
- * чекає тапу ("Отримати фідбек"). Один тап — один запит до ШІ на весь день:
- * щойно відповідь прийшла, кнопка зникає назавжди й лишається сам текст
- * ("Фідбек по сьогоднішньому дню від ШІ"). Наступного дня цикл з нуля.
+ * чекає тапу ("Дізнатись вердикт"). Один тап — один запит до ШІ на весь день:
+ * щойно відповідь прийшла, кнопка зникає назавжди й лишається сам розбір.
+ * Наступного дня цикл з нуля.
+ *
+ * Назва скрізь одна — «Звіт дня»: користувач має впізнавати той самий об'єкт
+ * і до генерації, і після, тож стани відрізняються змістом, а не заголовком.
  */
 export function DietAdvice() {
   const q = useAdvice();
@@ -102,7 +105,7 @@ const STATUS_COPY = {
   },
   requestable: {
     text: "День зібрано. Готовий дізнатись вердикт від ШІ-дієтолога?",
-    button: "Отримати фідбек",
+    button: "Дізнатись вердикт",
   },
 } as const;
 
@@ -201,6 +204,14 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className={cn("mcard overflow-hidden", !seen && "advice-fresh")}
     >
+      {/* Настрій дня читається ще до тексту — тонка смуга у колір вердикту. */}
+      <div
+        className="h-[3px] w-full"
+        style={{
+          background: `linear-gradient(90deg, ${accent}, color-mix(in srgb, ${accent} 8%, transparent))`,
+        }}
+      />
+
       <div className="flex items-start gap-3 p-[18px]">
         <span
           className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)]"
@@ -212,33 +223,43 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
           <Sparkles size={17} />
         </span>
 
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((o) => !o)}
-          className="min-w-0 flex-1 text-left"
-        >
-          <div className="flex items-center gap-1.5">
-            <span className="lbl !mb-0">Фідбек по сьогоднішньому дню від ШІ</span>
-            <ChevronDown
-              size={14}
-              className={cn(
-                "shrink-0 text-[var(--color-muted3)] transition-transform duration-[var(--duration-ui)]",
-                open && "rotate-180",
-              )}
-            />
-          </div>
+        <div className="min-w-0 flex-1">
+          <span className="lbl !mb-0">Звіт дня · ШІ-дієтолог</span>
           <p
             className="mt-1 text-[16px] font-semibold leading-tight"
             style={{ color: accent }}
           >
             {data.headline}
           </p>
-          <p className="mt-1 text-[14px] leading-snug text-[var(--color-muted)]">
+          <p className="mt-1.5 text-[14px] leading-snug text-[var(--color-muted)]">
             {data.body}
           </p>
-        </button>
+        </div>
       </div>
+
+      {/*
+        Порада на завтра лежить під складкою окремим рядком, а не ховається за
+        шевроном біля заголовка: так видно, що там саме «Завтра», і тап іде по
+        повноцінній смузі, а не по 14-піксельній іконці.
+      */}
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "flex w-full items-center justify-between gap-2 border-t border-[var(--color-divider)]",
+          "px-[18px] py-3 text-left transition-[background-color,transform] active:scale-[0.99]",
+        )}
+      >
+        <span className="lbl !mb-0">Що робити завтра</span>
+        <ChevronDown
+          size={16}
+          className={cn(
+            "shrink-0 text-[var(--color-muted3)] transition-transform duration-[var(--duration-ui)]",
+            open && "rotate-180",
+          )}
+        />
+      </button>
 
       <AnimatePresence initial={false}>
         {open ? (
@@ -250,11 +271,15 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
             transition={{ duration: reduce ? 0 : 0.26, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-[var(--color-divider)] px-[18px] py-3.5">
-              <span className="lbl">Завтра</span>
-              <p className="mt-1 text-[14px] leading-snug text-[var(--color-text)]">
-                {data.tip}
-              </p>
+            <div className="px-[18px] pb-[18px]">
+              <div
+                className="rounded-[var(--radius-md)] bg-[var(--color-tile)] p-3.5"
+                style={{ boxShadow: `inset 2px 0 0 ${accent}` }}
+              >
+                <p className="text-[14px] leading-snug text-[var(--color-text)]">
+                  {data.tip}
+                </p>
+              </div>
             </div>
           </motion.div>
         ) : null}

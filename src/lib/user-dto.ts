@@ -54,5 +54,7 @@ export function toUserDTO(user: UserWithSkins): UserDTO {
     startWeightDate: user.startWeightDate ?? null,
     remindersEnabled: user.remindersEnabled,
     approved: user.approved ?? true,
+    blocked: user.blockedAt != null,
+    blockReason: user.blockReason ?? null,
   };
 }

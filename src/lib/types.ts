@@ -45,6 +45,18 @@ export interface UserDTO {
   remindersEnabled: boolean;
   /** false — акаунт чекає підтвердження адміна */
   approved: boolean;
+  /** true — адмін призупинив доступ (окремо від approved: це не черга, а санкція) */
+  blocked: boolean;
+  /** Причина блокування — показується юзеру дослівно */
+  blockReason: string | null;
+}
+
+/**
+ * Юзер у списку адмінки — DTO плюс те, що потрібно для рішення «блокувати чи
+ * ні»: коли востаннє був запис їжі (null = не було жодного).
+ */
+export interface AdminUserDTO extends UserDTO {
+  lastEntryDate: string | null;
 }
 
 /** Нарахована нагорода (для тостів) */

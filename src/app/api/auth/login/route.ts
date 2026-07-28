@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
+  BLOCKED_FALLBACK_REASON,
   createSessionToken,
   setSessionCookie,
   verifyPassword,
@@ -47,6 +48,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "Невірний логін або пароль" },
       { status: 401 },
+    );
+  }
+
+  // Заблокованому сесію не видаємо взагалі: інакше він зайшов би «всередину» і
+  // побачив оверлей, ніби додаток працює. Причину показуємо прямо на екрані
+  // входу — людина має розуміти, за що і до кого йти.
+  if (user.blockedAt) {
+    return NextResponse.json(
+      {
+        error: user.blockReason?.trim() || BLOCKED_FALLBACK_REASON,
+        code: "BLOCKED",
+      },
+      { status: 403 },
     );
   }
 
