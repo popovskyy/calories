@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Flame } from "lucide-react";
 import { playFinisher } from "@/lib/sfx";
+import { haptic } from "@/lib/haptics";
 
 interface SaveCelebrateProps {
   open: boolean;
@@ -93,7 +94,10 @@ export function SaveCelebrate({
   useEffect(() => {
     if (!open) return;
     // Акорд лише за влучний день — щоб звук лишався нагородою, а не фоном.
-    if (inTarget) playFinisher(soundpack);
+    if (inTarget) {
+      playFinisher(soundpack);
+      haptic("success");
+    }
     const t = window.setTimeout(onDone, reduce ? 400 : 1100);
     return () => window.clearTimeout(t);
   }, [open, onDone, reduce, inTarget, soundpack]);

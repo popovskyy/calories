@@ -1,11 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Volume2, VolumeX, Sparkles } from "lucide-react";
+import { Volume2, VolumeX, Sparkles, Vibrate } from "lucide-react";
 import {
   getSettings,
   setSound,
   setVfx,
+  setHaptics,
   subscribeSettings,
 } from "@/lib/settings";
 
@@ -14,9 +15,9 @@ function subscribeNowhere() {
 }
 
 /**
- * Перемикачі звуку й ефектів для профілю. Обидва зберігаються в
- * localStorage і читаються напряму з sfx.ts / GlobalClickFx — без
- * серверного стану, миттєво і без мигання при переході між сторінками.
+ * Перемикачі звуку, ефектів і вібрації для профілю. Зберігаються в
+ * localStorage і читаються напряму з sfx.ts / haptics.ts / GlobalClickFx —
+ * без серверного стану, миттєво і без мигання при переході між сторінками.
  */
 export function SoundSettingsCard() {
   const mounted = useSyncExternalStore(
@@ -91,6 +92,39 @@ export function SoundSettingsCard() {
           }
         >
           {settings.vfx ? "ON" : "OFF"}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setHaptics(!settings.haptics)}
+        className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
+      >
+        <div
+          className={
+            settings.haptics
+              ? "flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-tile)] text-[var(--color-accent)]"
+              : "flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[var(--color-tile)] text-[var(--color-muted3)]"
+          }
+        >
+          <Vibrate size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[16px] font-semibold text-[var(--color-text)]">
+            Вібрація
+          </div>
+          <div className="text-[13px] text-[var(--color-muted3)]">
+            Тактильний відгук на тапи (Android)
+          </div>
+        </div>
+        <span
+          className={
+            settings.haptics
+              ? "text-[13px] font-semibold text-[var(--color-green)]"
+              : "text-[13px] text-[var(--color-muted3)]"
+          }
+        >
+          {settings.haptics ? "ON" : "OFF"}
         </span>
       </button>
     </div>

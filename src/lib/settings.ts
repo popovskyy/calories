@@ -11,10 +11,12 @@ import { useSyncExternalStore } from "react";
 export interface Settings {
   sound: boolean;
   vfx: boolean;
+  /** Vibration API — лише Android Chromium; на iOS завжди no-op. */
+  haptics: boolean;
 }
 
 const KEY = "calories:settings:v1";
-const DEFAULTS: Settings = { sound: true, vfx: true };
+const DEFAULTS: Settings = { sound: true, vfx: true, haptics: true };
 
 let cache: Settings = DEFAULTS;
 const listeners = new Set<() => void>();
@@ -25,6 +27,7 @@ function normalize(v: unknown): Settings {
   return {
     sound: typeof o.sound === "boolean" ? o.sound : DEFAULTS.sound,
     vfx: typeof o.vfx === "boolean" ? o.vfx : DEFAULTS.vfx,
+    haptics: typeof o.haptics === "boolean" ? o.haptics : DEFAULTS.haptics,
   };
 }
 
@@ -68,6 +71,10 @@ export function setSound(sound: boolean) {
 
 export function setVfx(vfx: boolean) {
   persist({ ...cache, vfx });
+}
+
+export function setHaptics(haptics: boolean) {
+  persist({ ...cache, haptics });
 }
 
 export function subscribeSettings(cb: () => void): () => void {

@@ -12,6 +12,9 @@
  * клік), а `data-sfx="none"` дає моментам із власним фінішером (збереження
  * їжі тощо) лишитись беззвучними тут, щоб не забивати їхній звук.
  *
+ * Вібрація (Android Vibration API) йде тим самим `kind` через `haptics.ts`;
+ * на iOS тихо no-op. Вимикається перемикачем у профілі.
+ *
  * Іскри — не canvas: 3–4 короткоживучі `motion.span` у портал-оверлеї,
  * як у SaveCelebrate. Дешево, вимикається разом з prefers-reduced-motion
  * і з перемикачем «Візуальні ефекти» в профілі.
@@ -20,6 +23,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { playUiClick, playUiConfirm, playUiDestructive, playUiNav } from "@/lib/sfx";
+import { haptic, type HapticKind } from "@/lib/haptics";
 import { getSettings } from "@/lib/settings";
 import { useCurrentUser } from "@/hooks/useQueries";
 
@@ -74,6 +78,16 @@ function playForKind(kind: SfxKind, pack: string) {
   }
 }
 
+function hapticForKind(kind: Exclude<SfxKind, "none">) {
+  const map: Record<Exclude<SfxKind, "none">, HapticKind> = {
+    click: "click",
+    nav: "nav",
+    confirm: "confirm",
+    destructive: "destructive",
+  };
+  haptic(map[kind]);
+}
+
 export function GlobalClickFx() {
   const reduce = useReducedMotion();
   const { user } = useCurrentUser();
@@ -97,6 +111,7 @@ export function GlobalClickFx() {
       if (kind === "none") return;
 
       if (getSettings().sound) playForKind(kind, packRef.current);
+      hapticForKind(kind);
 
       if (!reduce && getSettings().vfx) {
         const id = ++seq.current;
