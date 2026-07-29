@@ -40,17 +40,6 @@ function Body({ entry }: { entry: ArenaEntry }) {
       ? Math.min(1, Math.max(0, entry.todayCalories / entry.targetCalories))
       : 0;
 
-  // Ваги суперника ми не знаємо (та й показувати чужу вагу не варто), тож
-  // орієнтир у грамах порахувати чесно неможливо — показуємо частку калорій
-  // від кожного макроса: це видно з самих записів і одразу читає перекос.
-  const kcal = {
-    protein: entry.protein * 4,
-    fats: entry.fats * 9,
-    carbs: entry.carbs * 4,
-  };
-  const kcalTotal = kcal.protein + kcal.fats + kcal.carbs;
-  const share = (v: number) => (kcalTotal > 0 ? v / kcalTotal : 0);
-
   const stageName =
     EVOLUTION_STAGES[entry.stage - 1]?.nameUk ?? EVOLUTION_STAGES[0]!.nameUk;
 
@@ -137,26 +126,26 @@ function Body({ entry }: { entry: ArenaEntry }) {
         </div>
       </section>
 
-      {/* БЖУ */}
+      {/* БЖУ — та сама шкала, що на огляді: з'їдено / норма */}
       <section className="flex flex-col gap-2">
         <span className="lbl">Білки · жири · вуглеводи</span>
         <div className="flex gap-2">
           <Macro
             label="Білки"
             grams={entry.protein}
-            share={share(kcal.protein)}
+            target={entry.macroTargets.protein}
             color="var(--color-macro-protein)"
           />
           <Macro
             label="Жири"
             grams={entry.fats}
-            share={share(kcal.fats)}
+            target={entry.macroTargets.fats}
             color="var(--color-macro-fats)"
           />
           <Macro
             label="Вугл."
             grams={entry.carbs}
-            share={share(kcal.carbs)}
+            target={entry.macroTargets.carbs}
             color="var(--color-macro-carbs)"
           />
         </div>
@@ -191,18 +180,20 @@ function Body({ entry }: { entry: ArenaEntry }) {
   );
 }
 
-/** Грами + частка калорій дня, яку дав цей макрос. */
+/** Грами з'їденого + прогрес до особистої норми (як MacroTiles на огляді). */
 function Macro({
   label,
   grams,
-  share,
+  target,
   color,
 }: {
   label: string;
   grams: number;
-  share: number;
+  target: number;
   color: string;
 }) {
+  const over = target > 0 && grams > target;
+  const ratio = target > 0 ? Math.min(grams / target, 1) : 0;
   return (
     <div className="flex-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] p-2 text-center">
       <div className="text-[11px] text-[var(--color-muted3)]">{label}</div>
@@ -213,11 +204,14 @@ function Macro({
       <div className="mt-1 h-1 overflow-hidden rounded-full bg-[var(--color-track)]">
         <div
           className="h-full rounded-full"
-          style={{ width: `${share * 100}%`, background: color }}
+          style={{
+            width: `${ratio * 100}%`,
+            background: over ? "var(--color-red)" : color,
+          }}
         />
       </div>
       <div className="mt-0.5 text-[10px] tabular-nums text-[var(--color-muted3)]">
-        {Math.round(share * 100)}%
+        {target} г
       </div>
     </div>
   );

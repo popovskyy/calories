@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
-import { kyivHourNow, todayYMD } from "@/lib/date";
-import { generateDayAdvice, type AdviceMood } from "@/lib/gemini-advice";
+import {
+  fromYMD,
+  humanDate,
+  kyivHourNow,
+  shortDate,
+  todayYMD,
+  weekDays,
+  weekStartYMD,
+} from "@/lib/date";
+import {
+  generateDayAdvice,
+  generateWeekAdvice,
+  type AdviceMood,
+} from "@/lib/gemini-advice";
 import { AiError } from "@/lib/ai-error";
 import { GOAL_LABELS, calcMacroTargets, isGoal } from "@/lib/calories";
 import type { AdviceResponse } from "@/lib/types";
@@ -10,39 +22,56 @@ import type { AdviceResponse } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Звіт відкривається лише після 17:00 за Києвом — день уже фактично закритий. */
-const UNLOCK_HOUR = 17;
+/** Денний звіт (Пн–Сб) відкривається після 18:00 за Києвом. */
+const UNLOCK_HOUR = 18;
+/** Тижневий фідбек (неділя) — після 15:00; до того — «збір інфи». */
+const WEEKLY_UNLOCK_HOUR = 15;
 
 /** mood зберігається рядком — звужуємо на читанні з БД. */
 function toMood(v: string): AdviceMood {
   return v === "good" || v === "over" ? v : "mixed";
 }
 
+function isSunday(ymd: string): boolean {
+  return fromYMD(ymd).getUTCDay() === 0;
+}
+
 /**
- * GET /api/advice — звіт дня від ШІ, один раз на добу, за запитом користувача.
+ * GET /api/advice — звіт від ШІ, один раз на період, за запитом користувача.
  *
- * Це не фонова штука: до 17:00 звіт просто недоступний ("locked"), після —
- * якщо за день є хоч один запис їжі, картка показує кнопку ("requestable") і
- * чекає, поки користувач сам натисне й попросить вердикт (`?force=1`). Щойно
- * ШІ відповів — результат назавжди кешується в DailyAdvice на цю дату:
- * кнопка зникає, показується сам текст ("ready"). Наступного дня цикл
- * починається знову.
+ * Пн–Сб: денний звіт після 18:00 (DailyAdvice за сьогодні).
+ * Неділя: тижневий фідбек після 15:00 (WeeklyAdvice за weekStart); денний
+ * не генерується і не показується. До 15:00 — "locked" («збір інфи»).
+ *
+ * До unlock — "locked". Після — якщо є їжа за період: "requestable", поки
+ * користувач не натисне (`?force=1`). Результат кешується.
  */
 export async function GET(request: Request) {
   const auth = await requireSession();
   if (!auth.ok) return auth.response;
 
   const force = new URL(request.url).searchParams.get("force") === "1";
-
   const userId = auth.session.userId;
   const date = todayYMD();
 
+  if (isSunday(date)) {
+    return handleWeekly(userId, date, force);
+  }
+  return handleDaily(userId, date, force);
+}
+
+async function handleDaily(
+  userId: string,
+  date: string,
+  force: boolean,
+): Promise<NextResponse> {
   const cached = await prisma.dailyAdvice.findUnique({
     where: { userId_date: { userId, date } },
   });
   if (cached) {
     return NextResponse.json({
       state: "ready",
+      kind: "daily",
       date,
       headline: cached.headline,
       body: cached.body,
@@ -52,7 +81,10 @@ export async function GET(request: Request) {
   }
 
   if (kyivHourNow() < UNLOCK_HOUR) {
-    return NextResponse.json({ state: "locked" } satisfies AdviceResponse);
+    return NextResponse.json({
+      state: "locked",
+      kind: "daily",
+    } satisfies AdviceResponse);
   }
 
   const user = await prisma.user.findUnique({
@@ -83,15 +115,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Користувача не знайдено" }, { status: 404 });
   }
 
-  // Порожній день — єдиний випадок, коли говорити нема про що.
   if (user.meals.length === 0) {
-    return NextResponse.json({ state: "no_meals" } satisfies AdviceResponse);
+    return NextResponse.json({
+      state: "no_meals",
+      kind: "daily",
+    } satisfies AdviceResponse);
   }
 
-  // Дані вже є, час настав — але поки користувач сам не тисне кнопку,
-  // нічого фоном не генеруємо й не б'ємо в платний API.
   if (!force) {
-    return NextResponse.json({ state: "requestable" } satisfies AdviceResponse);
+    return NextResponse.json({
+      state: "requestable",
+      kind: "daily",
+    } satisfies AdviceResponse);
   }
 
   const totals = user.meals.reduce(
@@ -133,6 +168,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       state: "ready",
+      kind: "daily",
       date,
       ...advice,
     } satisfies AdviceResponse);
@@ -141,6 +177,176 @@ export async function GET(request: Request) {
     console.error("[advice]", e);
     return NextResponse.json(
       { error: "Не вдалося зібрати звіт дня" },
+      { status },
+    );
+  }
+}
+
+async function handleWeekly(
+  userId: string,
+  today: string,
+  force: boolean,
+): Promise<NextResponse> {
+  const weekStart = weekStartYMD(today);
+
+  const cached = await prisma.weeklyAdvice.findUnique({
+    where: { userId_weekStart: { userId, weekStart } },
+  });
+  if (cached) {
+    return NextResponse.json({
+      state: "ready",
+      kind: "weekly",
+      date: weekStart,
+      headline: cached.headline,
+      body: cached.body,
+      tip: cached.tip,
+      mood: toMood(cached.mood),
+    } satisfies AdviceResponse);
+  }
+
+  if (kyivHourNow() < WEEKLY_UNLOCK_HOUR) {
+    return NextResponse.json({
+      state: "locked",
+      kind: "weekly",
+    } satisfies AdviceResponse);
+  }
+
+  const days = weekDays(weekStart).filter((d) => d <= today);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      name: true,
+      goal: true,
+      weight: true,
+      targetCalories: true,
+      meals: {
+        where: { date: { in: days }, status: { not: "cancelled" } },
+        orderBy: { createdAt: "asc" },
+        select: {
+          date: true,
+          description: true,
+          calories: true,
+          protein: true,
+          fats: true,
+          carbs: true,
+        },
+      },
+      activities: {
+        where: { date: { in: days }, status: { not: "cancelled" } },
+        select: { date: true, caloriesBurned: true },
+      },
+    },
+  });
+  if (!user) {
+    return NextResponse.json({ error: "Користувача не знайдено" }, { status: 404 });
+  }
+
+  if (user.meals.length === 0) {
+    return NextResponse.json({
+      state: "no_meals",
+      kind: "weekly",
+    } satisfies AdviceResponse);
+  }
+
+  if (!force) {
+    return NextResponse.json({
+      state: "requestable",
+      kind: "weekly",
+    } satisfies AdviceResponse);
+  }
+
+  const byDay = new Map<
+    string,
+    {
+      calories: number;
+      protein: number;
+      fats: number;
+      carbs: number;
+      mealsCount: number;
+      burned: number;
+      mealHints: string[];
+    }
+  >();
+  for (const d of days) {
+    byDay.set(d, {
+      calories: 0,
+      protein: 0,
+      fats: 0,
+      carbs: 0,
+      mealsCount: 0,
+      burned: 0,
+      mealHints: [],
+    });
+  }
+  for (const m of user.meals) {
+    const row = byDay.get(m.date);
+    if (!row) continue;
+    row.calories += m.calories;
+    row.protein += m.protein;
+    row.fats += m.fats;
+    row.carbs += m.carbs;
+    row.mealsCount += 1;
+    if (row.mealHints.length < 4) row.mealHints.push(m.description);
+  }
+  for (const a of user.activities) {
+    const row = byDay.get(a.date);
+    if (!row) continue;
+    row.burned += a.caloriesBurned;
+  }
+
+  const goal = isGoal(user.goal) ? user.goal : "maintain";
+  const macros = calcMacroTargets(user.targetCalories, user.weight);
+  const weekEnd = days[days.length - 1] ?? today;
+  const weekLabel = `${shortDate(weekStart)} – ${shortDate(weekEnd)}`;
+
+  try {
+    const advice = await generateWeekAdvice({
+      days: days.map((d) => {
+        const row = byDay.get(d)!;
+        return {
+          date: d,
+          label: humanDate(d),
+          calories: row.calories - row.burned,
+          protein: Math.round(row.protein),
+          fats: Math.round(row.fats),
+          carbs: Math.round(row.carbs),
+          mealsCount: row.mealsCount,
+          burned: row.burned,
+          mealHints: row.mealHints,
+        };
+      }),
+      targetCalories: user.targetCalories,
+      proteinTarget: macros.protein,
+      goalLabel: GOAL_LABELS[goal],
+      name: user.name,
+      weekLabel,
+    });
+
+    const row = {
+      headline: advice.headline,
+      body: advice.body,
+      tip: advice.tip,
+      mood: advice.mood,
+      mealCount: user.meals.length,
+    };
+    await prisma.weeklyAdvice.upsert({
+      where: { userId_weekStart: { userId, weekStart } },
+      create: { userId, weekStart, ...row },
+      update: row,
+    });
+
+    return NextResponse.json({
+      state: "ready",
+      kind: "weekly",
+      date: weekStart,
+      ...advice,
+    } satisfies AdviceResponse);
+  } catch (e) {
+    const status = e instanceof AiError ? e.status : 502;
+    console.error("[advice:week]", e);
+    return NextResponse.json(
+      { error: "Не вдалося зібрати тижневий фідбек" },
       { status },
     );
   }

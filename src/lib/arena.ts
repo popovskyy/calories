@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { GOAL_LABELS, isGoal, type Goal } from "@/lib/calories";
+import { GOAL_LABELS, calcMacroTargets, isGoal, type Goal } from "@/lib/calories";
 import { getCosmetic } from "@/lib/cosmetics";
 import { computeEvolutionStage, inTargetBand } from "@/lib/economy";
 import type { ArenaEntry } from "@/lib/types";
@@ -64,6 +64,7 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
       avatarUrl: true,
       goal: true,
       targetCalories: true,
+      weight: true,
       title: true,
       frame: true,
       maxStreak: true,
@@ -110,6 +111,8 @@ export async function computeRanking(date: string): Promise<RankedEntry[]> {
       protein: Math.round(u.meals.reduce((s, m) => s + m.protein, 0)),
       fats: Math.round(u.meals.reduce((s, m) => s + m.fats, 0)),
       carbs: Math.round(u.meals.reduce((s, m) => s + m.carbs, 0)),
+      // Вагу в рейтинг не віддаємо — лише готові орієнтири, як на огляді.
+      macroTargets: calcMacroTargets(u.targetCalories, u.weight),
       mealsCount: u.meals.length,
       maxStreak: u.maxStreak,
       inTargetDays: u.totalInTargetDays,

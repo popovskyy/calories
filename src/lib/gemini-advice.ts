@@ -34,17 +34,39 @@ export interface AdviceInput {
   name: string;
 }
 
+export interface WeekDaySummary {
+  date: string;
+  label: string;
+  calories: number;
+  protein: number;
+  fats: number;
+  carbs: number;
+  mealsCount: number;
+  burned: number;
+  /** Короткі описи прийомів — щоб ШІ міг згадати конкретні страви. */
+  mealHints: string[];
+}
+
+export interface WeekAdviceInput {
+  days: WeekDaySummary[];
+  targetCalories: number;
+  proteinTarget: number;
+  goalLabel: string;
+  name: string;
+  weekLabel: string;
+}
+
 /**
  * Тон: елітний фітнес-дієтолог з почуттям гумору — не медична консультація,
  * а щоденний «звіт» від людини, яка бачила тисячі раціонів і вміє про це
  * пожартувати. Гумор живий і трохи зухвалий, але без вульгарності, образ,
  * діагнозів чи справжнього сорому — жарт завжди б'є по звичці, не по людині.
  *
- * Генерується раз на добу, на прохання користувача, після 17:00 — тобто
+ * Генерується раз на добу (Пн–Сб після 18:00), на прохання користувача —
  * день уже фактично закритий, тож текст завжди підбиває підсумок і радить
  * щось на завтра, без застережень «зарано підсумовувати».
  */
-const SYSTEM = `Ти — елітний фітнес-дієтолог з великим досвідом і гострим почуттям гумору.
+const SYSTEM_DAY = `Ти — елітний фітнес-дієтолог з великим досвідом і гострим почуттям гумору.
 Клієнти платять за твої звіти шалені гроші саме тому, що ти кажеш правду смішно,
 а не тому, що ти м'який. Пиши українською, живо, з дотепними життєвими жартами
 й легкою іронією — так, щоб людина посміхнулась і одразу зрозуміла натяк.
@@ -76,6 +98,32 @@ const SYSTEM = `Ти — елітний фітнес-дієтолог з вел�
 
 Без емодзі. Звертайся на "ти".`;
 
+const SYSTEM_WEEK = `Ти — елітний фітнес-дієтолог з великим досвідом і гострим почуттям гумору.
+Клієнти платять за твої тижневі звіти саме тому, що ти бачиш ПАТЕРНИ, а не
+окремі дні, і кажеш про них смішно й по суті. Пиши українською, живо, з
+дотепними жартами й легкою іронією.
+
+Жартуй про звички й наслідки (цукор, фастфуд, диван, "останній раз"), а не
+про зовнішність чи цінність людини. Ніколи не став діагнозів, не згадуй
+хвороби, не переходь на образи.
+
+Це підсумок за ТИЖДЕНЬ (пишеться в неділю) — дивись на тренди: скільки днів
+близько до норми, де були перебори, чи тягне білок, чи є «дірки» без записів.
+Дай пораду на НАСТУПНИЙ тиждень, а не на завтра.
+
+Відповідай СУВОРО JSON:
+- headline: 2–5 слів, дотепний вердикт тижня
+- body: 2–3 речення з гумором про тиждень — згадай конкретні дні/страви з
+  журналу, де це доречно. Людина має впізнати свій тиждень.
+- tip: одна конкретна дія на НАСТУПНИЙ тиждень, з тим самим жартівливим тоном.
+- mood: "good" якщо тиждень загалом тримався, "mixed" якщо були перекоси,
+  "over" якщо перебори домінували
+
+ВАЖЛИВО про калорії: перебір і недобір НЕ рівноцінні. Перебір ламає ціль.
+Помірний недобір на дефіциті — норма. Дні без записів — теж патерн, зауваж.
+
+Без емодзі. Звертайся на "ти".`;
+
 const schema: ResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -87,7 +135,7 @@ const schema: ResponseSchema = {
   required: ["headline", "body", "tip", "mood"],
 };
 
-function buildPrompt(input: AdviceInput): string {
+function buildDayPrompt(input: AdviceInput): string {
   const meals = input.meals
     .map(
       (m) =>
@@ -118,7 +166,46 @@ ${acts}
 білок ${input.totals.protein} г, жири ${input.totals.fats} г, вуглеводи ${input.totals.carbs} г.`;
 }
 
-function normalize(parsed: Record<string, unknown>): DayAdvice {
+function buildWeekPrompt(input: WeekAdviceInput): string {
+  const lines = input.days
+    .map((d) => {
+      const delta = d.calories - input.targetCalories;
+      const deltaLabel =
+        delta === 0
+          ? "влучно"
+          : delta > 0
+            ? `перебір +${delta}`
+            : `недобір ${delta}`;
+      const hints =
+        d.mealHints.length > 0
+          ? ` · ${d.mealHints.slice(0, 4).join("; ")}`
+          : "";
+      return `- ${d.label} (${d.date}): ${d.calories} ккал (${deltaLabel}), б ${d.protein} / ж ${d.fats} / в ${d.carbs}, записів ${d.mealsCount}, спалено ${d.burned}${hints}`;
+    })
+    .join("\n");
+
+  const logged = input.days.filter((d) => d.mealsCount > 0);
+  const avgKcal =
+    logged.length > 0
+      ? Math.round(logged.reduce((s, d) => s + d.calories, 0) / logged.length)
+      : 0;
+  const avgProtein =
+    logged.length > 0
+      ? Math.round(logged.reduce((s, d) => s + d.protein, 0) / logged.length)
+      : 0;
+
+  return `Зараз НЕДІЛЯ — підбиваємо підсумок тижня ${input.weekLabel}.
+
+Гравець: ${input.name}. Ціль: ${input.goalLabel}.
+Денна норма: ${input.targetCalories} ккал, орієнтир білка: ${input.proteinTarget} г.
+Днів із записами: ${logged.length} з ${input.days.length}.
+Середнє за дні з їжею: ${avgKcal} ккал, білок ${avgProtein} г.
+
+По днях:
+${lines || "- немає записів"}`;
+}
+
+function normalize(parsed: Record<string, unknown>, bodyMax = 320): DayAdvice {
   const str = (v: unknown, max: number) =>
     String(v ?? "")
       .replace(/\s+/g, " ")
@@ -129,38 +216,45 @@ function normalize(parsed: Record<string, unknown>): DayAdvice {
     moodRaw === "good" || moodRaw === "over" ? moodRaw : "mixed";
 
   const headline = str(parsed.headline, 60);
-  const body = str(parsed.body, 320);
-  const tip = str(parsed.tip, 200);
+  const body = str(parsed.body, bodyMax);
+  const tip = str(parsed.tip, 220);
   if (!headline || !body) throw new AiError("Порожня порада від ШІ");
   return { headline, body, tip, mood };
 }
 
-async function adviceGemini(input: AdviceInput): Promise<DayAdvice> {
+async function callGemini(
+  system: string,
+  prompt: string,
+  bodyMax: number,
+): Promise<DayAdvice> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new AiError("Не задано GEMINI_API_KEY", 400);
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: SYSTEM,
+    systemInstruction: system,
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: schema,
-      // Вища за аналіз їжі: порада має звучати живою, а не шаблонною.
       temperature: 0.7,
     },
   });
 
-  const result = await model.generateContent([{ text: buildPrompt(input) }]);
+  const result = await model.generateContent([{ text: prompt }]);
   try {
-    return normalize(JSON.parse(result.response.text()));
+    return normalize(JSON.parse(result.response.text()), bodyMax);
   } catch (e) {
     if (e instanceof AiError) throw e;
     throw new AiError("Gemini повернув некоректний JSON");
   }
 }
 
-async function adviceOpenAI(input: AdviceInput): Promise<DayAdvice> {
+async function callOpenAI(
+  system: string,
+  prompt: string,
+  bodyMax: number,
+): Promise<DayAdvice> {
   const key = gptApiKey();
   if (!key) throw new AiError("Не задано GPT_API_KEY", 400);
 
@@ -170,10 +264,10 @@ async function adviceOpenAI(input: AdviceInput): Promise<DayAdvice> {
     response_format: { type: "json_object" },
     temperature: 0.7,
     messages: [
-      { role: "system", content: SYSTEM },
+      { role: "system", content: system },
       {
         role: "user",
-        content: `${buildPrompt(input)}\n\nПоверни JSON: headline, body, tip, mood`,
+        content: `${prompt}\n\nПоверни JSON: headline, body, tip, mood`,
       },
     ],
   });
@@ -182,23 +276,39 @@ async function adviceOpenAI(input: AdviceInput): Promise<DayAdvice> {
       string,
       unknown
     >,
+    bodyMax,
   );
+}
+
+async function withFallback(
+  system: string,
+  prompt: string,
+  bodyMax: number,
+): Promise<DayAdvice> {
+  const preferGpt = process.env.AI_PROVIDER?.trim().toLowerCase() === "openai";
+  if (preferGpt && gptApiKey()) {
+    try {
+      return await callOpenAI(system, prompt, bodyMax);
+    } catch {
+      return await callGemini(system, prompt, bodyMax);
+    }
+  }
+  try {
+    return await callGemini(system, prompt, bodyMax);
+  } catch (e) {
+    if (!gptApiKey()) throw e;
+    return await callOpenAI(system, prompt, bodyMax);
+  }
 }
 
 /** Той самий фолбек-порядок, що в решті ШІ-модулів. */
 export async function generateDayAdvice(input: AdviceInput): Promise<DayAdvice> {
-  const preferGpt = process.env.AI_PROVIDER?.trim().toLowerCase() === "openai";
-  if (preferGpt && gptApiKey()) {
-    try {
-      return await adviceOpenAI(input);
-    } catch {
-      return await adviceGemini(input);
-    }
-  }
-  try {
-    return await adviceGemini(input);
-  } catch (e) {
-    if (!gptApiKey()) throw e;
-    return await adviceOpenAI(input);
-  }
+  return withFallback(SYSTEM_DAY, buildDayPrompt(input), 320);
+}
+
+/** Тижневий підсумок (неділя) — той самий тон, ширший зріз. */
+export async function generateWeekAdvice(
+  input: WeekAdviceInput,
+): Promise<DayAdvice> {
+  return withFallback(SYSTEM_WEEK, buildWeekPrompt(input), 480);
 }

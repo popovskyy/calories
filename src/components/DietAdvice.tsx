@@ -4,22 +4,22 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, RefreshCw, Sparkles } from "lucide-react";
 import { useAdvice, useForceAdvice } from "@/hooks/useQueries";
+import { WeeklyFeedbackButton } from "@/components/WeeklyFeedbackButton";
 import { todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
 import { Skeleton } from "@/components/ui/Skeleton";
-import type { AdviceResponse } from "@/lib/types";
+import type { AdviceKind, AdviceResponse } from "@/lib/types";
 
 type Ready = Extract<AdviceResponse, { state: "ready" }>;
 
 /**
- * Звіт дня від ШІ-дієтолога на Огляді — не фонова картка, а кнопка з чітким
- * циклом: до 17:00 задісейблена ("звіт готується…"), після 17:00 активна й
- * чекає тапу ("Дізнатись вердикт"). Один тап — один запит до ШІ на весь день:
- * щойно відповідь прийшла, кнопка зникає назавжди й лишається сам розбір.
- * Наступного дня цикл з нуля.
- *
- * Назва скрізь одна — «Звіт дня»: користувач має впізнавати той самий об'єкт
- * і до генерації, і після, тож стани відрізняються змістом, а не заголовком.
+ * Звіт від ШІ-дієтолога на Огляді — не фонова картка, а кнопка з чітким
+ * циклом:
+ *  • Пн–Сб: до 18:00 задісейблена, після — «Дізнатись вердикт» (денний звіт).
+ *  • Неділя: до 15:00 «Звіт готується…», після — «Дізнатись вердикт»
+ *    (звіт тижня; денний не показуємо).
+ * Один тап — один запит до ШІ на період; щойно відповідь прийшла, кнопка
+ * зникає й лишається сам розбір.
  */
 export function DietAdvice() {
   const q = useAdvice();
@@ -32,7 +32,7 @@ export function DietAdvice() {
           <Sparkles size={17} />
         </span>
         <div className="min-w-0 flex-1">
-          <span className="lbl !mb-0">Звіт дня</span>
+          <span className="lbl !mb-0">Звіт</span>
           <p className="mt-0.5 text-[13px] text-[var(--color-muted3)]">
             Не вдалося зібрати — ШІ не відповів
           </p>
@@ -52,9 +52,6 @@ export function DietAdvice() {
   const data = q.data;
 
   // Поки перший запит ще в польоті — нейтральний скелетон, а не «locked».
-  // Раніше тут одразу малювався стан «locked» як дефолт, і якщо реальна
-  // відповідь (уже після 17:00) виявлялась іншою — «Звіт готується» встигав
-  // блимнути й миттю замінитись, що читалось як «звіт зник».
   if (!data) return <LoadingCard />;
 
   if (data.state === "ready") return <AdviceCard advice={data} />;
@@ -62,6 +59,7 @@ export function DietAdvice() {
   if (data.state === "requestable") {
     return (
       <StatusCard
+        kind={data.kind}
         state="requestable"
         onRequest={() => force.mutate()}
         pending={force.isPending}
@@ -70,11 +68,12 @@ export function DietAdvice() {
     );
   }
 
-  if (data.state === "no_meals") return <StatusCard state="no_meals" />;
+  if (data.state === "no_meals") {
+    return <StatusCard kind={data.kind} state="no_meals" />;
+  }
 
-  // "locked" і будь-яка невідома форма відповіді (напр. застарілий кеш зі
-  // старої версії API під час hot-reload) — той самий безпечний дефолт.
-  return <StatusCard state="locked" />;
+  // locked — денний або тижневий (до unlock-години)
+  return <StatusCard kind={data.kind ?? "daily"} state="locked" />;
 }
 
 function LoadingCard() {
@@ -94,9 +93,9 @@ function LoadingCard() {
   );
 }
 
-const STATUS_COPY = {
+const DAILY_COPY = {
   locked: {
-    text: "Звіт готується… Стане доступним після 17:00 — коли день вже фактично закритий.",
+    text: "Звіт готується… Стане доступним після 18:00 — коли день вже фактично закритий.",
     button: "Звіт готується…",
   },
   no_meals: {
@@ -109,19 +108,38 @@ const STATUS_COPY = {
   },
 } as const;
 
+const WEEKLY_COPY = {
+  locked: {
+    text: "Звіт готується… Стане доступним після 15:00 — коли тиждень вже майже закритий.",
+  },
+  no_meals: {
+    text: "Цього тижня ще нема жодного запису їжі — поки що нема що аналізувати.",
+    button: "Немає даних за тиждень",
+  },
+  requestable: {
+    text: "Тиждень зібрано. Готовий дізнатись вердикт від ШІ-дієтолога?",
+  },
+} as const;
+
 function StatusCard({
+  kind,
   state,
   onRequest,
   pending = false,
   error = false,
 }: {
+  kind: AdviceKind;
   state: "locked" | "no_meals" | "requestable";
   onRequest?: () => void;
   pending?: boolean;
   error?: boolean;
 }) {
-  const copy = STATUS_COPY[state];
+  const weekly = kind === "weekly";
+  const title = weekly ? "Звіт тижня" : "Звіт дня";
+  const text = weekly ? WEEKLY_COPY[state].text : DAILY_COPY[state].text;
   const active = state === "requestable";
+  const neon =
+    weekly && (state === "locked" || state === "requestable" || pending);
 
   return (
     <section className="mcard flex flex-col gap-3 p-[18px]">
@@ -129,36 +147,52 @@ function StatusCard({
         <span
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)]",
-            active
-              ? "bg-[color-mix(in_srgb,var(--color-accent)_16%,transparent)] text-[var(--color-accent)]"
-              : "bg-[var(--color-tile)] text-[var(--color-muted3)]",
+            weekly && (state === "locked" || active)
+              ? "bg-[color-mix(in_srgb,#3db89a_16%,transparent)] text-[#3db89a]"
+              : active
+                ? "bg-[color-mix(in_srgb,var(--color-accent)_16%,transparent)] text-[var(--color-accent)]"
+                : "bg-[var(--color-tile)] text-[var(--color-muted3)]",
           )}
         >
-          <Sparkles size={17} className={pending ? "spark-pulse" : undefined} />
+          <Sparkles
+            size={17}
+            className={pending || (weekly && state === "locked") ? "spark-pulse" : undefined}
+          />
         </span>
         <div className="min-w-0 flex-1">
-          <span className="lbl !mb-0">Звіт дня</span>
+          <span className="lbl !mb-0">{title}</span>
           <p className="mt-1 text-[14px] leading-snug text-[var(--color-muted)]">
-            {copy.text}
+            {text}
           </p>
         </div>
       </div>
 
-      <button
-        type="button"
-        className="btn btn-primary btn-block btn-sm"
-        data-sfx={active ? "confirm" : "none"}
-        disabled={!active || pending}
-        onClick={onRequest}
-      >
-        {pending ? (
-          <>
-            <RefreshCw size={14} className="animate-spin" /> Готуємо звіт…
-          </>
-        ) : (
-          copy.button
-        )}
-      </button>
+      {neon ? (
+        <WeeklyFeedbackButton
+          phase={
+            pending ? "pending" : state === "locked" ? "collecting" : "ready"
+          }
+          onClick={onRequest}
+        />
+      ) : (
+        <button
+          type="button"
+          className="btn btn-primary btn-block btn-sm"
+          data-sfx={active ? "confirm" : "none"}
+          disabled={!active || pending}
+          onClick={onRequest}
+        >
+          {pending ? (
+            <>
+              <RefreshCw size={14} className="animate-spin" /> Готуємо звіт…
+            </>
+          ) : weekly && state === "no_meals" ? (
+            WEEKLY_COPY.no_meals.button
+          ) : (
+            DAILY_COPY[state].button
+          )}
+        </button>
+      )}
 
       {error ? (
         <p className="text-center text-[12px] text-[var(--color-red)]">
@@ -172,14 +206,16 @@ function StatusCard({
 function AdviceCard({ advice: data }: { advice: Ready }) {
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
+  const weekly = data.kind === "weekly";
 
-  // Позначка «вже бачив» — раз на добу, бо звіт за сьогодні більше не зміниться.
-  const seenKey = `advice-seen:${todayYMD()}`;
+  const seenKey = weekly
+    ? `advice-seen:week:${data.date}`
+    : `advice-seen:${data.date || todayYMD()}`;
   const [seen] = useState(() => {
     try {
       return sessionStorage.getItem(seenKey) !== null;
     } catch {
-      return true; // private mode — не блимаємо
+      return true;
     }
   });
   useEffect(() => {
@@ -195,7 +231,9 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
       ? "var(--color-red)"
       : data.mood === "good"
         ? "var(--color-green)"
-        : "var(--color-accent)";
+        : weekly
+          ? "#3db89a"
+          : "var(--color-accent)";
 
   return (
     <motion.section
@@ -204,7 +242,6 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className={cn("mcard overflow-hidden", !seen && "advice-fresh")}
     >
-      {/* Настрій дня читається ще до тексту — тонка смуга у колір вердикту. */}
       <div
         className="h-[3px] w-full"
         style={{
@@ -224,7 +261,9 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
         </span>
 
         <div className="min-w-0 flex-1">
-          <span className="lbl !mb-0">Звіт дня · ШІ-дієтолог</span>
+          <span className="lbl !mb-0">
+            {weekly ? "Звіт тижня · ШІ-дієтолог" : "Звіт дня · ШІ-дієтолог"}
+          </span>
           <p
             className="mt-1 text-[16px] font-semibold leading-tight"
             style={{ color: accent }}
@@ -237,11 +276,6 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
         </div>
       </div>
 
-      {/*
-        Порада на завтра лежить під складкою окремим рядком, а не ховається за
-        шевроном біля заголовка: так видно, що там саме «Завтра», і тап іде по
-        повноцінній смузі, а не по 14-піксельній іконці.
-      */}
       <button
         type="button"
         aria-expanded={open}
@@ -251,7 +285,9 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
           "px-[18px] py-3 text-left transition-[background-color,transform] active:scale-[0.99]",
         )}
       >
-        <span className="lbl !mb-0">Що робити завтра</span>
+        <span className="lbl !mb-0">
+          {weekly ? "Що робити наступного тижня" : "Що робити завтра"}
+        </span>
         <ChevronDown
           size={16}
           className={cn(

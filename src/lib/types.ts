@@ -236,22 +236,22 @@ export interface NotificationDTO {
 }
 
 /**
- * Розбір раціону від ШІ. Не готовий лише тоді, коли за день ще нічого не
- * записано — тоді картка мовчить, бо коментувати нічого.
+ * Звіт від ШІ — денний (Пн–Сб після 18:00) або тижневий (неділя після 15:00).
+ * - locked: ще рано (daily < 18:00 / weekly < 15:00), кнопка недоступна.
+ * - no_meals: час настав, але нема записів їжі за період.
+ * - requestable: є що аналізувати — кнопка активна, чекає тапу.
+ * - ready: користувач натиснув, ШІ відповів — показуємо текст.
  */
-/**
- * Звіт дня — один раз на добу, на прохання, а не фоном.
- * - locked: ще не 17:00, кнопка недоступна.
- * - no_meals: 17:00 настало, але за день нема жодного запису їжі.
- * - requestable: 17:00 настало, є що аналізувати — кнопка активна, чекає тапу.
- * - ready: користувач натиснув, ШІ відповів — показуємо текст, кнопки більше нема.
- */
+export type AdviceKind = "daily" | "weekly";
+
 export type AdviceResponse =
-  | { state: "locked" }
-  | { state: "no_meals" }
-  | { state: "requestable" }
+  | { state: "locked"; kind: AdviceKind }
+  | { state: "no_meals"; kind: AdviceKind }
+  | { state: "requestable"; kind: AdviceKind }
   | {
       state: "ready";
+      kind: AdviceKind;
+      /** YYYY-MM-DD дня (daily) або понеділка тижня (weekly). */
       date: string;
       headline: string;
       body: string;
@@ -296,6 +296,8 @@ export interface ArenaEntry {
   protein: number;
   fats: number;
   carbs: number;
+  /** Орієнтири БЖВ (з ваги на сервері; саму вагу клієнту не віддаємо). */
+  macroTargets: { protein: number; fats: number; carbs: number };
   /** Скільки прийомів їжі записано сьогодні. */
   mealsCount: number;
   /** Досягнення: рекорд серії і скільки днів закрито в ±5%. */

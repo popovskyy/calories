@@ -72,6 +72,7 @@ model User {
   weights          WeightLog[]
   epics            UserEpic[]
   advices          DailyAdvice[]
+  weeklyAdvices    WeeklyAdvice[]
 }
 
 /**
@@ -80,9 +81,9 @@ model User {
  * Кешуємо в БД, бо генерація коштує виклику до Gemini: без кешу кожне
  * відкриття Огляду било б у платний API. Раніше текст перегенеровувався
  * протягом дня (по mealCount / dayPart), але тепер звіт відкривається лише
- * після 17:00 і пишеться як підсумок закритого дня — тож перша ж згенерована
- * версія лишається незмінною до завтра, а mealCount/dayPart живуть як
- * діагностика: на якому зрізі дня писався текст.
+ * після 18:00 (Пн–Сб) і пишеться як підсумок закритого дня — тож перша ж
+ * згенерована версія лишається незмінною до завтра, а mealCount/dayPart
+ * живуть як діагностика: на якому зрізі дня писався текст.
  */
 model DailyAdvice {
   id        String   @id @default(cuid())
@@ -102,6 +103,27 @@ model DailyAdvice {
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+/**
+ * Тижневий фідбек від ШІ — один на тиждень (Пн–Нд), доступний у неділю.
+ * Кеш за weekStart, щоб повторні відкриття Огляду не били в платний API.
+ */
+model WeeklyAdvice {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart String // YYYY-MM-DD понеділок
+  headline  String
+  body      String
+  tip       String
+  mood      String // good | mixed | over
+  mealCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([userId, weekStart])
+  @@index([userId, weekStart])
 }
 
 /** Тижневі квести (Пн–Нд, Kyiv). Адмін може правити або додавати свої. */
