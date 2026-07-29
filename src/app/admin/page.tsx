@@ -13,7 +13,7 @@ import { Field, inputClass } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { GOAL_LABELS, type Goal, type Sex } from "@/lib/calories";
-import { DEFAULT_SKINS, parsePresetId, toPresetUrl } from "@/lib/avatar-presets";
+import { DEFAULT_SKINS, toPresetUrl } from "@/lib/avatar-presets";
 import { fromYMD, humanDate, todayYMD } from "@/lib/date";
 import type { AdminUserDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
@@ -241,7 +241,6 @@ export default function AdminPage() {
   );
 
   const draftPunishmentActive = draft.peppaPunishBackupAvatarUrl != null;
-  const draftPunishmentSkinId = parsePresetId(draft.avatarUrl ?? null) ?? "pepa_pig";
 
   const subtitle =
     tab === "users"
@@ -423,17 +422,21 @@ export default function AdminPage() {
 
                   <div className="mt-1 flex flex-col gap-2 rounded-[var(--radius-md)] border-l-[3px] border-[var(--color-red)] bg-[var(--color-tile)] p-3">
                     <span className="lbl !mb-0">Покарання</span>
-
                     {draftPunishmentActive ? (
                       <div className="flex items-center gap-3 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-2">
-                        <div className="flex flex-col items-center gap-0.5">
-                          <Avatar name={draft.name || "?"} avatarUrl={draft.peppaPunishBackupAvatarUrl} size={32} />
-                          <span className="text-[10px] text-[var(--color-muted3)]">було</span>
-                        </div>
-                        <span className="text-[14px] text-[var(--color-muted3)]">→</span>
-                        <div className="flex flex-col items-center gap-0.5">
-                          <Avatar name={draft.name || "?"} avatarUrl={draft.avatarUrl} size={32} />
-                          <span className="text-[10px] font-semibold text-[var(--color-red)]">зараз</span>
+                        <Avatar
+                          name={draft.name || "?"}
+                          avatarUrl={toPresetUrl("pepa_pig")}
+                          size={32}
+                          animated={false}
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate text-[13px] font-semibold text-[var(--color-text)]">
+                            Зараз носить: Свинка Пепа
+                          </div>
+                          <div className="truncate text-[12px] text-[var(--color-muted3)]">
+                            Скін покарання фіксований: `pepa_pig`
+                          </div>
                         </div>
                       </div>
                     ) : null}
@@ -463,27 +466,6 @@ export default function AdminPage() {
                       />
                       Покарання активне
                     </label>
-
-                    <Field
-                      label="Скін покарання"
-                      hint={draftPunishmentActive ? undefined : "Увімкни покарання, щоб змінювати скін"}
-                    >
-                      <select
-                        className={inputClass}
-                        value={draftPunishmentSkinId}
-                        disabled={!draftPunishmentActive}
-                        onChange={(e) => {
-                          const skinId = e.target.value;
-                          setDraft((d) => ({ ...d, avatarUrl: toPresetUrl(skinId) }));
-                        }}
-                      >
-                        {BUILTIN_SKINS.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.nameUk}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
                   </div>
 
                   <Field label="Ім'я">
