@@ -20,7 +20,7 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
 
 /** Побутовий рух (не тренування) — база підтримки ваги. */
 export const MAINTENANCE_ACTIVITY_FACTOR = 1.2;
-/** Дефіцит −15% від TDEE. */
+/** Дефіцит за замовчуванням, якщо ціль/тижні не задані: −15% від TDEE. */
 export const DEFICIT_FACTOR = 0.85;
 /** Орієнтовно ккал на 1 кг маси тіла. */
 export const KCAL_PER_KG = 7700;
@@ -62,6 +62,10 @@ export interface CalorieInput {
   goal: Goal;
   /** Ігнорується — залишено для старих викликів. */
   activityLevel?: ActivityLevel;
+  /** Цільова вага (кг). Разом із targetWeeks задає темп дефіциту. */
+  targetWeightKg?: number | null;
+  /** Строк до цілі у тижнях. */
+  targetWeeks?: number | null;
   now?: Date;
 }
 
@@ -71,6 +75,18 @@ export interface CalorieBreakdown {
   /** BMR × MAINTENANCE_ACTIVITY_FACTOR (побутовий рух). */
   tdee: number;
   targetCalories: number;
+  /**
+   * Як пораховано дефіцит: `pace` — від цілі/тижнів,
+   * `fixed` — fallback −15%, `null` — підтримка.
+   */
+  deficitSource: "pace" | "fixed" | null;
+  /** Фактичний відсоток зрізу від TDEE (після підлоги), для UI. */
+  deficitPct: number | null;
+  /**
+   * true — норма піднята підлогою безпеки, тож темп із цілі/тижнів
+   * лише з їжі може не встигнути (потрібні тренування або довший строк).
+   */
+  paceClamped: boolean;
 }
 
 export function ageFromBirth(
@@ -106,8 +122,22 @@ export function deficitFloor(sex: Sex): number {
 }
 
 /**
- * Ціль = TDEE (підтримка) або TDEE×0.85 (дефіцит, з підлогою).
- * Тренування враховуються окремими ActivityLog, не множником.
+ * Денний дефіцит (ккал), потрібний щоб скинути `lossKg` за `weeks` тижнів.
+ * `null`, якщо темп задати неможливо.
+ */
+export function paceDailyDeficit(
+  lossKg: number,
+  weeks: number,
+): number | null {
+  if (!(lossKg > 0) || !(weeks >= 1)) return null;
+  return (lossKg * KCAL_PER_KG) / (weeks * 7);
+}
+
+/**
+ * Ціль = TDEE (підтримка) або TDEE − дефіцит.
+ * Якщо є цільова вага < поточної і строк у тижнях — дефіцит від темпу
+ * (Δкг × 7700 / днів). Інакше при goal=deficit — фіксований −15%.
+ * Підлога: 1500♂ / 1200♀. Тренування — окремі ActivityLog.
  */
 export function calcTargetCalories(input: CalorieInput): CalorieBreakdown {
   const age = ageFromBirth(input.birthYear, input.birthMonth, input.now);
@@ -121,20 +151,51 @@ export function calcTargetCalories(input: CalorieInput): CalorieBreakdown {
   );
   const tdee = calcTdee(bmr);
 
-  let target =
-    input.goal === "maintain"
-      ? tdee
-      : Math.round(tdee * DEFICIT_FACTOR);
-
-  if (input.goal === "deficit") {
-    target = Math.max(target, deficitFloor(input.sex));
+  if (input.goal === "maintain") {
+    return {
+      age,
+      bmr,
+      tdee,
+      targetCalories: tdee,
+      deficitSource: null,
+      deficitPct: null,
+      paceClamped: false,
+    };
   }
+
+  const tw = input.targetWeightKg;
+  const weeks = input.targetWeeks;
+  const lossKg =
+    tw != null && Number.isFinite(tw) ? input.weightKg - tw : NaN;
+  const paced =
+    weeks != null && Number.isFinite(weeks)
+      ? paceDailyDeficit(lossKg, weeks)
+      : null;
+
+  let rawTarget: number;
+  let deficitSource: "pace" | "fixed";
+
+  if (paced != null) {
+    rawTarget = Math.round(tdee - paced);
+    deficitSource = "pace";
+  } else {
+    rawTarget = Math.round(tdee * DEFICIT_FACTOR);
+    deficitSource = "fixed";
+  }
+
+  const floor = deficitFloor(input.sex);
+  const target = Math.max(rawTarget, floor);
+  const deficitPct =
+    tdee > 0 ? Math.round((1 - target / tdee) * 100) : null;
 
   return {
     age,
     bmr,
     tdee,
     targetCalories: target,
+    deficitSource,
+    deficitPct,
+    paceClamped: deficitSource === "pace" && rawTarget < floor,
   };
 }
 

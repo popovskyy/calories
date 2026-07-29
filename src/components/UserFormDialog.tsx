@@ -129,6 +129,8 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     ) {
       return null;
     }
+    const tw = form.targetWeight ? parseFloat(form.targetWeight) : null;
+    const weeks = form.targetWeeks ? parseInt(form.targetWeeks, 10) : null;
     return calcTargetCalories({
       birthYear,
       birthMonth,
@@ -136,6 +138,8 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       weightKg: weight,
       heightCm: height,
       goal: form.goal,
+      targetWeightKg: tw != null && Number.isFinite(tw) ? tw : null,
+      targetWeeks: weeks != null && Number.isFinite(weeks) ? weeks : null,
     });
   }, [form]);
 
@@ -371,7 +375,10 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         </div>
 
         <div className="flex gap-3">
-          <Field label="Ціль, кг" hint="Порожньо — ціль не відстежується">
+          <Field
+            label="Ціль, кг"
+            hint="Разом із тижнями задає темп дефіциту"
+          >
             <input
               className={inputClass}
               value={form.targetWeight}
@@ -380,7 +387,10 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               placeholder="Напр. 70"
             />
           </Field>
-          <Field label="Тижнів" hint="Скільки тижнів на ціль">
+          <Field
+            label="Тижнів"
+            hint="Без цілі/тижнів — фіксований −15%"
+          >
             <input
               className={inputClass}
               value={form.targetWeeks}
@@ -422,8 +432,18 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               <div className="mt-1 text-[14px] text-[var(--color-muted3)]">
                 {preview.age} р · BMR {preview.bmr.toLocaleString("uk-UA")} · TDEE{" "}
                 {preview.tdee.toLocaleString("uk-UA")}
-                {form.goal === "deficit" ? " · −15%" : ""}
+                {preview.deficitPct != null
+                  ? ` · −${preview.deficitPct}%${
+                      preview.deficitSource === "pace" ? " за темпом" : ""
+                    }`
+                  : ""}
               </div>
+              {preview.paceClamped ? (
+                <div className="mt-1.5 text-[13px] text-[var(--color-muted3)]">
+                  Підлога безпеки — темп лише з їжі може не встигнути; додайте
+                  рух або подовжіть строк.
+                </div>
+              ) : null}
             </>
           ) : (
             <div className="mt-1 text-[16px] text-[var(--color-muted3)]">

@@ -79,6 +79,8 @@ export function AuthForm() {
     const w = parseFloat(weight);
     const h = parseFloat(height);
     if (!by || !bm || !(w > 0) || !(h > 0)) return null;
+    const tw = targetWeight ? parseFloat(targetWeight) : null;
+    const weeks = targetWeeks ? parseInt(targetWeeks, 10) : null;
     return calcTargetCalories({
       birthYear: by,
       birthMonth: bm,
@@ -86,8 +88,20 @@ export function AuthForm() {
       weightKg: w,
       heightCm: h,
       goal,
+      targetWeightKg: tw != null && Number.isFinite(tw) ? tw : null,
+      targetWeeks: weeks != null && Number.isFinite(weeks) ? weeks : null,
     });
-  }, [mode, birthYear, birthMonth, sex, weight, height, goal]);
+  }, [
+    mode,
+    birthYear,
+    birthMonth,
+    sex,
+    weight,
+    height,
+    goal,
+    targetWeight,
+    targetWeeks,
+  ]);
 
   const busy = loginMut.isPending || registerMut.isPending;
 
@@ -343,7 +357,7 @@ export function AuthForm() {
             </Field>
           </div>
           <p className="text-[12px] text-[var(--color-muted3)]">
-            Порожньо — ціль не відстежується
+            Ціль і тижні задають темп дефіциту; порожньо — фіксований −15%
           </p>
 
           <div className="flex flex-col gap-1.5">
@@ -366,6 +380,15 @@ export function AuthForm() {
                 {preview.targetCalories.toLocaleString("uk-UA")}{" "}
                 <span className="text-[15px] font-medium text-[var(--color-muted3)]">ккал/день</span>
               </div>
+              {preview.deficitPct != null ? (
+                <div className="mt-1 text-[13px] text-[var(--color-muted3)]">
+                  −{preview.deficitPct}%
+                  {preview.deficitSource === "pace" ? " за темпом" : ""}
+                  {preview.paceClamped
+                    ? " · підлога безпеки — темп може не встигнути"
+                    : ""}
+                </div>
+              ) : null}
             </div>
           ) : null}
 

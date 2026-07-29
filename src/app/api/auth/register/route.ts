@@ -93,6 +93,8 @@ export async function POST(req: NextRequest) {
     weightKg: profile.weight,
     heightCm: profile.height,
     goal: profile.goal,
+    targetWeightKg: targetWeight ?? null,
+    targetWeeks: targetWeeks ?? null,
   });
 
   const passwordHash = await hashPassword(password);

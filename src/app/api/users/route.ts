@@ -97,6 +97,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Якщо змінили ціль по вазі — скидаємо startWeight і startWeightDate
+  const existing = await prisma.user.findUnique({
+    where: { id: auth.session.userId },
+    select: { targetWeight: true, targetWeeks: true, weight: true },
+  });
+
+  const nextTargetWeight =
+    targetWeight !== undefined ? targetWeight : (existing?.targetWeight ?? null);
+  const nextTargetWeeks =
+    targetWeeks !== undefined ? targetWeeks : (existing?.targetWeeks ?? null);
+
   const { targetCalories } = calcTargetCalories({
     birthYear: fields.birthYear,
     birthMonth: fields.birthMonth,
@@ -104,12 +115,8 @@ export async function POST(req: NextRequest) {
     weightKg: fields.weight,
     heightCm: fields.height,
     goal: fields.goal,
-  });
-
-  // Якщо змінили ціль по вазі — скидаємо startWeight і startWeightDate
-  const existing = await prisma.user.findUnique({
-    where: { id: auth.session.userId },
-    select: { targetWeight: true, targetWeeks: true, weight: true },
+    targetWeightKg: nextTargetWeight,
+    targetWeeks: nextTargetWeeks,
   });
 
   const goalChanged =

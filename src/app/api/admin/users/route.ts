@@ -125,6 +125,8 @@ export async function PATCH(req: NextRequest) {
       weightKg: next.weight,
       heightCm: next.height,
       goal: next.goal as "maintain" | "deficit",
+      targetWeightKg: existing.targetWeight,
+      targetWeeks: existing.targetWeeks,
     });
     targetCalories = t;
   }
