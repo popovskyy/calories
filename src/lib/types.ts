@@ -49,6 +49,8 @@ export interface UserDTO {
   blocked: boolean;
   /** Причина блокування — показується юзеру дослівно */
   blockReason: string | null;
+  /** true — активне покарання (Пепа); аватар залочений, грає саундтрек */
+  punishmentActive: boolean;
 }
 
 /**

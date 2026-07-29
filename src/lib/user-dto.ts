@@ -56,5 +56,6 @@ export function toUserDTO(user: UserWithSkins): UserDTO {
     approved: user.approved ?? true,
     blocked: user.blockedAt != null,
     blockReason: user.blockReason ?? null,
+    punishmentActive: user.peppaPunishBackupAvatarUrl != null,
   };
 }

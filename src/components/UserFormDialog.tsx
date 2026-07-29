@@ -87,7 +87,8 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
   const [avatarDirty, setAvatarDirty] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const punishmentActive = user?.avatarUrl === toPresetUrl("pepa_pig");
+  const punishmentActive =
+    user?.punishmentActive === true || user?.avatarUrl === toPresetUrl("pepa_pig");
 
   useEffect(() => {
     if (!open || !user) return;
