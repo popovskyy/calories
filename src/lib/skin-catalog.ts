@@ -44,7 +44,7 @@ export async function ensureSkinCatalog(): Promise<void> {
         price: s.price,
         rarity: s.rarity,
         bg: s.bg,
-        enabled: true,
+        enabled: s.enabled ?? true,
         sortOrder: s.sortOrder ?? 0,
         artKind: s.artKind,
         svg: s.svg ?? null,

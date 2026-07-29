@@ -13,8 +13,9 @@ import { Field, inputClass } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { GOAL_LABELS, type Goal, type Sex } from "@/lib/calories";
+import { DEFAULT_SKINS, parsePresetId, toPresetUrl } from "@/lib/avatar-presets";
 import { fromYMD, humanDate, todayYMD } from "@/lib/date";
-import type { AdminUserDTO, UserDTO } from "@/lib/types";
+import type { AdminUserDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
 type Tab = "users" | "skins" | "quests" | "entries";
@@ -26,14 +27,16 @@ const TABS: ReadonlyArray<readonly [Tab, string]> = [
   ["entries", "Модерація"],
 ];
 
+const BUILTIN_SKINS = DEFAULT_SKINS.filter((s) => s.artKind === "builtin");
+
 export default function AdminPage() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("users");
   const [users, setUsers] = useState<AdminUserDTO[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<UserDTO | null>(null);
+  const [selected, setSelected] = useState<AdminUserDTO | null>(null);
   const [blockReason, setBlockReason] = useState("");
-  const [draft, setDraft] = useState<Partial<UserDTO> & { password?: string }>({});
+  const [draft, setDraft] = useState<Partial<AdminUserDTO> & { password?: string }>({});
   const [saving, setSaving] = useState(false);
   const [recalcing, setRecalcing] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -60,7 +63,7 @@ export default function AdminPage() {
     void load();
   }, [load]);
 
-  const openEdit = (u: UserDTO) => {
+  const openEdit = (u: AdminUserDTO) => {
     setSelected(u);
     setDraft({ ...u, password: "" });
     setBlockReason(u.blockReason ?? "");
@@ -100,6 +103,7 @@ export default function AdminPage() {
           height: draft.height,
           targetCalories: draft.targetCalories,
           avatarUrl: draft.avatarUrl,
+            peppaPunishBackupAvatarUrl: draft.peppaPunishBackupAvatarUrl,
           coins: draft.coins,
           approved: draft.approved,
           recalcTarget: false,
@@ -206,7 +210,7 @@ export default function AdminPage() {
     }
   };
 
-  const remove = async (u: UserDTO) => {
+  const remove = async (u: AdminUserDTO) => {
     if (!confirm(`Видалити «${u.name}» та всі його записи?`)) return;
     setRemovingId(u.id);
     try {
@@ -235,6 +239,9 @@ export default function AdminPage() {
   const selectedIdle = idleHint(
     selected ? (users.find((u) => u.id === selected.id)?.lastEntryDate ?? null) : null,
   );
+
+  const draftPunishmentActive = draft.peppaPunishBackupAvatarUrl != null;
+  const draftPunishmentSkinId = parsePresetId(draft.avatarUrl ?? null) ?? "pepa_pig";
 
   const subtitle =
     tab === "users"
@@ -412,6 +419,57 @@ export default function AdminPage() {
                         id: {selected.id.slice(0, 10)}…
                       </div>
                     </div>
+                  </div>
+
+                  <div className="mt-1 flex flex-col gap-2 rounded-[var(--radius-md)] bg-[var(--color-tile)] p-3">
+                    <span className="lbl !mb-0">Картка покарання</span>
+
+                    <label className="flex items-center gap-2 text-[14px]">
+                      <input
+                        type="checkbox"
+                        checked={draftPunishmentActive}
+                        onChange={(e) => {
+                          const on = e.target.checked;
+                          setDraft((d) => {
+                            if (on) {
+                              return {
+                                ...d,
+                                peppaPunishBackupAvatarUrl:
+                                  d.peppaPunishBackupAvatarUrl ?? (d.avatarUrl ?? null),
+                                avatarUrl: toPresetUrl("pepa_pig"),
+                              };
+                            }
+                            return {
+                              ...d,
+                              avatarUrl: d.peppaPunishBackupAvatarUrl ?? null,
+                              peppaPunishBackupAvatarUrl: null,
+                            };
+                          });
+                        }}
+                      />
+                      Покарання активне
+                    </label>
+
+                    <Field
+                      label="Активний скін покарання"
+                      hint={draftPunishmentActive ? undefined : "Увімкни покарання, щоб змінювати скін"}
+                    >
+                      <select
+                        className={inputClass}
+                        value={draftPunishmentSkinId}
+                        disabled={!draftPunishmentActive}
+                        onChange={(e) => {
+                          const skinId = e.target.value;
+                          setDraft((d) => ({ ...d, avatarUrl: toPresetUrl(skinId) }));
+                        }}
+                      >
+                        {BUILTIN_SKINS.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.nameUk}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
                   </div>
 
                   <Field label="Ім'я">

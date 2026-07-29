@@ -391,7 +391,9 @@ export async function listDailyCards(
     const key = keys[slot]!;
     const legacyKey = legacyKeys[slot]!;
     const baseCoins = cardReward(slot);
-    const payable = done && (!FINAL_DAY_KINDS.has(def.kind) || isClosed);
+    const isFinalKind = FINAL_DAY_KINDS.has(def.kind);
+    const showFinalState = !isFinalKind || isClosed;
+    const payable = done && showFinalState;
 
     const priorCoins = claimedCoins.get(key) ?? claimedCoins.get(legacyKey);
     let isClaimed = priorCoins !== undefined;
@@ -410,9 +412,11 @@ export async function listDailyCards(
       description: def.description,
       icon: def.icon,
       slot,
-      progress: Math.min(progress, target),
+      // Для "final day" карток показуємо прогрес/галочку лише після закриття дня,
+      // інакше UI виглядає як "зараховано" ще до 20:00/закриття кухні.
+      progress: Math.min(showFinalState ? progress : 0, target),
       target,
-      done,
+      done: payable,
       claimed: isClaimed,
       rewardCoins,
     });

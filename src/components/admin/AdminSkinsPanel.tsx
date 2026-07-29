@@ -237,7 +237,11 @@ export function AdminSkinsPanel() {
                             <span className="block font-semibold">{s.nameUk}</span>
                             <span className="text-[12px] text-[var(--color-muted3)]">
                               {s.id}
-                              {s.enabled === false ? " · вимкнено" : ""}
+                            {s.enabled === false ? (
+                              <span className="ml-2 inline-flex items-center rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--color-red)_18%,transparent)] px-2 py-0.5 text-[11px] text-[var(--color-red)]">
+                                вимкнено
+                              </span>
+                            ) : null}
                               {s.tier === "free" ? " · free" : ""}
                             </span>
                           </span>

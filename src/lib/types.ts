@@ -57,6 +57,8 @@ export interface UserDTO {
  */
 export interface AdminUserDTO extends UserDTO {
   lastEntryDate: string | null;
+  /** Backup старого avatarUrl при активному покаранні (null = не активне). */
+  peppaPunishBackupAvatarUrl: string | null;
 }
 
 /** Нарахована нагорода (для тостів) */

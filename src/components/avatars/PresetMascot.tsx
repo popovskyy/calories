@@ -209,6 +209,24 @@ function MascotArt({ id }: { id: string }) {
           <Smile y={90} />
         </Face>
       );
+    case "pepa_pig":
+      return (
+        <Face bg={preset.bg}>
+          {/* ears */}
+          <path d="M36 50 L44 24 L62 42 Z" fill="#FFB6D9" />
+          <path d="M92 50 L84 24 L66 42 Z" fill="#FFB6D9" />
+          {/* head/body */}
+          <ellipse cx="64" cy="74" rx="36" ry="32" fill="#FF86D0" />
+          {/* cheek/snout highlight */}
+          <ellipse cx="64" cy="82" rx="20" ry="16" fill="#FFD1E8" />
+          {/* snout */}
+          <ellipse cx="64" cy="92" rx="14" ry="10" fill="#FFB6D9" />
+          <ellipse cx="64" cy="94" rx="7" ry="5" fill="#FF5AA8" />
+          {/* eyes + smile */}
+          <Eyes y={60} r={7} pupil={3.2} />
+          <Smile y={98} />
+        </Face>
+      );
     // --- Ассети / інлайн: рендеряться з img ---
     default:
       return null;

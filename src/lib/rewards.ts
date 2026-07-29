@@ -22,6 +22,7 @@ import {
   STREAK_DIVIDEND_COINS,
   STREAK_MILESTONES,
 } from "@/lib/economy";
+import { toPresetUrl } from "@/lib/avatar-presets";
 
 export type { GrantedReward };
 
@@ -56,8 +57,52 @@ async function settleClosedDay(
 
   await grant(userId, `daily_log:${date}`, DAILY_LOG_COINS, "Запис їжі", out);
 
-  if (isInTarget(totals.net, targetCalories, goal)) {
+  const isNormal = isInTarget(totals.net, targetCalories, goal);
+  if (isNormal) {
     await grant(userId, `in_target:${date}`, IN_TARGET_COINS, "День у цілі", out);
+  }
+
+  // Peppa punishment:
+  // - if user OVERs (net > target) on a closed day -> next day they get `pepa_pig`
+  // - if punishment is active AND that closed day was in-target -> revert to backup on following day
+  const isOver = totals.net > targetCalories;
+  if (!isOver && !isNormal) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      avatarUrl: true,
+      peppaPunishBackupAvatarUrl: true,
+    },
+  });
+  if (!user) return;
+
+  const peppaActive = user.peppaPunishBackupAvatarUrl != null;
+
+  if (peppaActive && isNormal) {
+    // Only revert when the closed day is "in target" AND punishment is already active.
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatarUrl: user.peppaPunishBackupAvatarUrl,
+        peppaPunishBackupAvatarUrl: null,
+      },
+    });
+  } else if (isOver) {
+    // Apply punishment for next day.
+    // Do not overwrite backup if user is already in punishment.
+    const nextBackup =
+      user.peppaPunishBackupAvatarUrl == null
+        ? user.avatarUrl
+        : user.peppaPunishBackupAvatarUrl;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        peppaPunishBackupAvatarUrl: nextBackup,
+        avatarUrl: toPresetUrl("pepa_pig"),
+      },
+    });
   }
 }
 

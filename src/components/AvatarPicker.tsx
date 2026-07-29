@@ -19,6 +19,7 @@ interface AvatarPickerProps {
   value: string | null;
   onChange: (presetUrl: string) => void;
   className?: string;
+  disabled?: boolean;
   /** id куплених преміум-скінів */
   ownedIds?: string[];
   /** якщо передано — не фетчимо каталог */
@@ -32,6 +33,7 @@ export function AvatarPicker({
   value,
   onChange,
   className,
+  disabled = false,
   ownedIds = [],
   skins: skinsProp,
   freeOnly = false,
@@ -79,10 +81,14 @@ export function AvatarPicker({
               type="button"
               aria-label={p.nameUk}
               aria-pressed={active}
-              onClick={() =>
-                locked
-                  ? toast.message(`«${p.nameUk}» — у Магазині за монети`)
-                  : onChange(toPresetUrl(p.id))
+              disabled={disabled}
+              onClick={
+                disabled
+                  ? undefined
+                  : () =>
+                      locked
+                        ? toast.message(`«${p.nameUk}» — у Магазині за монети`)
+                        : onChange(toPresetUrl(p.id))
               }
               initial={reduce ? false : { opacity: 0, y: 8, filter: "blur(4px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -92,13 +98,14 @@ export function AvatarPicker({
                 bounce: 0,
                 delay: reduce ? 0 : Math.min(i * 0.03, 0.24),
               }}
-              whileTap={reduce ? undefined : { scale: 0.94 }}
+              whileTap={disabled || reduce ? undefined : { scale: 0.94 }}
               className={cn(
                 "relative flex aspect-square items-center justify-center rounded-[var(--radius-md)] p-1 outline-none transition-colors",
                 "focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]",
                 active
                   ? "bg-[color-mix(in_srgb,var(--color-accent)_28%,transparent)] ring-2 ring-[var(--color-accent)]"
                   : "bg-[var(--color-tile)] hover:bg-[color-mix(in_srgb,var(--color-text)_6%,transparent)]",
+                disabled ? "opacity-60 cursor-not-allowed hover:bg-[var(--color-tile)]" : undefined,
               )}
               style={
                 p.tier === "premium"

@@ -29,6 +29,14 @@ export async function POST(req: NextRequest) {
 
   const userId = auth.session.userId;
 
+  const punishmentActive = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { peppaPunishBackupAvatarUrl: true },
+  });
+  if (punishmentActive?.peppaPunishBackupAvatarUrl != null) {
+    return NextResponse.json({ error: "Скін змінювати не можна під час покарання" }, { status: 403 });
+  }
+
   if (skin.tier === "premium") {
     const owned = await prisma.userSkin.findUnique({
       where: { userId_skinId: { userId, skinId: skin.id } },

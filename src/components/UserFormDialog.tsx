@@ -16,7 +16,7 @@ import {
   type Goal,
   type Sex,
 } from "@/lib/calories";
-import { isPresetAvatar } from "@/lib/avatar-presets";
+import { isPresetAvatar, toPresetUrl } from "@/lib/avatar-presets";
 import type { UserDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -87,6 +87,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
   const [avatarDirty, setAvatarDirty] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const punishmentActive = user?.avatarUrl === toPresetUrl("pepa_pig");
 
   useEffect(() => {
     if (!open || !user) return;
@@ -141,6 +142,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    if (punishmentActive) return;
     if (!file.type.startsWith("image/")) {
       return toast.error("Оберіть зображення");
     }
@@ -217,12 +219,17 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               setAvatarDirty(true);
             }}
             ownedIds={user?.ownedSkinIds ?? []}
+            disabled={punishmentActive}
           />
           <div className="w-full rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-3 py-3">
             <button
               type="button"
               className="flex w-full items-center justify-between text-left text-[14px] font-medium text-[var(--color-muted2)]"
-              onClick={() => setShowPhoto((v) => !v)}
+              disabled={punishmentActive}
+              onClick={() => {
+                if (punishmentActive) return;
+                setShowPhoto((v) => !v);
+              }}
             >
               <span>Або з селфі (ШІ)</span>
               <span className="text-[var(--color-muted3)]">{showPhoto ? "▴" : "▾"}</span>
@@ -233,8 +240,11 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                   <button
                     type="button"
                     className="btn btn-ghost flex-1"
-                    disabled={generating}
-                    onClick={() => fileRef.current?.click()}
+                    disabled={punishmentActive || generating}
+                    onClick={() => {
+                      if (punishmentActive) return;
+                      fileRef.current?.click();
+                    }}
                   >
                     {generating ? (
                       <>
@@ -272,8 +282,11 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                 <button
                   type="button"
                   className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[var(--color-muted2)] px-3 py-2.5 text-[14px] text-[var(--color-muted2)]"
-                  disabled={generating}
-                  onClick={() => fileRef.current?.click()}
+                  disabled={punishmentActive || generating}
+                  onClick={() => {
+                    if (punishmentActive) return;
+                    fileRef.current?.click();
+                  }}
                 >
                   <Upload size={16} /> Завантажити селфі
                 </button>

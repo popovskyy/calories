@@ -80,6 +80,17 @@ export async function POST(req: NextRequest) {
   const { avatarUrl, targetWeight, targetWeeks, ...fields } = parsed.data;
 
   if (avatarUrl !== undefined) {
+    const punishmentActive = await prisma.user.findUnique({
+      where: { id: auth.session.userId },
+      select: { peppaPunishBackupAvatarUrl: true },
+    });
+    if (punishmentActive?.peppaPunishBackupAvatarUrl != null) {
+      return NextResponse.json(
+        { error: "Скін змінювати не можна під час покарання" },
+        { status: 403 },
+      );
+    }
+
     const gate = await assertAvatarAllowed(auth.session.userId, avatarUrl);
     if (!gate.ok) {
       return NextResponse.json({ error: gate.error }, { status: 403 });

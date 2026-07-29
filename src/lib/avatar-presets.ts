@@ -20,7 +20,8 @@ export type BuiltinMascotId =
   | "frog"
   | "penguin"
   | "chick"
-  | "raccoon";
+  | "raccoon"
+  | "pepa_pig";
 
 /** @deprecated використовуйте string skin id; залишено для сумісності типів */
 export type AvatarPresetId = string;
@@ -50,6 +51,17 @@ export const DEFAULT_SKINS: AvatarPreset[] = [
   { id: "penguin", nameUk: "Пінгвін", bg: "#1CB0F6", tier: "free", price: 0, rarity: "common", artKind: "builtin", sortOrder: 80 },
   { id: "chick", nameUk: "Курча", bg: "#FFC800", tier: "free", price: 0, rarity: "common", artKind: "builtin", sortOrder: 90 },
   { id: "raccoon", nameUk: "Єнот", bg: "#AFAFAF", tier: "free", price: 0, rarity: "common", artKind: "builtin", sortOrder: 100 },
+  {
+    id: "pepa_pig",
+    nameUk: "Свинка Пепа",
+    bg: "#FFB6D9",
+    tier: "free",
+    price: 0,
+    rarity: "common",
+    artKind: "builtin",
+    sortOrder: 105,
+    enabled: false,
+  },
   { id: "ronaldo", nameUk: "Cristiano Ronaldo", bg: "#046A38", tier: "premium", price: 450, rarity: "epic", artKind: "file", sortOrder: 300 },
   { id: "messi", nameUk: "Lionel Messi", bg: "#74C0FC", tier: "premium", price: 450, rarity: "epic", artKind: "file", sortOrder: 310 },
   { id: "yamal", nameUk: "Lamine Yamal", bg: "#C60B1E", tier: "premium", price: 400, rarity: "epic", artKind: "file", sortOrder: 320 },
@@ -65,7 +77,7 @@ export const DEFAULT_SKINS: AvatarPreset[] = [
 export const AVATAR_PRESETS = DEFAULT_SKINS;
 
 export const BUILTIN_MASCOT_IDS = new Set<string>([
-  "kiwi", "fox", "cat", "bear", "panda", "bunny", "frog", "penguin", "chick", "raccoon",
+  "kiwi", "fox", "cat", "bear", "panda", "bunny", "frog", "penguin", "chick", "raccoon", "pepa_pig",
 ]);
 
 export interface RarityStyle {

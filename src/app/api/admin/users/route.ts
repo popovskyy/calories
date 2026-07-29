@@ -35,6 +35,7 @@ export async function GET() {
     sorted.map((u) => ({
       ...toUserDTO(u),
       lastEntryDate: u.meals[0]?.date ?? null,
+      peppaPunishBackupAvatarUrl: u.peppaPunishBackupAvatarUrl,
     })),
   );
 }
@@ -63,6 +64,7 @@ const updateSchema = z.object({
   height: z.number().positive().optional(),
   targetCalories: z.number().int().positive().optional(),
   avatarUrl: z.string().nullable().optional(),
+  peppaPunishBackupAvatarUrl: z.string().nullable().optional(),
   coins: z.number().int().min(0).max(10_000_000).optional(),
   approved: z.boolean().optional(),
   /** true — призупинити доступ, false — повернути. */
@@ -134,6 +136,9 @@ export async function PATCH(req: NextRequest) {
       ...(rest.username ? { username: rest.username.toLowerCase() } : {}),
       ...(password ? { passwordHash: await hashPassword(password) } : {}),
       ...(rest.avatarUrl !== undefined ? { avatarUrl: rest.avatarUrl } : {}),
+      ...(rest.peppaPunishBackupAvatarUrl !== undefined
+        ? { peppaPunishBackupAvatarUrl: rest.peppaPunishBackupAvatarUrl }
+        : {}),
       ...(rest.coins !== undefined ? { coins: rest.coins } : {}),
       ...(rest.approved !== undefined ? { approved: rest.approved } : {}),
       // blockedAt — і прапорець, і дата події: розблокування чистить обидва
