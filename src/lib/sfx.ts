@@ -115,11 +115,34 @@ export function getPackProfile(pack: string): PackProfile {
  */
 let lastRewardAt = 0;
 let lastEpicAt = 0;
+/** Які recalc.id вже озвучили — один сигнал, один звук (журнал + огляд). */
+const playedRitualIds = new Set<number>();
 
 function rewardGate(minGapMs: number): boolean {
   const now = Date.now();
   if (now - lastRewardAt < minGapMs) return false;
   lastRewardAt = now;
+  return true;
+}
+
+/**
+ * Брама ритуального звуку (дровина / фогхорн / дзвіночок).
+ *
+ * Сигнал чують і міні-спалах на /log, і герой на Огляді — без брами
+ * той самий whoosh/гудок грав би двічі. Id «займається» одразу, навіть
+ * якщо звук приглушено (акорд нагороди / вимкнений sound): інакше
+ * пізніше на Огляді раптом знову гудело б.
+ */
+export function claimRitualSound(recalcId: number): boolean {
+  if (playedRitualIds.has(recalcId)) return false;
+  playedRitualIds.add(recalcId);
+  if (playedRitualIds.size > 24) {
+    const oldest = playedRitualIds.values().next().value;
+    if (oldest !== undefined) playedRitualIds.delete(oldest);
+  }
+  if (!soundAllowed()) return false;
+  // Нагорода («день у нормі») важливіша за атмосферу ритуалу.
+  if (Date.now() - lastRewardAt < 1200) return false;
   return true;
 }
 
@@ -231,38 +254,35 @@ export function playEpicFanfare(pack = "default") {
 /**
  * Фогхорн маяка — голос теми «Маяк» на ритуалі перерахунку.
  *
- * Низький синус із повільним підйомом і другою гармонікою: не «гудок у
- * вуха», а далекий сигнал з-за туману. Рецепт фіксований: це голос маяка,
- * а не тембр саундпака (саундпак чутно у finisher).
+ * Короткий далекий «рев» (не довгий гудок): швидкий підйом, коротка
+ * плато, згасання ~1 с. Саундпак лише трохи міняє гучність.
  */
 export function playFoghorn(pack = "default") {
   if (!soundAllowed()) return;
   const ac = getContext();
   if (!ac) return;
 
-  // Пакет впливає лише на гучність — «кіно» звучить трохи глибше.
-  const gainScale = pack === "cinema" ? 1.25 : 1;
+  const gainScale = pack === "cinema" ? 1.15 : 1;
 
   try {
     const now = ac.currentTime;
     const voices: { hz: number; gain: number }[] = [
-      { hz: 68, gain: 0.16 * gainScale },
-      { hz: 136, gain: 0.05 * gainScale },
+      { hz: 78, gain: 0.1 * gainScale },
+      { hz: 156, gain: 0.035 * gainScale },
     ];
     for (const v of voices) {
       const osc = ac.createOscillator();
       const gain = ac.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(v.hz, now);
-      // ледь помітний під'їзд знизу — як розгін ревуна
-      osc.frequency.exponentialRampToValueAtTime(v.hz * 1.04, now + 0.35);
+      osc.frequency.setValueAtTime(v.hz * 0.96, now);
+      osc.frequency.exponentialRampToValueAtTime(v.hz, now + 0.18);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(v.gain, now + 0.4);
-      gain.gain.setValueAtTime(v.gain, now + 0.9);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.7);
+      gain.gain.exponentialRampToValueAtTime(v.gain, now + 0.22);
+      gain.gain.setValueAtTime(v.gain * 0.85, now + 0.45);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.05);
       osc.connect(gain).connect(ac.destination);
       osc.start(now);
-      osc.stop(now + 1.75);
+      osc.stop(now + 1.1);
     }
   } catch {
     /* звук ніколи не має ламати навігацію */
@@ -336,7 +356,7 @@ export function playLogToss(pack = "default") {
 
       const gain = ac.createGain();
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.22, now + 0.45);
+      gain.gain.exponentialRampToValueAtTime(0.14, now + 0.45);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
 
       source.connect(lowpass).connect(gain).connect(ac.destination);

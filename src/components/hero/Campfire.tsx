@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { CampDeer } from "@/components/ambient/CampDeer";
 import type { HeroProps } from "@/components/hero/CalorieHero";
-import { playLogToss } from "@/lib/sfx";
+import { claimRitualSound, playLogToss } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 
@@ -53,6 +53,8 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const consumeRecalc = useAppStore((s) => s.consumeRecalc);
   const { user } = useCurrentUser();
   const pack = user?.soundpack ?? "default";
+  const packRef = useRef(pack);
+  packRef.current = pack;
 
   /*
    * Стану ритуалу в React немає взагалі: увесь таймлайн (дровина .85s, спалах
@@ -73,10 +75,10 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
 
   useEffect(() => {
     if (!recalc) return;
-    playLogToss(pack);
+    if (claimRitualSound(recalc.id)) playLogToss(packRef.current);
     const t = window.setTimeout(consumeRecalc, 2600);
     return () => window.clearTimeout(t);
-  }, [recalc, consumeRecalc, pack]);
+  }, [recalc, consumeRecalc]);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[52px]" : "text-[62px]";

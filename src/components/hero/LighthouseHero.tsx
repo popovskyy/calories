@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { isInTargetFor } from "@/lib/economy";
-import { playFoghorn, playLighthouseDing } from "@/lib/sfx";
+import { claimRitualSound, playFoghorn, playLighthouseDing } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 
@@ -34,6 +34,8 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
   const consumeRecalc = useAppStore((s) => s.consumeRecalc);
   const { user } = useCurrentUser();
   const pack = user?.soundpack ?? "default";
+  const packRef = useRef(pack);
+  packRef.current = pack;
 
   const ritualActive = recalc !== null;
   const ritualKey = recalc?.id ?? "idle";
@@ -65,10 +67,10 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
 
   useEffect(() => {
     if (!recalc) return;
-    playFoghorn(pack);
+    if (claimRitualSound(recalc.id)) playFoghorn(packRef.current);
     const t = window.setTimeout(consumeRecalc, 2600);
     return () => window.clearTimeout(t);
-  }, [recalc, consumeRecalc, pack]);
+  }, [recalc, consumeRecalc]);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[44px]" : digits >= 4 ? "text-[52px]" : "text-[58px]";

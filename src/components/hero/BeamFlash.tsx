@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { playFoghorn } from "@/lib/sfx";
+import { useEffect, useRef } from "react";
+import { claimRitualSound, playFoghorn } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 import { useThemeId } from "@/hooks/useThemeId";
@@ -9,18 +9,20 @@ import { useThemeId } from "@/hooks/useThemeId";
 /**
  * Компактне відлуння ритуалу маяка для Журналу — аналог EmberFlash у forest.
  * Сигнал свідомо НЕ споживається: повний оберт променя має відпрацювати
- * на Огляді.
+ * на Огляді. Звук — один раз на сигнал (claimRitualSound).
  */
 export function BeamFlash() {
   const recalc = useAppStore((s) => s.recalc);
   const { user } = useCurrentUser();
   const pack = user?.soundpack ?? "default";
+  const packRef = useRef(pack);
+  packRef.current = pack;
   const lighthouse = useThemeId() === "lighthouse";
 
   useEffect(() => {
     if (!lighthouse || !recalc) return;
-    playFoghorn(pack);
-  }, [recalc, lighthouse, pack]);
+    if (claimRitualSound(recalc.id)) playFoghorn(packRef.current);
+  }, [recalc, lighthouse]);
 
   if (!lighthouse || !recalc) return null;
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { playLogToss } from "@/lib/sfx";
+import { useEffect, useRef } from "react";
+import { claimRitualSound, playLogToss } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 import { useThemeId } from "@/hooks/useThemeId";
@@ -12,18 +12,21 @@ import { useThemeId } from "@/hooks/useThemeId";
  * Після збереження їжі застосунок веде на /log, а вогнище живе на Огляді —
  * без цього спалаху перерахунок пройшов би повз очі. Сигнал тут свідомо
  * НЕ споживається: повний ритуал усе одно має відпрацювати на Огляді.
- * Анімації forwards, тож догорілий вузол лишається невидимим до кінця сигналу.
+ * Звук — через claimRitualSound: один сигнал = один whoosh, навіть якщо
+ * потім відкриється Campfire.
  */
 export function EmberFlash() {
   const recalc = useAppStore((s) => s.recalc);
   const { user } = useCurrentUser();
   const pack = user?.soundpack ?? "default";
+  const packRef = useRef(pack);
+  packRef.current = pack;
   const forest = useThemeId() === "forest";
 
   useEffect(() => {
     if (!forest || !recalc) return;
-    playLogToss(pack);
-  }, [recalc, forest, pack]);
+    if (claimRitualSound(recalc.id)) playLogToss(packRef.current);
+  }, [recalc, forest]);
 
   if (!forest || !recalc) return null;
 
