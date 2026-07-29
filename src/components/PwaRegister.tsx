@@ -29,9 +29,15 @@ export function PwaRegister() {
     // Якщо новий SW бере на себе контроль (після оновлення деплою), стара
     // вкладка все ще виконує JS, завантажений під попередню версію — тож
     // перезавантажуємось один раз, щоб гарантовано підхопити свіжі чанки.
+    //
+    // hadController — обов'язкова умова: sw.js робить skipWaiting + clients.claim,
+    // тож controllerchange кидається і при ПЕРШІЙ у житті реєстрації, коли
+    // жодного старого JS немає. Без цієї перевірки кожен новий відвідувач
+    // отримував повне перезавантаження одразу після першого промальовування.
+    const hadController = navigator.serviceWorker.controller !== null;
     let reloadedForUpdate = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloadedForUpdate) return;
+      if (!hadController || reloadedForUpdate) return;
       reloadedForUpdate = true;
       window.location.reload();
     });

@@ -26,7 +26,6 @@ import {
   useRecentMeals,
   useSaveMeal,
 } from "@/hooks/useQueries";
-import { useMounted } from "@/hooks/useMounted";
 import { useAppStore } from "@/store/useAppStore";
 import { humanDateFull } from "@/lib/date";
 import { compressImageToJpeg } from "@/lib/image-compress";
@@ -39,9 +38,8 @@ interface ImageState {
 }
 
 export default function AddFoodPage() {
-  const mounted = useMounted();
   const router = useRouter();
-  const { user } = useCurrentUser();
+  const { user, isLoading: userLoading } = useCurrentUser();
   const selectedDate = useAppStore((s) => s.selectedDate);
   const recent = useRecentMeals(10);
   const dash = useDashboard();
@@ -158,7 +156,7 @@ export default function AddFoodPage() {
     persist(result);
   };
 
-  if (mounted && !user) {
+  if (!userLoading && !user) {
     return (
       <AppFrame>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
@@ -192,11 +190,9 @@ export default function AddFoodPage() {
           <h1 className="page-title">
             Новий прийом їжі
           </h1>
-          {mounted ? (
-            <p className="text-[14px] text-[var(--color-muted3)]">
-              {humanDateFull(selectedDate)}
-            </p>
-          ) : null}
+          <p className="text-[14px] text-[var(--color-muted3)]">
+            {humanDateFull(selectedDate)}
+          </p>
         </div>
       </header>
 

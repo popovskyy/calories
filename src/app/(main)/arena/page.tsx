@@ -11,20 +11,18 @@ import { LoadError } from "@/components/ui/LoadError";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { PlayerCard } from "@/components/arena/PlayerCard";
 import { useArena, useCurrentUser, useNudge } from "@/hooks/useQueries";
-import { useMounted } from "@/hooks/useMounted";
 import { humanDate } from "@/lib/date";
 import { cn } from "@/lib/cn";
 import { isInTargetFor } from "@/lib/economy";
 import type { ArenaEntry, ArenaYesterdayEntry } from "@/lib/types";
 
 export default function ArenaPage() {
-  const mounted = useMounted();
   const arena = useArena();
   const { user } = useCurrentUser();
   // Обраний учасник — модалка з повним зрізом його дня.
   const [picked, setPicked] = useState<ArenaEntry | null>(null);
 
-  if (mounted && arena.isError) {
+  if (arena.isError) {
     return (
       <LoadError
         message="Не вдалося завантажити арену"
@@ -32,7 +30,7 @@ export default function ArenaPage() {
       />
     );
   }
-  if (!mounted || arena.isLoading) {
+  if (arena.isLoading) {
     return (
       <>
         <Skeleton className="h-8 w-36" />

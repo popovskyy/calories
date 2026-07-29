@@ -23,7 +23,6 @@ import {
   useDeleteMeal,
   useMeals,
 } from "@/hooks/useQueries";
-import { useMounted } from "@/hooks/useMounted";
 import { useAppStore } from "@/store/useAppStore";
 import { shiftYMD } from "@/lib/date";
 import type { MealDTO } from "@/lib/types";
@@ -37,7 +36,6 @@ type ConfirmState =
 type LogTab = "food" | "activity";
 
 function LogPageInner() {
-  const mounted = useMounted();
   const { user, isLoading } = useCurrentUser();
   const selectedDate = useAppStore((s) => s.selectedDate);
   const setSelectedDate = useAppStore((s) => s.setSelectedDate);
@@ -57,7 +55,7 @@ function LogPageInner() {
     }
   }, [searchParams, setSelectedDate]);
 
-  if (mounted && (meals.isError || activities.isError)) {
+  if (meals.isError || activities.isError) {
     return (
       <LoadError
         message="Не вдалося завантажити журнал"
@@ -68,7 +66,7 @@ function LogPageInner() {
       />
     );
   }
-  if (!mounted || isLoading || !user) return <LogSkeleton />;
+  if (isLoading || !user) return <LogSkeleton />;
 
   const list = meals.data ?? [];
   const acts = activities.data ?? [];

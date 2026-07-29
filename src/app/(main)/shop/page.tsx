@@ -19,7 +19,6 @@ import {
   useEquipTheme,
   useShop,
 } from "@/hooks/useQueries";
-import { useMounted } from "@/hooks/useMounted";
 import { requestThemeEquipFlash } from "@/components/ThemeEquipFlash";
 import { ThemePreview } from "@/components/shop/ThemePreview";
 import { RARITY } from "@/lib/avatar-presets";
@@ -43,7 +42,6 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function ShopPage() {
-  const mounted = useMounted();
   const { user } = useCurrentUser();
   const shop = useShop();
   const buySkin = useBuySkin();
@@ -111,7 +109,7 @@ export default function ShopPage() {
         </div>
       </header>
 
-      {!mounted || shop.isLoading ? (
+      {shop.isLoading ? (
         <div className="grid grid-cols-2 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-[168px] w-full rounded-[var(--radius-lg)]" />

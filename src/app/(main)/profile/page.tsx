@@ -12,18 +12,16 @@ import { UserFormDialog } from "@/components/UserFormDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import { useCurrentUser, useLogout, useStreak } from "@/hooks/useQueries";
-import { useMounted } from "@/hooks/useMounted";
 import { GOAL_LABELS } from "@/lib/calories";
 
 export default function ProfilePage() {
-  const mounted = useMounted();
   const { user, isLoading, isError, refetch } = useCurrentUser();
   const logout = useLogout();
   const streak = useStreak();
   const [formOpen, setFormOpen] = useState(false);
   const [pwdOpen, setPwdOpen] = useState(false);
 
-  if (mounted && isError) {
+  if (isError) {
     return (
       <LoadError
         message="Не вдалося завантажити профіль"
@@ -32,7 +30,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!mounted || isLoading) {
+  if (isLoading) {
     return (
       <>
         <Skeleton className="h-8 w-40" />

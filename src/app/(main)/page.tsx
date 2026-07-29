@@ -17,7 +17,6 @@ import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import { useCurrentUser, useDashboard, useEpics } from "@/hooks/useQueries";
-import { useMounted } from "@/hooks/useMounted";
 import { calcMacroTargets } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
@@ -31,12 +30,11 @@ const WeeklyChart = dynamic(
 );
 
 export default function DashboardPage() {
-  const mounted = useMounted();
   const { user, isLoading, isError, refetch } = useCurrentUser();
   const dash = useDashboard();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  if (mounted && (isError || dash.isError)) {
+  if (isError || dash.isError) {
     return (
       <LoadError
         message="Не вдалося завантажити огляд"
@@ -47,7 +45,7 @@ export default function DashboardPage() {
       />
     );
   }
-  if (!mounted || isLoading || !user) return <DashboardSkeleton />;
+  if (isLoading || !user) return <DashboardSkeleton />;
 
   const today = dash.data?.today;
   const over = (today?.difference ?? 0) < 0;

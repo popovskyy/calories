@@ -17,15 +17,13 @@ import {
   useRecentActivities,
   useSaveActivity,
 } from "@/hooks/useQueries";
-import { useMounted } from "@/hooks/useMounted";
 import { useAppStore } from "@/store/useAppStore";
 import { humanDateFull } from "@/lib/date";
 import type { AnalyzeActivityResult, RecentActivityDTO } from "@/lib/types";
 
 export default function AddActivityPage() {
-  const mounted = useMounted();
   const router = useRouter();
-  const { user } = useCurrentUser();
+  const { user, isLoading: userLoading } = useCurrentUser();
   const dash = useDashboard();
   const selectedDate = useAppStore((s) => s.selectedDate);
 
@@ -110,7 +108,7 @@ export default function AddActivityPage() {
     );
   };
 
-  if (mounted && !user) {
+  if (!userLoading && !user) {
     return (
       <AppFrame>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
@@ -142,11 +140,9 @@ export default function AddActivityPage() {
           <h1 className="page-title">
             Активність
           </h1>
-          {mounted ? (
-            <p className="text-[14px] text-[var(--color-muted3)]">
-              {humanDateFull(selectedDate)}
-            </p>
-          ) : null}
+          <p className="text-[14px] text-[var(--color-muted3)]">
+            {humanDateFull(selectedDate)}
+          </p>
         </div>
       </header>
 

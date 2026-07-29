@@ -4,11 +4,9 @@ import { toast } from "sonner";
 import { EpicCard } from "@/components/EpicCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useEpics, useStartEpic } from "@/hooks/useQueries";
-import { useMounted } from "@/hooks/useMounted";
 
 /** Хроніки — довгі походи на місяці. Активний обираєш сам. */
 export default function EpicsPage() {
-  const mounted = useMounted();
   const q = useEpics();
   const start = useStartEpic();
 
@@ -31,7 +29,7 @@ export default function EpicsPage() {
         </p>
       </header>
 
-      {!mounted || q.isLoading ? (
+      {q.isLoading ? (
         <div className="flex flex-col gap-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[140px] w-full rounded-[var(--radius-lg)]" />
