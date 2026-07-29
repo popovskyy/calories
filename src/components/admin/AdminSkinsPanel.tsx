@@ -44,6 +44,22 @@ function InlineSvgPreview({
   );
 }
 
+function SkinAvatar({ s, size }: { s: SkinRow; size: number }) {
+  if (s.artKind === "inline" && s.svg?.trim()) {
+    return <InlineSvgPreview svg={s.svg} size={size} bg={s.bg} label={s.nameUk} />;
+  }
+  return (
+    <PresetMascot
+      id={s.id}
+      size={size}
+      animated={false}
+      artKind={s.artKind}
+      nameUk={s.nameUk}
+      bg={s.bg}
+    />
+  );
+}
+
 const emptyNew = (): Partial<SkinRow> & { id: string } => ({
   id: "",
   nameUk: "",
@@ -205,206 +221,154 @@ export function AdminSkinsPanel() {
     }
   };
 
-  // “Покарання” — окрема сущність у адмінці: не змішуємо з основним каталогом.
-  const punishmentSkins = skins.filter((s) => s.id === "pepa_pig");
+  const punishmentSkin = skins.find((s) => s.id === "pepa_pig") ?? null;
   const catalogSkins = skins.filter((s) => s.id !== "pepa_pig");
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
-      <div className="min-w-0 overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-divider)] px-3 py-2.5">
-          <span className="text-[13px] text-[var(--color-muted3)]">
-            {skins.length} скінів · ціна і рідкість редагуються в редакторі
-          </span>
-          <button type="button" className="btn btn-primary btn-sm" onClick={startCreate}>
-            <Plus size={15} /> Новий скін
-          </button>
-        </div>
-        {/*
-          Було max-h-[70vh] + overflow-y-auto — вкладена скрол-пастка:
-          список мав власний скрол усередині сторінки, яка сама не скролилась,
-          тож нижні скіни було не дістати. Тепер скролить сторінка.
-        */}
-        <div className="overflow-x-auto">
-          <div className="grid min-w-[860px] gap-4 sm:grid-cols-2">
-            {/* Покарання */}
-            <div className="min-w-[420px] overflow-x-auto">
-              <table className="w-full min-w-[420px] text-left text-[14px]">
-                <thead className="sticky top-0 bg-[var(--color-surface)] text-[12px] uppercase text-[var(--color-muted3)]">
-                  <tr>
-                    <th className="px-3 py-2">Покарання</th>
-                    <th className="px-3 py-2" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--color-divider)]">
-                  {loading
-                    ? [0].map((i) => (
-                        <tr key={i}>
-                          <td colSpan={2} className="p-3">
-                            <Skeleton className="h-10 w-full" />
-                          </td>
-                        </tr>
-                      ))
-                    : punishmentSkins.length === 0
-                      ? (
-                        <tr>
-                          <td colSpan={2} className="p-3 text-[13px] text-[var(--color-muted3)]">
-                            Немає active punishment skin
-                          </td>
-                        </tr>
-                      )
-                      : punishmentSkins.map((s) => (
-                        <tr
-                          key={s.id}
-                          className={
-                            selected?.id === s.id
-                              ? "bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]"
-                              : "hover:bg-[var(--color-tile)]"
-                          }
-                        >
-                          <td className="px-3 py-2">
-                            <button
-                              type="button"
-                              className="flex items-center gap-2 text-left"
-                              onClick={() => open(s)}
-                            >
-                              {s.artKind === "inline" && s.svg?.trim() ? (
-                                <InlineSvgPreview
-                                  svg={s.svg}
-                                  size={36}
-                                  bg={s.bg}
-                                  label={s.nameUk}
-                                />
-                              ) : (
-                                <PresetMascot
-                                  id={s.id}
-                                  size={36}
-                                  animated={false}
-                                  artKind={s.artKind}
-                                  nameUk={s.nameUk}
-                                  bg={s.bg}
-                                />
-                              )}
-                              <span>
-                                <span className="block font-semibold">{s.nameUk}</span>
-                                <span className="text-[12px] text-[var(--color-muted3)]">
-                                  {s.id}
-                                  {s.enabled === false ? (
-                                    <span className="ml-2 inline-flex items-center rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--color-red)_18%,transparent)] px-2 py-0.5 text-[11px] text-[var(--color-red)]">
-                                      вимкнено
-                                    </span>
-                                  ) : null}
-                                </span>
-                              </span>
-                            </button>
-                          </td>
-                          <td className="px-3 py-2">
-                            <button
-                              type="button"
-                              className="icon-btn hover:text-[var(--color-red)]"
-                              onClick={() => void remove(s.id)}
-                              aria-label={`Вимкнути скін ${s.nameUk}`}
-                              title="Вимкнути в магазині"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
+      <div className="flex min-w-0 flex-col gap-4">
+        {/* ── Покарання: компактний банер ── */}
+        <button
+          type="button"
+          onClick={() => punishmentSkin && open(punishmentSkin)}
+          className={cn(
+            "mcard flex items-center gap-4 p-4 text-left transition-colors",
+            punishmentSkin && "hover:bg-[var(--color-tile)]",
+            selected?.id === "pepa_pig" && "ring-2 ring-[var(--color-accent)]",
+          )}
+        >
+          <div className="shrink-0">
+            {loading ? (
+              <Skeleton className="h-14 w-14 rounded-full" />
+            ) : punishmentSkin ? (
+              <SkinAvatar s={punishmentSkin} size={56} />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-tile)] text-[24px]">
+                🐷
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-red)]">
+                Скін покарання
+              </span>
+              {punishmentSkin?.enabled === false ? (
+                <span className="rounded-[4px] bg-[color-mix(in_srgb,var(--color-red)_16%,transparent)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-red)]">
+                  прихований
+                </span>
+              ) : null}
             </div>
+            <div className="mt-0.5 truncate text-[15px] font-semibold">
+              {punishmentSkin?.nameUk ?? "Свинка Пепа"}
+            </div>
+            <div className="mt-0.5 text-[12px] text-[var(--color-muted3)]">
+              Автоматично вдягається при переборі калорій. Не доступний у магазині.
+            </div>
+          </div>
+          <span className="shrink-0 text-[12px] text-[var(--color-muted3)]">Редагувати →</span>
+        </button>
 
-            {/* Основний каталог */}
-            <div className="min-w-[420px] overflow-x-auto">
-              <table className="w-full min-w-[420px] text-left text-[14px]">
-                <thead className="sticky top-0 bg-[var(--color-surface)] text-[12px] uppercase text-[var(--color-muted3)]">
-                  <tr>
-                    <th className="px-3 py-2">Скін</th>
-                    <th className="px-3 py-2">Ціна</th>
-                    <th className="px-3 py-2">Рідкість</th>
-                    <th className="px-3 py-2" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--color-divider)]">
-                  {loading
-                    ? [0, 1, 2].map((i) => (
-                        <tr key={i}>
-                          <td colSpan={4} className="p-3">
-                            <Skeleton className="h-10 w-full" />
-                          </td>
-                        </tr>
-                      ))
-                    : catalogSkins.map((s) => (
+        {/* ── Каталог скінів ── */}
+        <div className="min-w-0 overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-divider)] px-4 py-3">
+            <span className="text-[13px] text-[var(--color-muted3)]">
+              {catalogSkins.length} скінів · обери для редагування
+            </span>
+            <button type="button" className="btn btn-primary btn-sm" onClick={startCreate}>
+              <Plus size={15} /> Новий скін
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-[14px]">
+              <thead className="sticky top-0 bg-[var(--color-surface)] text-[11px] uppercase tracking-wider text-[var(--color-muted3)]">
+                <tr>
+                  <th className="px-4 py-2.5">Скін</th>
+                  <th className="px-4 py-2.5 text-right">Ціна</th>
+                  <th className="px-4 py-2.5">Рідкість</th>
+                  <th className="w-10 px-2 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-divider)]">
+                {loading
+                  ? [0, 1, 2].map((i) => (
+                      <tr key={i}>
+                        <td colSpan={4} className="p-3">
+                          <Skeleton className="h-10 w-full" />
+                        </td>
+                      </tr>
+                    ))
+                  : catalogSkins.map((s) => {
+                      const isSelected = selected?.id === s.id;
+                      const disabled = s.enabled === false;
+                      return (
                         <tr
                           key={s.id}
-                          className={
-                            selected?.id === s.id
+                          className={cn(
+                            "transition-colors",
+                            isSelected
                               ? "bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]"
-                              : "hover:bg-[var(--color-tile)]"
-                          }
+                              : "hover:bg-[var(--color-tile)]",
+                            disabled && "opacity-50",
+                          )}
                         >
-                          <td className="px-3 py-2">
+                          <td className="px-4 py-2.5">
                             <button
                               type="button"
-                              className="flex items-center gap-2 text-left"
+                              className="flex items-center gap-3 text-left"
                               onClick={() => open(s)}
                             >
-                              {s.artKind === "inline" && s.svg?.trim() ? (
-                                <InlineSvgPreview
-                                  svg={s.svg}
-                                  size={36}
-                                  bg={s.bg}
-                                  label={s.nameUk}
-                                />
-                              ) : (
-                                <PresetMascot
-                                  id={s.id}
-                                  size={36}
-                                  animated={false}
-                                  artKind={s.artKind}
-                                  nameUk={s.nameUk}
-                                  bg={s.bg}
-                                />
-                              )}
-                              <span>
-                                <span className="block font-semibold">{s.nameUk}</span>
-                                <span className="text-[12px] text-[var(--color-muted3)]">
-                                  {s.id}
-                                  {s.enabled === false ? (
-                                    <span className="ml-2 inline-flex items-center rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--color-red)_18%,transparent)] px-2 py-0.5 text-[11px] text-[var(--color-red)]">
-                                      вимкнено
+                              <SkinAvatar s={s} size={36} />
+                              <span className="min-w-0">
+                                <span className="flex items-center gap-1.5">
+                                  <span className="truncate font-semibold">{s.nameUk}</span>
+                                  {disabled ? (
+                                    <span className="shrink-0 rounded-[4px] bg-[color-mix(in_srgb,var(--color-red)_16%,transparent)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-red)]">
+                                      OFF
                                     </span>
                                   ) : null}
-                                  {s.tier === "free" ? " · free" : ""}
+                                </span>
+                                <span className="block truncate text-[12px] text-[var(--color-muted3)]">
+                                  {s.id}{s.tier === "free" ? " · free" : ""}
                                 </span>
                               </span>
                             </button>
                           </td>
-                          <td className="px-3 py-2 tabular-nums font-semibold">{s.price}</td>
-                          <td className="px-3 py-2" style={{ color: RARITY[s.rarity].color }}>
-                            {RARITY[s.rarity].label}
+                          <td className="px-4 py-2.5 text-right tabular-nums font-semibold">
+                            {s.price > 0 ? s.price : "—"}
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-4 py-2.5">
+                            <span
+                              className="inline-block rounded-[4px] px-2 py-0.5 text-[11px] font-semibold"
+                              style={{
+                                color: RARITY[s.rarity].color,
+                                background: `color-mix(in srgb, ${RARITY[s.rarity].color} 12%, transparent)`,
+                              }}
+                            >
+                              {RARITY[s.rarity].label}
+                            </span>
+                          </td>
+                          <td className="px-2 py-2.5 text-center">
                             <button
                               type="button"
-                              className="icon-btn hover:text-[var(--color-red)]"
+                              className="icon-btn text-[var(--color-muted3)] hover:text-[var(--color-red)]"
                               onClick={() => void remove(s.id)}
-                              aria-label={`Вимкнути скін ${s.nameUk}`}
-                              title="Вимкнути в магазині"
+                              aria-label={`Вимкнути ${s.nameUk}`}
+                              title="Вимкнути"
                             >
-                              <Trash2 size={15} />
+                              <Trash2 size={14} />
                             </button>
                           </td>
                         </tr>
-                      ))}
-                </tbody>
-              </table>
-            </div>
+                      );
+                    })}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
+      {/* ── Редактор збоку ── */}
       <AdminEditor
         open={creating || selected ? (selected?.id ?? "new") : null}
         title={creating ? "Новий скін" : selected ? "Редагування скіна" : undefined}
@@ -413,7 +377,7 @@ export function AdminSkinsPanel() {
         {!creating && !selected ? (
           <div className="flex flex-col gap-3">
             <p className="text-[15px] text-[var(--color-muted3)]">
-              Обери скін, щоб змінити ціну / рідкість, або створи новий з SVG.
+              Обери скін зі списку або створи новий.
             </p>
             <button type="button" className="btn btn-primary btn-block" onClick={startCreate}>
               <Plus size={16} /> Додати новий скін
