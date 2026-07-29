@@ -89,6 +89,12 @@ export function weekdayShort(ymd: string): string {
   return WEEKDAYS_UK[fromYMD(ymd).getUTCDay()];
 }
 
+/** «24 лип» — компактний підпис для осей графіків. */
+export function shortDate(ymd: string): string {
+  const d = fromYMD(ymd);
+  return `${d.getUTCDate()} ${MONTHS_UK[d.getUTCMonth()]}`;
+}
+
 /** «Нд, 24 лип» */
 export function humanDate(ymd: string): string {
   const d = fromYMD(ymd);

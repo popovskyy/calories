@@ -258,6 +258,8 @@ export type AdviceResponse =
 export interface ForecastResponse {
   configured: boolean;
   startWeight: number | null;
+  /** Дата, від якої рахується ціль (YYYY-MM-DD) — початок осі графіка. */
+  startWeightDate: string | null;
   currentWeight: number | null;
   targetWeight: number | null;
   expectedWeight: number | null;

@@ -13,13 +13,15 @@ export async function GET() {
   const auth = await requireSession();
   if (!auth.ok) return auth.response;
 
-  const items = await prisma.weightLog.findMany({
+  // Беремо саме СВІЖІ записи (desc + take), інакше після 90 зважувань
+  // графік застиг би на найстаріших. Клієнту віддаємо за зростанням дати.
+  const rows = await prisma.weightLog.findMany({
     where: { userId: auth.session.userId },
-    orderBy: { date: "asc" },
-    take: 90,
+    orderBy: { date: "desc" },
+    take: 180,
     select: { date: true, weight: true },
   });
-  return NextResponse.json({ items });
+  return NextResponse.json({ items: rows.reverse() });
 }
 
 const schema = z.object({

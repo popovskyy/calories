@@ -44,6 +44,7 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
       ...emptyForecast(),
       configured: false,
       startWeight: user.startWeight,
+      startWeightDate: user.startWeightDate,
       currentWeight: user.weight,
       targetWeight: user.targetWeight,
     };
@@ -127,6 +128,7 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
   return {
     configured: true,
     startWeight,
+    startWeightDate,
     currentWeight,
     targetWeight,
     expectedWeight,
@@ -144,6 +146,7 @@ function emptyForecast(): ForecastResponse {
   return {
     configured: false,
     startWeight: null,
+    startWeightDate: null,
     currentWeight: null,
     targetWeight: null,
     expectedWeight: null,

@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { EPICS } from "@/lib/epics";
-import { playFinisher } from "@/lib/sfx";
+import { playEpicFanfare, playFinisher } from "@/lib/sfx";
 import { useCurrentUser } from "@/hooks/useQueries";
 import type { GrantedReward } from "@/lib/types";
 
@@ -88,8 +88,14 @@ export function RewardCelebrations() {
       if (epicMoments.length > 0) {
         setEpicQueue((q) => [...q, ...epicMoments]);
       }
-      if (!reduceRef.current && (rest.length > 0 || epicMoments.length > 0)) {
-        playFinisher(packRef.current);
+      if (!reduceRef.current) {
+        // Вузол хроніки — рідкісний момент, у нього власний, більший звук;
+        // звичайні квести лишаються на скромному акорді.
+        if (epicMoments.length > 0) {
+          playEpicFanfare(packRef.current);
+        } else if (rest.length > 0) {
+          playFinisher(packRef.current);
+        }
       }
     });
   }, [qc]);

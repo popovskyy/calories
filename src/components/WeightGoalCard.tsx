@@ -5,6 +5,7 @@ import { Scale } from "lucide-react";
 import { toast } from "sonner";
 import { ProgressBar } from "@/components/ProgressBar";
 import { UserFormDialog } from "@/components/UserFormDialog";
+import { WeightChart } from "@/components/WeightChart";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   useCurrentUser,
@@ -16,6 +17,7 @@ import {
 export function WeightGoalCard() {
   const { user } = useCurrentUser();
   const { data, isLoading } = useForecast();
+  const { data: history } = useWeightHistory();
   const [formOpen, setFormOpen] = useState(false);
 
   if (isLoading) {
@@ -49,11 +51,13 @@ export function WeightGoalCard() {
 
   const {
     startWeight,
+    startWeightDate,
     currentWeight,
     targetWeight,
     expectedWeight,
     deltaActual,
     plannedWeightToday,
+    targetDate,
     daysLeft,
     loggedDays,
     totalDays,
@@ -118,7 +122,19 @@ export function WeightGoalCard() {
       <ProgressBar value={done} />
 
       <WeighInRow currentWeight={currentWeight} />
-      <WeightSparkline />
+
+      {startWeight != null &&
+      startWeightDate &&
+      targetWeight != null &&
+      targetDate ? (
+        <WeightChart
+          points={history?.items ?? []}
+          startWeight={startWeight}
+          startWeightDate={startWeightDate}
+          targetWeight={targetWeight}
+          targetDate={targetDate}
+        />
+      ) : null}
 
       <div>
         <p className="text-[15px] font-semibold text-[var(--color-text)]">
@@ -199,56 +215,6 @@ function WeighInRow({ currentWeight }: { currentWeight: number | null }) {
       >
         {logWeight.isPending ? "…" : "Записати"}
       </button>
-    </div>
-  );
-}
-
-/** Спарклайн останніх зважувань — тренд видно без сторінки статистики. */
-function WeightSparkline() {
-  const { data } = useWeightHistory();
-  const points = (data?.items ?? []).slice(-30);
-  if (points.length < 2) return null;
-
-  const w = 320;
-  const h = 44;
-  const pad = 3;
-  const weights = points.map((p) => p.weight);
-  const min = Math.min(...weights);
-  const max = Math.max(...weights);
-  const span = Math.max(max - min, 0.5);
-  const xy = points.map((p, i) => {
-    const x = pad + (i / (points.length - 1)) * (w - pad * 2);
-    const y = pad + (1 - (p.weight - min) / span) * (h - pad * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const last = xy[xy.length - 1]!.split(",");
-
-  return (
-    <div>
-      <svg
-        aria-hidden
-        viewBox={`0 0 ${w} ${h}`}
-        className="h-[44px] w-full"
-        preserveAspectRatio="none"
-      >
-        <polyline
-          points={xy.join(" ")}
-          fill="none"
-          stroke="var(--color-accent)"
-          strokeWidth="2"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          opacity="0.85"
-        />
-        <circle cx={last[0]} cy={last[1]} r="3" fill="var(--color-accent)" />
-      </svg>
-      <div className="flex justify-between text-[11px] tabular-nums text-[var(--color-muted3)]">
-        <span>{fmtKg(min)}</span>
-        <span>
-          {points.length} {points.length === 1 ? "запис" : points.length < 5 ? "записи" : "записів"}
-        </span>
-        <span>{fmtKg(max)}</span>
-      </div>
     </div>
   );
 }

@@ -105,6 +105,24 @@ export function getPackProfile(pack: string): PackProfile {
   return PACKS[pack] ?? PACKS.default!;
 }
 
+/**
+ * Спільна брама сімейства «нагорода».
+ *
+ * Одна дія користувача розсилає кілька інвалідацій (`quests`, `epics`,
+ * картки дня, святкування збереження) — кожна прилітає окремою подією кешу,
+ * і без цієї брами той самий акорд грав би двічі-тричі поспіль, що на слух
+ * читається як заїкання, а не як нагорода.
+ */
+let lastRewardAt = 0;
+let lastEpicAt = 0;
+
+function rewardGate(minGapMs: number): boolean {
+  const now = Date.now();
+  if (now - lastRewardAt < minGapMs) return false;
+  lastRewardAt = now;
+  return true;
+}
+
 /** Акорд перемоги для кожного пакета: півтони від базової ноти. */
 const FANFARE: Record<string, { wave: OscillatorType; notes: number[]; gain: number }> = {
   default: { wave: "triangle", notes: [523, 659, 784], gain: 0.11 },
@@ -121,6 +139,7 @@ const FANFARE: Record<string, { wave: OscillatorType; notes: number[]; gain: num
  */
 export function playFinisher(pack = "default") {
   if (!soundAllowed()) return;
+  if (!rewardGate(900)) return;
   const ac = getContext();
   if (!ac) return;
 
@@ -139,6 +158,70 @@ export function playFinisher(pack = "default") {
       osc.connect(gain).connect(ac.destination);
       osc.start(at);
       osc.stop(at + 0.3);
+    });
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
+ * Вузол хроніки («Перший кілограм» і подібні) — окремий, більший звук.
+ *
+ * Такі моменти трапляються кілька разів за весь шлях, тому вони НЕ мають
+ * звучати як щоденна картка чи влучний день: висхідне арпеджіо на п'ять нот
+ * плюс низький корінь і дзвінкий хвіст. Впізнається з першої ноти саме як
+ * «це щось рідкісне».
+ */
+const EPIC_NOTES: Record<string, number[]> = {
+  default: [392, 523, 659, 784, 1047],
+  blocky: [349, 466, 587, 784, 932],
+  retro: [523, 659, 784, 1047, 1319],
+  cinema: [131, 175, 262, 349, 523],
+};
+
+export function playEpicFanfare(pack = "default") {
+  if (!soundAllowed()) return;
+  // Власна брама: рідкісний момент має право прозвучати навіть одразу після
+  // звичайного фінішера — але сам себе не дублює.
+  const now = Date.now();
+  if (now - lastEpicAt < 1500) return;
+  lastEpicAt = now;
+  lastRewardAt = now; // приглушує звичайний акорд із тієї ж пачки нагород
+
+  const ac = getContext();
+  if (!ac) return;
+
+  const f = FANFARE[pack] ?? FANFARE.default!;
+  const notes = EPIC_NOTES[pack] ?? EPIC_NOTES.default!;
+
+  try {
+    const t0 = ac.currentTime;
+
+    // Низький корінь — підкладка, що тримає всю фразу.
+    const root = ac.createOscillator();
+    const rootGain = ac.createGain();
+    root.type = "sine";
+    root.frequency.setValueAtTime(notes[0]! / 2, t0);
+    rootGain.gain.setValueAtTime(0.0001, t0);
+    rootGain.gain.exponentialRampToValueAtTime(f.gain * 0.8, t0 + 0.08);
+    rootGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.1);
+    root.connect(rootGain).connect(ac.destination);
+    root.start(t0);
+    root.stop(t0 + 1.15);
+
+    notes.forEach((hz, i) => {
+      const at = t0 + i * 0.11;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = f.wave;
+      osc.frequency.setValueAtTime(hz, at);
+      gain.gain.setValueAtTime(f.gain, at);
+      // Остання нота дзвенить довше — це і є «хвіст» моменту.
+      const tail = i === notes.length - 1 ? 0.9 : 0.3;
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + tail);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(at);
+      osc.stop(at + tail + 0.02);
     });
   } catch {
     /* звук ніколи не має ламати навігацію */
