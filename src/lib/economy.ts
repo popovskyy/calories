@@ -107,8 +107,8 @@ export const SETTLE_LOOKBACK_DAYS = 3;
  */
 export const TARGET_OVER_TOLERANCE = 0.05;
 export const TARGET_UNDER_TOLERANCE: Record<Goal, number> = {
-  deficit: 0.15,
-  maintain: 0.1,
+  deficit: 0.24,
+  maintain: 0.24,
 };
 
 /** Межі зони «в цілі» в ккал. */

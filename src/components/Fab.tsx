@@ -37,7 +37,8 @@ function FabButton() {
     <motion.span
       data-pending={pending || undefined}
       initial={{ scale: 0.92, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
+      animate={{ scale: pending ? 0.94 : 1, opacity: 1 }}
+      whileTap={{ scale: 0.94 }}
       transition={{
         // Спрінг лише на scale: спрінг по opacity осцилює навколо 1 і
         // читається як блимання (найпомітніше на пласкій minecraft-кнопці).

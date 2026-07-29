@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ChevronDown } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { CalorieHero } from "@/components/hero/CalorieHero";
@@ -11,7 +12,6 @@ import { DietAdvice } from "@/components/DietAdvice";
 import { MacroTiles } from "@/components/MacroTiles";
 import { QuestChip } from "@/components/QuestChip";
 import { ThemeAspirationHint } from "@/components/ThemeAspirationHint";
-import { WeeklyChart } from "@/components/WeeklyChart";
 import { WeeklyQuestsCard } from "@/components/WeeklyQuestsCard";
 import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -21,6 +21,14 @@ import { useMounted } from "@/hooks/useMounted";
 import { calcMacroTargets } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
+
+const WeeklyChart = dynamic(
+  () => import("@/components/WeeklyChart").then((m) => m.WeeklyChart),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[150px] w-full" />,
+  },
+);
 
 export default function DashboardPage() {
   const mounted = useMounted();
@@ -172,7 +180,11 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 {dash.data ? (
-                  <WeeklyChart days={dash.data.days} target={user.targetCalories} />
+                  moreOpen ? (
+                    <WeeklyChart days={dash.data.days} target={user.targetCalories} />
+                  ) : (
+                    <Skeleton className="h-[150px] w-full" />
+                  )
                 ) : (
                   <Skeleton className="h-[150px] w-full" />
                 )}

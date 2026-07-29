@@ -748,11 +748,18 @@ html[data-theme="polonyna"] .coin-chip {
   gap: 2px;
   padding: 4px 0;
   color: var(--color-nav-idle-fg);
-  transition: color var(--duration-ui) ease, background var(--duration-ui) ease;
+  transition: color var(--duration-ui) ease, background var(--duration-ui) ease,
+    transform var(--duration-press) var(--ease-out);
+  will-change: transform;
 }
 .nav-tab[data-active="true"] {
   color: var(--color-nav-active-fg);
   background: var(--color-nav-active-bg);
+}
+
+/* Натиск має відчуватися миттєво (pointerdown) */
+.nav-tab:active {
+  transform: scale(0.97);
 }
 /*
  * Обгортка вмісту таба. `display: contents` лишає іконку й підпис прямими

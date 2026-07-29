@@ -14,6 +14,7 @@ import { useArena, useCurrentUser, useNudge } from "@/hooks/useQueries";
 import { useMounted } from "@/hooks/useMounted";
 import { humanDate } from "@/lib/date";
 import { cn } from "@/lib/cn";
+import { isInTargetFor } from "@/lib/economy";
 import type { ArenaEntry, ArenaYesterdayEntry } from "@/lib/types";
 
 export default function ArenaPage() {
@@ -176,8 +177,9 @@ function ProgressHalo({
       ? Math.min(1, entry.todayCalories / entry.targetCalories)
       : 0;
   const over = entry.difference < 0;
-  const inTarget =
-    entry.hasLog && entry.absError <= entry.targetCalories * 0.05;
+  const inTarget = entry.hasLog
+    ? isInTargetFor(entry.todayCalories, entry.targetCalories, entry.goal)
+    : false;
   const color = over
     ? "var(--color-red)"
     : inTarget
