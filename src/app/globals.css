@@ -754,6 +754,21 @@ html[data-theme="polonyna"] .coin-chip {
   color: var(--color-nav-active-fg);
   background: var(--color-nav-active-bg);
 }
+/*
+ * Обгортка вмісту таба. `display: contents` лишає іконку й підпис прямими
+ * flex-дітьми `.nav-tab`, але дає куди повісити стан «перехід у процесі»:
+ * доки маршрут вантажиться, таб уже виглядає активним, тож швидкий тап не
+ * здається зігнорованим.
+ */
+.nav-tab-inner {
+  display: contents;
+}
+.nav-tab-inner[data-pending] {
+  color: var(--color-nav-active-fg);
+}
+.nav-tab-inner[data-pending] .nav-tab-label {
+  font-weight: 600;
+}
 .nav-tab-label {
   font-size: 11px;
 }
@@ -823,6 +838,7 @@ html[data-theme="minecraft"] .nav-tab-label {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
 }
 .fab-btn {
+  position: relative;
   width: 64px;
   height: 64px;
   border-radius: var(--radius-pill);
@@ -836,6 +852,42 @@ html[data-theme="minecraft"] .nav-tab-label {
 .fab-btn-icon {
   width: 32px;
   height: 32px;
+}
+
+/*
+ * Очікування переходу. Кнопка лишається «втиснутою», поки маршрут вантажиться:
+ * тап зарахований, просто сторінка ще їде. Кільце вмикається із затримкою
+ * 140 мс — прогріті переходи встигають завершитись раніше й не блимають.
+ */
+.fab-btn[data-pending] {
+  transform: scale(0.94);
+}
+.fab-ring {
+  position: absolute;
+  inset: -5px;
+  /* успадкований радіус: у forest/minecraft кнопка не кругла, а зі скосом */
+  border-radius: inherit;
+  border: 2px solid transparent;
+  border-top-color: var(--color-accent-200, #fff);
+  opacity: 0;
+  animation:
+    fabRingIn 0.18s ease-out 0.14s forwards,
+    fabRingSpin 0.7s linear 0.14s infinite;
+}
+@keyframes fabRingIn {
+  to {
+    opacity: 0.85;
+  }
+}
+@keyframes fabRingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fab-ring {
+    animation: fabRingIn 0.18s ease-out 0.14s forwards;
+  }
 }
 
 html[data-theme="forest"] .fab-wrap {

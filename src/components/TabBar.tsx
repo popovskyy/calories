@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { House, ClipboardList, Trophy, User } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 const TABS = [
   { href: "/", label: "Огляд", icon: House },
@@ -32,12 +33,36 @@ export function TabBar() {
                 (href === "/profile" && pathname.startsWith("/shop"));
           return (
             <Link key={href} href={href} data-active={active} className="nav-tab">
-              <Icon size={20} strokeWidth={active ? 2.1 : 1.8} />
-              <span className="nav-tab-label">{label}</span>
+              <TabContent icon={Icon} label={label} active={active} />
             </Link>
           );
         })}
       </nav>
     </div>
+  );
+}
+
+/**
+ * Вміст таба з індикатором очікування переходу.
+ *
+ * `useLinkStatus` доступний лише всередині `<Link>`, тому це окремий
+ * компонент. Поки маршрут вантажиться, таб підсвічується як активний —
+ * інакше при швидкому перемиканні здається, що тап не спрацював.
+ */
+function TabContent({
+  icon: Icon,
+  label,
+  active,
+}: {
+  icon: LucideIcon;
+  label: string;
+  active: boolean;
+}) {
+  const { pending } = useLinkStatus();
+  return (
+    <span className="nav-tab-inner" data-pending={pending || undefined}>
+      <Icon size={20} strokeWidth={active || pending ? 2.1 : 1.8} />
+      <span className="nav-tab-label">{label}</span>
+    </span>
   );
 }
