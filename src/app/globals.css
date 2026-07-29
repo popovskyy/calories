@@ -750,7 +750,6 @@ html[data-theme="polonyna"] .coin-chip {
   color: var(--color-nav-idle-fg);
   transition: color var(--duration-ui) ease, background var(--duration-ui) ease,
     transform var(--duration-press) var(--ease-out);
-  will-change: transform;
 }
 .nav-tab[data-active="true"] {
   color: var(--color-nav-active-fg);
@@ -762,13 +761,16 @@ html[data-theme="polonyna"] .coin-chip {
   transform: scale(0.97);
 }
 /*
- * Обгортка вмісту таба. `display: contents` лишає іконку й підпис прямими
- * flex-дітьми `.nav-tab`, але дає куди повісити стан «перехід у процесі»:
- * доки маршрут вантажиться, таб уже виглядає активним, тож швидкий тап не
- * здається зігнорованим.
+ * Обгортка вмісту таба — звичайний flex, не display:contents.
+ * Safari/iOS PWA з contents ламає hit-testing і інколи scroll-composited
+ * сусідів; pending-стан лишається через data-pending на цій обгортці.
  */
 .nav-tab-inner {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
 .nav-tab-inner[data-pending] {
   color: var(--color-nav-active-fg);

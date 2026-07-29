@@ -17,6 +17,11 @@ import { usePathname } from "next/navigation";
  * дані догружаються й блок росте, підрізане значення лишається — і сторінка
  * відкривається десь посередині. Явне обнулення на зміну pathname прибирає
  * обидва випадки.
+ *
+ * На iOS standalone `scrollTo({ behavior: "instant" })` після зміни маршруту
+ * лишав scrollTop від'ємним (гумка overscroll) і розсинхронізував scroll-шар
+ * з paint — звідси «діра» з AmbientLayer замість контенту. Тому лише
+ * присвоєння scrollTop і повтор після кадру розкладки.
  */
 export function AppScroll({
   className,
@@ -29,7 +34,21 @@ export function AppScroll({
   const pathname = usePathname();
 
   useLayoutEffect(() => {
-    ref.current?.scrollTo({ top: 0, behavior: "instant" });
+    const el = ref.current;
+    if (!el) return;
+
+    const reset = () => {
+      el.scrollTop = 0;
+    };
+
+    reset();
+    // Другий кадр: iOS WKWebView інколи застосовує гуму overscroll уже після
+    // першого layout-ефекту й лишає від'ємний offset.
+    const raf = requestAnimationFrame(() => {
+      reset();
+      if (el.scrollTop < 0) el.scrollTop = 0;
+    });
+    return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
   return (
