@@ -21,6 +21,24 @@ export async function GET(req: NextRequest) {
     where: { userId: auth.session.userId, date },
     // Найновіші зверху — так журнал читають частіше, ніж хронологічно.
     orderBy: { createdAt: "desc" },
+    // Явний select без imageUrl: у старих записах там data:-URI по 400-680 КБ
+    // база64 прямо в рядку Postgres. Просто вказати select з imageUrl: true й
+    // відкинути значення ПІСЛЯ запиту не рятує — Prisma однаково перетягне
+    // повний блоб із БД до того моменту. А цей екран узагалі ніде фото не
+    // рендерить (MealCard показує лише опис/КБЖУ), тож полю тут нема чого
+    // робити — не селектимо його зовсім.
+    select: {
+      id: true,
+      userId: true,
+      date: true,
+      description: true,
+      calories: true,
+      protein: true,
+      fats: true,
+      carbs: true,
+      status: true,
+      createdAt: true,
+    },
   });
   return NextResponse.json(meals);
 }
@@ -35,7 +53,13 @@ const macros = {
 const saveSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Дата має бути YYYY-MM-DD"),
   description: z.string().min(1, "Потрібен опис страви"),
-  imageUrl: z.string().optional().nullable(),
+  // Було: повний data:-URI (400-680 КБ база64) від клієнта в imageUrl, або
+  // сирий imageBase64 з того ж джерела. Фото потрібне рівно один раз — щоб
+  // Gemini подивився, що на тарілці (/api/meals/analyze, окремий виклик,
+  // нічого нікуди не пише) — і після цього більше ніде не читається: жоден
+  // компонент у списку/картках не рендерить саму картинку, лише перевіряє
+  // truthy. Тож замість байтів приймаємо прапорець.
+  hasPhoto: z.boolean().optional(),
   imageBase64: z.string().optional(),
   imageMimeType: z.string().optional(),
   apiKey: z.string().optional(),
@@ -93,12 +117,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Фото з аналізу/камери зберігаємо в записі — картка «Доказ» дивиться на imageUrl.
-  const imageUrl =
-    d.imageUrl?.trim() ||
-    (d.imageBase64
-      ? `data:${d.imageMimeType?.trim() || "image/jpeg"};base64,${d.imageBase64}`
-      : null);
+  // Фото було в аналізі (з клієнта чи камери) — картка «Доказ» дивиться лише
+  // на «чи було», не на сам вміст. Колонка imageUrl лишається для сумісності
+  // зі старими записами (там реальні base64), але нові пишуть тільки мітку.
+  const hasPhoto = d.hasPhoto ?? !!d.imageBase64;
+  const imageUrl = hasPhoto ? "1" : null;
 
   const meal = await prisma.mealLog.create({
     data: {

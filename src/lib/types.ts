@@ -385,7 +385,10 @@ export interface MealDTO {
   protein: number;
   fats: number;
   carbs: number;
-  imageUrl: string | null;
+  // Опційне: GET /api/meals (список) свідомо не селектить це поле — у старих
+  // записах там data:-URI по сотні КБ база64. Присутнє лише у відповідях
+  // POST/PATCH одразу після збереження запису.
+  imageUrl?: string | null;
   status: "approved" | "cancelled" | string;
   createdAt: string; // ISO
 }

@@ -135,8 +135,12 @@ export default function AddFoodPage() {
         protein: macros.protein,
         fats: macros.fats,
         carbs: macros.carbs,
-        // Картка «Доказ» перевіряє imageUrl — фото має лишитись у записі.
-        imageUrl: image ? image.preview : null,
+        // Фото потрібне лише Gemini, щоб один раз глянути, що на тарілці —
+        // сама картинка нікуди в застосунку більше не рендериться (навіть
+        // картка «Доказ» лише перевіряє «чи було фото»). Тож замість повного
+        // base64 (400-700 КБ на запис — саме це гальмувало /log і прогрів
+        // кешу на дашборді) шлемо прапорець.
+        hasPhoto: !!image,
       },
       {
         onSuccess: (res) => {

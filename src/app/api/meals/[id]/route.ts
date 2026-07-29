@@ -27,7 +27,12 @@ export async function PATCH(
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
-  const meal = await prisma.mealLog.findUnique({ where: { id } });
+  // select: перевірці власника й статусу не потрібен imageUrl (у старих
+  // записах — до сотень КБ база64 прямо в рядку).
+  const meal = await prisma.mealLog.findUnique({
+    where: { id },
+    select: { userId: true, status: true },
+  });
   if (!meal || meal.userId !== auth.session.userId) {
     return NextResponse.json({ error: "Запис не знайдено" }, { status: 404 });
   }
@@ -55,6 +60,18 @@ export async function PATCH(
       carbs: d.carbs,
       ...(d.date ? { date: d.date } : {}),
     },
+    select: {
+      id: true,
+      userId: true,
+      date: true,
+      description: true,
+      calories: true,
+      protein: true,
+      fats: true,
+      carbs: true,
+      status: true,
+      createdAt: true,
+    },
   });
 
   return NextResponse.json(updated);
@@ -69,7 +86,10 @@ export async function DELETE(
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
-  const meal = await prisma.mealLog.findUnique({ where: { id } });
+  const meal = await prisma.mealLog.findUnique({
+    where: { id },
+    select: { userId: true },
+  });
   if (!meal || meal.userId !== auth.session.userId) {
     return NextResponse.json({ error: "Запис не знайдено" }, { status: 404 });
   }

@@ -145,7 +145,7 @@ export interface SaveMealInput extends AnalyzeInput {
   protein?: number;
   fats?: number;
   carbs?: number;
-  imageUrl?: string | null;
+  hasPhoto?: boolean;
 }
 export const saveMeal = (input: SaveMealInput) =>
   req<SaveMealResult>("/api/meals", { method: "POST", body: JSON.stringify(input) });
