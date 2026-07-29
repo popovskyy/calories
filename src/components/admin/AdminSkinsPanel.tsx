@@ -328,7 +328,8 @@ export function AdminSkinsPanel() {
                                     </span>
                                   ) : null}
                                 </span>
-                                <span className="block truncate text-[12px] text-[var(--color-muted3)]">
+                                <span className="flex items-center gap-1 truncate text-[12px] text-[var(--color-muted3)]">
+                                  <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-[var(--color-divider)]" style={{ background: s.bg }} />
                                   {s.id}{s.tier === "free" ? " · free" : ""}
                                 </span>
                               </span>
@@ -509,11 +510,19 @@ export function AdminSkinsPanel() {
             </Field>
 
             <Field label="Колір фону">
-              <input
-                className={inputClass}
-                value={draft.bg ?? ""}
-                onChange={(e) => setDraft((d) => ({ ...d, bg: e.target.value }))}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={draft.bg ?? "#333333"}
+                  onChange={(e) => setDraft((d) => ({ ...d, bg: e.target.value }))}
+                  className="h-9 w-9 shrink-0 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-transparent p-0.5"
+                />
+                <input
+                  className={`${inputClass} flex-1`}
+                  value={draft.bg ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, bg: e.target.value }))}
+                />
+              </div>
             </Field>
 
             <label className="flex items-center gap-2 text-[14px]">

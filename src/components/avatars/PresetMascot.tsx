@@ -60,21 +60,22 @@ function Smile({ y = 78 }: { y?: number }) {
   );
 }
 
-function MascotArt({ id }: { id: string }) {
+function MascotArt({ id, bg: bgOverride }: { id: string; bg?: string }) {
   const preset = getPreset(id);
   if (!preset) {
     return (
-      <Face bg="#888">
+      <Face bg={bgOverride ?? "#888"}>
         <Eyes />
         <Smile />
       </Face>
     );
   }
+  const bg = bgOverride ?? preset.bg;
 
   switch (id) {
     case "kiwi":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <ellipse cx="64" cy="72" rx="38" ry="34" fill="#4CAF00" />
           <ellipse cx="64" cy="68" rx="28" ry="26" fill="#7AD406" />
           <Eyes y={56} />
@@ -86,7 +87,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "fox":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           {/* ears */}
           <path d="M28 48 L40 18 L54 48 Z" fill="#FF7A00" />
           <path d="M100 48 L88 18 L74 48 Z" fill="#FF7A00" />
@@ -101,7 +102,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "cat":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <path d="M30 52 L38 16 L56 48 Z" fill="#F5D0B0" />
           <path d="M98 52 L90 16 L72 48 Z" fill="#F5D0B0" />
           <path d="M36 46 L40 26 L50 46 Z" fill="#FFB6C8" />
@@ -115,7 +116,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "bear":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <circle cx="32" cy="40" r="16" fill="#B8895A" />
           <circle cx="96" cy="40" r="16" fill="#B8895A" />
           <circle cx="32" cy="40" r="8" fill="#E8C4A0" />
@@ -129,7 +130,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "panda":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <circle cx="34" cy="38" r="14" fill="#1a1a1a" />
           <circle cx="94" cy="38" r="14" fill="#1a1a1a" />
           <ellipse cx="64" cy="70" rx="38" ry="34" fill="#F5F5F5" />
@@ -145,7 +146,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "bunny":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <ellipse cx="42" cy="28" rx="12" ry="28" fill="#FFB6D9" />
           <ellipse cx="86" cy="28" rx="12" ry="28" fill="#FFB6D9" />
           <ellipse cx="42" cy="30" rx="5" ry="18" fill="#FF7AB8" />
@@ -158,7 +159,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "frog":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <ellipse cx="64" cy="74" rx="40" ry="32" fill="#5BB000" />
           <circle cx="40" cy="48" r="16" fill="#6BC400" />
           <circle cx="88" cy="48" r="16" fill="#6BC400" />
@@ -172,7 +173,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "penguin":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <ellipse cx="64" cy="70" rx="36" ry="38" fill="#2B2B2B" />
           <ellipse cx="64" cy="78" rx="22" ry="26" fill="#F5F5F5" />
           <Eyes y={52} lx={48} rx={80} />
@@ -183,7 +184,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "chick":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <ellipse cx="64" cy="72" rx="36" ry="34" fill="#FFE566" />
           <path d="M64 18 L70 42 L58 42 Z" fill="#FF9600" />
           <Eyes y={58} />
@@ -194,7 +195,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "raccoon":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           <circle cx="34" cy="40" r="14" fill="#8A8A8A" />
           <circle cx="94" cy="40" r="14" fill="#8A8A8A" />
           <ellipse cx="64" cy="70" rx="38" ry="34" fill="#C8C8C8" />
@@ -211,7 +212,7 @@ function MascotArt({ id }: { id: string }) {
       );
     case "pepa_pig":
       return (
-        <Face bg={preset.bg}>
+        <Face bg={bg}>
           {/* ears */}
           <path d="M36 50 L44 24 L62 42 Z" fill="#FFB6D9" />
           <path d="M92 50 L84 24 L66 42 Z" fill="#FFB6D9" />
@@ -394,7 +395,7 @@ export function PresetMascot({
           className="h-full w-full rounded-full object-cover"
         />
       ) : (
-        <MascotArt id={id} />
+        <MascotArt id={id} bg={bg} />
       )}
 
       {frame === "epic" ? <EpicRing reduce={!!reduce} /> : null}

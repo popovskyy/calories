@@ -412,17 +412,32 @@ export default function AdminPage() {
                   }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Avatar name={draft.name || "?"} avatarUrl={draft.avatarUrl} size={48} />
+                    <Avatar name={draft.name || "?"} avatarUrl={draftPunishmentActive ? draft.peppaPunishBackupAvatarUrl : draft.avatarUrl} size={48} />
                     <div className="min-w-0">
                       <div className="truncate font-semibold">{draft.name}</div>
                       <div className="truncate text-[12px] text-[var(--color-muted3)]">
                         id: {selected.id.slice(0, 10)}…
                       </div>
+                      {draftPunishmentActive ? (
+                        <span className="mt-0.5 inline-block rounded-[4px] bg-[color-mix(in_srgb,var(--color-red)_16%,transparent)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-red)]">
+                          покарання активне
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="mt-1 flex flex-col gap-2 rounded-[var(--radius-md)] bg-[var(--color-tile)] p-3">
-                    <span className="lbl !mb-0">Картка покарання</span>
+                  <div className="mt-1 flex flex-col gap-2 rounded-[var(--radius-md)] border-l-[3px] border-[var(--color-red)] bg-[var(--color-tile)] p-3">
+                    <span className="lbl !mb-0">Покарання</span>
+
+                    {draftPunishmentActive ? (
+                      <div className="flex items-center gap-2 text-[13px] text-[var(--color-muted2)]">
+                        <Avatar name={draft.name || "?"} avatarUrl={draft.avatarUrl} size={28} />
+                        <span>Зараз носить</span>
+                        <span className="font-semibold text-[var(--color-red)]">
+                          {BUILTIN_SKINS.find((s) => s.id === draftPunishmentSkinId)?.nameUk ?? draftPunishmentSkinId}
+                        </span>
+                      </div>
+                    ) : null}
 
                     <label className="flex items-center gap-2 text-[14px]">
                       <input
@@ -451,7 +466,7 @@ export default function AdminPage() {
                     </label>
 
                     <Field
-                      label="Активний скін покарання"
+                      label="Скін покарання"
                       hint={draftPunishmentActive ? undefined : "Увімкни покарання, щоб змінювати скін"}
                     >
                       <select
