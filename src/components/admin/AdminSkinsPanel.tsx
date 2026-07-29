@@ -14,6 +14,36 @@ import { cn } from "@/lib/cn";
 
 type SkinRow = AvatarPreset & { enabled?: boolean };
 
+function InlineSvgPreview({
+  svg,
+  size,
+  bg,
+  label,
+}: {
+  svg: string;
+  size: number;
+  bg?: string;
+  label?: string;
+}) {
+  const src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  return (
+    <div
+      className="relative overflow-hidden rounded-full"
+      style={{ width: size, height: size, background: bg ?? "transparent" }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={label ?? "svg"}
+        width={size}
+        height={size}
+        draggable={false}
+        className="h-full w-full rounded-full object-contain"
+      />
+    </div>
+  );
+}
+
 const emptyNew = (): Partial<SkinRow> & { id: string } => ({
   id: "",
   nameUk: "",
@@ -175,6 +205,10 @@ export function AdminSkinsPanel() {
     }
   };
 
+  // “Покарання” — окрема сущність у адмінці: не змішуємо з основним каталогом.
+  const punishmentSkins = skins.filter((s) => s.id === "pepa_pig");
+  const catalogSkins = skins.filter((s) => s.id !== "pepa_pig");
+
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
       <div className="min-w-0 overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
@@ -192,80 +226,182 @@ export function AdminSkinsPanel() {
           тож нижні скіни було не дістати. Тепер скролить сторінка.
         */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[420px] text-left text-[14px]">
-            <thead className="sticky top-0 bg-[var(--color-surface)] text-[12px] uppercase text-[var(--color-muted3)]">
-              <tr>
-                <th className="px-3 py-2">Скін</th>
-                <th className="px-3 py-2">Ціна</th>
-                <th className="px-3 py-2">Рідкість</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-divider)]">
-              {loading
-                ? [0, 1, 2].map((i) => (
-                    <tr key={i}>
-                      <td colSpan={4} className="p-3">
-                        <Skeleton className="h-10 w-full" />
-                      </td>
-                    </tr>
-                  ))
-                : skins.map((s) => (
-                    <tr
-                      key={s.id}
-                      className={
-                        selected?.id === s.id
-                          ? "bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]"
-                          : "hover:bg-[var(--color-tile)]"
-                      }
-                    >
-                      <td className="px-3 py-2">
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 text-left"
-                          onClick={() => open(s)}
+          <div className="grid min-w-[860px] gap-4 sm:grid-cols-2">
+            {/* Покарання */}
+            <div className="min-w-[420px] overflow-x-auto">
+              <table className="w-full min-w-[420px] text-left text-[14px]">
+                <thead className="sticky top-0 bg-[var(--color-surface)] text-[12px] uppercase text-[var(--color-muted3)]">
+                  <tr>
+                    <th className="px-3 py-2">Покарання</th>
+                    <th className="px-3 py-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-divider)]">
+                  {loading
+                    ? [0].map((i) => (
+                        <tr key={i}>
+                          <td colSpan={2} className="p-3">
+                            <Skeleton className="h-10 w-full" />
+                          </td>
+                        </tr>
+                      ))
+                    : punishmentSkins.length === 0
+                      ? (
+                        <tr>
+                          <td colSpan={2} className="p-3 text-[13px] text-[var(--color-muted3)]">
+                            Немає active punishment skin
+                          </td>
+                        </tr>
+                      )
+                      : punishmentSkins.map((s) => (
+                        <tr
+                          key={s.id}
+                          className={
+                            selected?.id === s.id
+                              ? "bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]"
+                              : "hover:bg-[var(--color-tile)]"
+                          }
                         >
-                          <PresetMascot
-                            id={s.id}
-                            size={36}
-                            animated={false}
-                            artKind={s.artKind}
-                            nameUk={s.nameUk}
-                            bg={s.bg}
-                          />
-                          <span>
-                            <span className="block font-semibold">{s.nameUk}</span>
-                            <span className="text-[12px] text-[var(--color-muted3)]">
-                              {s.id}
-                            {s.enabled === false ? (
-                              <span className="ml-2 inline-flex items-center rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--color-red)_18%,transparent)] px-2 py-0.5 text-[11px] text-[var(--color-red)]">
-                                вимкнено
+                          <td className="px-3 py-2">
+                            <button
+                              type="button"
+                              className="flex items-center gap-2 text-left"
+                              onClick={() => open(s)}
+                            >
+                              {s.artKind === "inline" && s.svg?.trim() ? (
+                                <InlineSvgPreview
+                                  svg={s.svg}
+                                  size={36}
+                                  bg={s.bg}
+                                  label={s.nameUk}
+                                />
+                              ) : (
+                                <PresetMascot
+                                  id={s.id}
+                                  size={36}
+                                  animated={false}
+                                  artKind={s.artKind}
+                                  nameUk={s.nameUk}
+                                  bg={s.bg}
+                                />
+                              )}
+                              <span>
+                                <span className="block font-semibold">{s.nameUk}</span>
+                                <span className="text-[12px] text-[var(--color-muted3)]">
+                                  {s.id}
+                                  {s.enabled === false ? (
+                                    <span className="ml-2 inline-flex items-center rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--color-red)_18%,transparent)] px-2 py-0.5 text-[11px] text-[var(--color-red)]">
+                                      вимкнено
+                                    </span>
+                                  ) : null}
+                                </span>
                               </span>
-                            ) : null}
-                              {s.tier === "free" ? " · free" : ""}
-                            </span>
-                          </span>
-                        </button>
-                      </td>
-                      <td className="px-3 py-2 tabular-nums font-semibold">{s.price}</td>
-                      <td className="px-3 py-2" style={{ color: RARITY[s.rarity].color }}>
-                        {RARITY[s.rarity].label}
-                      </td>
-                      <td className="px-3 py-2">
-                        <button
-                          type="button"
-                          className="icon-btn hover:text-[var(--color-red)]"
-                          onClick={() => void remove(s.id)}
-                          aria-label={`Вимкнути скін ${s.nameUk}`}
-                          title="Вимкнути в магазині"
+                            </button>
+                          </td>
+                          <td className="px-3 py-2">
+                            <button
+                              type="button"
+                              className="icon-btn hover:text-[var(--color-red)]"
+                              onClick={() => void remove(s.id)}
+                              aria-label={`Вимкнути скін ${s.nameUk}`}
+                              title="Вимкнути в магазині"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Основний каталог */}
+            <div className="min-w-[420px] overflow-x-auto">
+              <table className="w-full min-w-[420px] text-left text-[14px]">
+                <thead className="sticky top-0 bg-[var(--color-surface)] text-[12px] uppercase text-[var(--color-muted3)]">
+                  <tr>
+                    <th className="px-3 py-2">Скін</th>
+                    <th className="px-3 py-2">Ціна</th>
+                    <th className="px-3 py-2">Рідкість</th>
+                    <th className="px-3 py-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-divider)]">
+                  {loading
+                    ? [0, 1, 2].map((i) => (
+                        <tr key={i}>
+                          <td colSpan={4} className="p-3">
+                            <Skeleton className="h-10 w-full" />
+                          </td>
+                        </tr>
+                      ))
+                    : catalogSkins.map((s) => (
+                        <tr
+                          key={s.id}
+                          className={
+                            selected?.id === s.id
+                              ? "bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]"
+                              : "hover:bg-[var(--color-tile)]"
+                          }
                         >
-                          <Trash2 size={15} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-            </tbody>
-          </table>
+                          <td className="px-3 py-2">
+                            <button
+                              type="button"
+                              className="flex items-center gap-2 text-left"
+                              onClick={() => open(s)}
+                            >
+                              {s.artKind === "inline" && s.svg?.trim() ? (
+                                <InlineSvgPreview
+                                  svg={s.svg}
+                                  size={36}
+                                  bg={s.bg}
+                                  label={s.nameUk}
+                                />
+                              ) : (
+                                <PresetMascot
+                                  id={s.id}
+                                  size={36}
+                                  animated={false}
+                                  artKind={s.artKind}
+                                  nameUk={s.nameUk}
+                                  bg={s.bg}
+                                />
+                              )}
+                              <span>
+                                <span className="block font-semibold">{s.nameUk}</span>
+                                <span className="text-[12px] text-[var(--color-muted3)]">
+                                  {s.id}
+                                  {s.enabled === false ? (
+                                    <span className="ml-2 inline-flex items-center rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--color-red)_18%,transparent)] px-2 py-0.5 text-[11px] text-[var(--color-red)]">
+                                      вимкнено
+                                    </span>
+                                  ) : null}
+                                  {s.tier === "free" ? " · free" : ""}
+                                </span>
+                              </span>
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 tabular-nums font-semibold">{s.price}</td>
+                          <td className="px-3 py-2" style={{ color: RARITY[s.rarity].color }}>
+                            {RARITY[s.rarity].label}
+                          </td>
+                          <td className="px-3 py-2">
+                            <button
+                              type="button"
+                              className="icon-btn hover:text-[var(--color-red)]"
+                              onClick={() => void remove(s.id)}
+                              aria-label={`Вимкнути скін ${s.nameUk}`}
+                              title="Вимкнути в магазині"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -293,14 +429,23 @@ export function AdminSkinsPanel() {
           >
             {draft.id ? (
               <div className="flex justify-center">
-                <PresetMascot
-                  id={draft.id}
-                  size={72}
-                  animated
-                  artKind={(draft.artKind as SkinArtKind) ?? "inline"}
-                  nameUk={draft.nameUk}
-                  bg={draft.bg}
-                />
+                {draft.artKind === "inline" && draft.svg?.trim() ? (
+                  <InlineSvgPreview
+                    svg={draft.svg}
+                    size={72}
+                    bg={draft.bg}
+                    label={draft.nameUk ?? draft.id}
+                  />
+                ) : (
+                  <PresetMascot
+                    id={draft.id}
+                    size={72}
+                    animated
+                    artKind={(draft.artKind as SkinArtKind) ?? "inline"}
+                    nameUk={draft.nameUk}
+                    bg={draft.bg}
+                  />
+                )}
               </div>
             ) : null}
 
