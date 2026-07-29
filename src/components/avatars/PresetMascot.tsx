@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   BUILTIN_MASCOT_IDS,
@@ -9,6 +10,8 @@ import {
   type SkinArtKind,
 } from "@/lib/avatar-presets";
 import { cn } from "@/lib/cn";
+
+const bgCache = new Map<string, string>();
 
 function Face({
   children,
@@ -357,6 +360,40 @@ export function PresetMascot({
   const asset = mascotAssetPath(id, kind);
   const label = nameUk ?? preset?.nameUk ?? id;
 
+  const shouldFetchDbBg =
+    bg === undefined && (preset?.artKind === "builtin" || BUILTIN_MASCOT_IDS.has(id));
+  const [dbBg, setDbBg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!shouldFetchDbBg) return;
+    const cached = bgCache.get(id);
+    if (cached) {
+      setDbBg(cached);
+      return;
+    }
+
+    let cancelled = false;
+    void fetch(`/api/skins/${encodeURIComponent(id)}/def`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const nextBg = data?.bg;
+        if (typeof nextBg === "string" && nextBg.trim()) {
+          bgCache.set(id, nextBg);
+          setDbBg(nextBg);
+        }
+      })
+      .catch(() => {
+        // If the endpoint fails, we just keep the fallback bg.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, shouldFetchDbBg]);
+
+  const effectiveBg = (bg ?? dbBg ?? preset?.bg ?? "#888") as string;
+
   const ring = (frame ? FRAME_RING[frame] : undefined) ?? STAGE_RING[stage];
   const glow = STAGE_GLOW[stage];
 
@@ -371,7 +408,7 @@ export function PresetMascot({
       style={{
         width: size,
         height: size,
-        background: !asset ? bg ?? preset?.bg : undefined,
+        background: !asset ? effectiveBg : undefined,
         outline: ring,
         outlineOffset: ring ? 1 : undefined,
         boxShadow: glow,
@@ -398,7 +435,7 @@ export function PresetMascot({
           className="h-full w-full rounded-full object-cover"
         />
       ) : (
-        <MascotArt id={id} bg={bg} />
+        <MascotArt id={id} bg={effectiveBg} />
       )}
 
       {frame === "epic" ? <EpicRing reduce={!!reduce} /> : null}
