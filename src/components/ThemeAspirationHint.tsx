@@ -65,7 +65,7 @@ export function ThemeAspirationHint() {
         <button type="button" className="btn btn-ghost btn-sm" onClick={dismiss}>
           Ок
         </button>
-        <Link href="/shop" className="btn btn-primary btn-sm" onClick={dismiss}>
+        <Link href="/shop" scroll={false} className="btn btn-primary btn-sm" onClick={dismiss}>
           Дивитись
         </Link>
       </div>

@@ -14,7 +14,7 @@ import { LoadError } from "@/components/ui/LoadError";
 import { useCurrentUser, useLogout, useStreak } from "@/hooks/useQueries";
 import { GOAL_LABELS } from "@/lib/calories";
 
-export default function ProfilePage() {
+export function ProfileTab() {
   const { user, isLoading, isError, refetch } = useCurrentUser();
   const logout = useLogout();
   const streak = useStreak();
@@ -94,6 +94,7 @@ export default function ProfilePage() {
 
       <Link
         href="/shop"
+        scroll={false}
         className="mcard flex w-full items-center gap-3 p-4 text-left transition-[transform,background-color] duration-[var(--duration-press)] active:scale-[0.98] hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
       >
         <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,#FFC800_15%,transparent)] text-[#FFC800]">
@@ -138,3 +139,8 @@ export default function ProfilePage() {
     </>
   );
 }
+
+export default function Page() {
+  return null;
+}
+

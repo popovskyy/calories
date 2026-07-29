@@ -4,37 +4,62 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { House, ClipboardList, Trophy, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useMainTabs, type MainTab } from "@/components/MainTabs";
 
-const TABS = [
-  { href: "/", label: "Огляд", icon: House },
-  { href: "/log", label: "Журнал", icon: ClipboardList },
-  { href: "/arena", label: "Арена", icon: Trophy },
-  { href: "/profile", label: "Профіль", icon: User },
-] as const;
+const TABS: { id: MainTab; href: string; label: string; icon: LucideIcon }[] = [
+  { id: "overview", href: "/", label: "Огляд", icon: House },
+  { id: "log", href: "/log", label: "Журнал", icon: ClipboardList },
+  { id: "arena", href: "/arena", label: "Арена", icon: Trophy },
+  { id: "profile", href: "/profile", label: "Профіль", icon: User },
+];
 
 /**
- * Один markup — три вигляди: плоскі таби (Nocturne), pill (Forest),
- * хотбар-слоти (Minecraft). Різницю робить CSS за data-theme, тому список
- * табів і роути лишаються спільними.
+ * Головні таби — кнопки (без Next Link), щоб не тригерити soft-nav і
+ * scrollIntoView у .app-scroll на iOS. Лише /shop|/epics лишають Link.
  */
 export function TabBar() {
   const pathname = usePathname();
+  const { tab, selectTab, isExtra } = useMainTabs();
 
   return (
     <div className="nav-bar">
       <nav className="nav-list">
-        {TABS.map(({ href, label, icon: Icon }) => {
-          const active =
-            href === "/"
-              ? // Хроніки відкриваються з Огляду — таб лишається активним
-                pathname === "/" || pathname.startsWith("/epics")
-              : // Магазин відкривається лише з Профілю — таб лишається активним
-                pathname.startsWith(href) ||
-                (href === "/profile" && pathname.startsWith("/shop"));
+        {TABS.map(({ id, href, label, icon: Icon }) => {
+          const active = isExtra
+            ? id === "overview"
+              ? pathname === "/" || pathname.startsWith("/epics")
+              : id === "profile"
+                ? pathname.startsWith("/profile") || pathname.startsWith("/shop")
+                : pathname.startsWith(href)
+            : tab === id;
+
+          if (isExtra) {
+            return (
+              <Link
+                key={id}
+                href={href}
+                scroll={false}
+                data-active={active}
+                className="nav-tab"
+              >
+                <LinkTabContent icon={Icon} label={label} active={active} />
+              </Link>
+            );
+          }
+
           return (
-            <Link key={href} href={href} data-active={active} className="nav-tab">
-              <TabContent icon={Icon} label={label} active={active} />
-            </Link>
+            <button
+              key={id}
+              type="button"
+              data-active={active}
+              className="nav-tab"
+              onClick={() => selectTab(id)}
+            >
+              <span className="nav-tab-inner">
+                <Icon size={20} strokeWidth={active ? 2.1 : 1.8} />
+                <span className="nav-tab-label">{label}</span>
+              </span>
+            </button>
           );
         })}
       </nav>
@@ -42,14 +67,7 @@ export function TabBar() {
   );
 }
 
-/**
- * Вміст таба з індикатором очікування переходу.
- *
- * `useLinkStatus` доступний лише всередині `<Link>`, тому це окремий
- * компонент. Поки маршрут вантажиться, таб підсвічується як активний —
- * інакше при швидкому перемиканні здається, що тап не спрацював.
- */
-function TabContent({
+function LinkTabContent({
   icon: Icon,
   label,
   active,

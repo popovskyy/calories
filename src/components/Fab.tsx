@@ -13,6 +13,7 @@ export function Fab({ href = "/add" }: { href?: string }) {
   return (
     <Link
       href={href}
+      scroll={false}
       aria-label="Додати їжу або калорії"
       className="fab-wrap absolute right-4 z-20"
     >

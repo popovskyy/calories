@@ -29,7 +29,7 @@ const WeeklyChart = dynamic(
   },
 );
 
-export default function DashboardPage() {
+export function OverviewTab() {
   const { user, isLoading, isError, refetch } = useCurrentUser();
   const dash = useDashboard();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -216,7 +216,7 @@ function ActiveEpic() {
             Довгий похід на місяці. Обери свій шлях.
           </p>
         </div>
-        <Link href="/epics" className="btn btn-primary btn-sm shrink-0">
+        <Link href="/epics" scroll={false} className="btn btn-primary btn-sm shrink-0">
           Обрати
         </Link>
       </section>
@@ -231,7 +231,7 @@ function ActiveEpic() {
     <section className="mcard flex flex-col gap-3 p-[18px]">
       <div className="flex items-baseline justify-between gap-2">
         <span className="lbl">Хроніка</span>
-        <Link href="/epics" className="text-[13px] text-[var(--color-muted3)]">
+        <Link href="/epics" scroll={false} className="text-[13px] text-[var(--color-muted3)]">
           усі →
         </Link>
       </div>
@@ -252,3 +252,8 @@ function DashboardSkeleton() {
     </>
   );
 }
+
+export default function Page() {
+  return null;
+}
+

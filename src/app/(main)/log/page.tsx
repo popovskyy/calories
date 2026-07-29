@@ -279,7 +279,7 @@ function LogPageInner() {
   );
 }
 
-export default function LogPage() {
+export function LogTab() {
   return (
     <Suspense fallback={<LogSkeleton />}>
       <LogPageInner />
@@ -298,3 +298,8 @@ function LogSkeleton() {
     </>
   );
 }
+
+export default function Page() {
+  return null;
+}
+

@@ -16,7 +16,7 @@ import { cn } from "@/lib/cn";
 import { isInTargetFor } from "@/lib/economy";
 import type { ArenaEntry, ArenaYesterdayEntry } from "@/lib/types";
 
-export default function ArenaPage() {
+export function ArenaTab() {
   const arena = useArena();
   const { user } = useCurrentUser();
   // Обраний учасник — модалка з повним зрізом його дня.
@@ -448,3 +448,8 @@ function ArenaRow({
     </li>
   );
 }
+
+export default function Page() {
+  return null;
+}
+

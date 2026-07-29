@@ -747,9 +747,14 @@ html[data-theme="polonyna"] .coin-chip {
   justify-content: center;
   gap: 2px;
   padding: 4px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
   color: var(--color-nav-idle-fg);
   transition: color var(--duration-ui) ease, background var(--duration-ui) ease,
     transform var(--duration-press) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
 .nav-tab[data-active="true"] {
   color: var(--color-nav-active-fg);
@@ -999,7 +1004,7 @@ body {
   /* без safe-area-паддінгів: viewport-fit=auto, iOS інсетить вебв'ю сам */
 }
 
-/* Єдиний вертикальний скрол всередині шелла — критично для iOS touch */
+/* Єдиний вертикальний скрол шелу */
 .app-scroll {
   flex: 1 1 0;
   min-height: 0;
@@ -1009,17 +1014,9 @@ body {
   touch-action: pan-y;
 }
 
-/*
- * Секції всередині скрола ніколи не стискаються.
- *
- * .app-scroll — flex-колонка з обмеженою висотою, тож її діти за замовчуванням
- * мають flex-shrink: 1, і від схлопування їх рятує лише автоматичний
- * min-height: auto. А цей захист мовчки вимикається, щойно в елемента
- * overflow ≠ visible — і така картка стискається до нульової висоти, лишаючись
- * у DOM з opacity: 1. Саме так зникав звіт дня: він єдиний має overflow-hidden
- * (потрібен, щоб розкривати блок «Завтра»), тому схлопувався тільки він.
- */
-.app-scroll > * {
+/* Не стискати секції з overflow ≠ visible у flex-колонці скрола */
+.app-scroll > *,
+.app-scroll [data-main-tab] > * {
   flex-shrink: 0;
 }
 
