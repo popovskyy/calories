@@ -11,7 +11,8 @@ export async function GET(
 ) {
   const { id } = await params;
   const skin = await getSkinDef(id);
-  if (!skin || !skin.enabled || skin.artKind !== "inline" || !skin.svg) {
+  const allowPunishment = id === "pepa_pig";
+  if (!skin || (!skin.enabled && !allowPunishment) || skin.artKind !== "inline" || !skin.svg) {
     return NextResponse.json({ error: "Немає SVG" }, { status: 404 });
   }
   return new NextResponse(skin.svg, {

@@ -58,9 +58,20 @@ export const DEFAULT_SKINS: AvatarPreset[] = [
     tier: "free",
     price: 0,
     rarity: "common",
-    artKind: "builtin",
+    // Для покарань адмін може заливати svg у БД — тому defaults трактуємо як inline.
+    // Не доступний у магазині лишається через enabled:false.
+    artKind: "inline",
     sortOrder: 105,
     enabled: false,
+    // Фолбек, щоб навіть без адмінського svg не було «порожньо».
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <circle cx="128" cy="128" r="120" fill="#FFB6D9"/>
+  <ellipse cx="128" cy="122" rx="52" ry="46" fill="#FF86D0"/>
+  <circle cx="105" cy="120" r="9" fill="#1a1a1a"/>
+  <circle cx="151" cy="120" r="9" fill="#1a1a1a"/>
+  <ellipse cx="128" cy="150" rx="24" ry="14" fill="#FFD1E8"/>
+  <circle cx="128" cy="150" r="6" fill="#FF5AA8"/>
+</svg>`,
   },
   { id: "ronaldo", nameUk: "Cristiano Ronaldo", bg: "#046A38", tier: "premium", price: 450, rarity: "epic", artKind: "file", sortOrder: 300 },
   { id: "messi", nameUk: "Lionel Messi", bg: "#74C0FC", tier: "premium", price: 450, rarity: "epic", artKind: "file", sortOrder: 310 },
@@ -77,7 +88,7 @@ export const DEFAULT_SKINS: AvatarPreset[] = [
 export const AVATAR_PRESETS = DEFAULT_SKINS;
 
 export const BUILTIN_MASCOT_IDS = new Set<string>([
-  "kiwi", "fox", "cat", "bear", "panda", "bunny", "frog", "penguin", "chick", "raccoon", "pepa_pig",
+  "kiwi", "fox", "cat", "bear", "panda", "bunny", "frog", "penguin", "chick", "raccoon"
 ]);
 
 export interface RarityStyle {

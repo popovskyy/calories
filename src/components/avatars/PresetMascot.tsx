@@ -349,7 +349,10 @@ export function PresetMascot({
   const reduce = useReducedMotion();
   const preset = getPreset(id);
   const kind: SkinArtKind =
-    artKind ?? (BUILTIN_MASCOT_IDS.has(id) ? "builtin" : "file");
+    artKind ??
+    // По дефолту беремо artKind із preset (DEFAULT_SKINS), щоб admin-змінені
+    // inline/file скейни реально рендерились.
+    (preset?.artKind ?? (BUILTIN_MASCOT_IDS.has(id) ? "builtin" : "file"));
   const idle = animated && !reduce;
   const asset = mascotAssetPath(id, kind);
   const label = nameUk ?? preset?.nameUk ?? id;
