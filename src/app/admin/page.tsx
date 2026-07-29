@@ -412,17 +412,12 @@ export default function AdminPage() {
                   }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Avatar name={draft.name || "?"} avatarUrl={draftPunishmentActive ? draft.peppaPunishBackupAvatarUrl : draft.avatarUrl} size={48} />
+                    <Avatar name={draft.name || "?"} avatarUrl={draft.avatarUrl} size={48} />
                     <div className="min-w-0">
                       <div className="truncate font-semibold">{draft.name}</div>
                       <div className="truncate text-[12px] text-[var(--color-muted3)]">
                         id: {selected.id.slice(0, 10)}…
                       </div>
-                      {draftPunishmentActive ? (
-                        <span className="mt-0.5 inline-block rounded-[4px] bg-[color-mix(in_srgb,var(--color-red)_16%,transparent)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-red)]">
-                          покарання активне
-                        </span>
-                      ) : null}
                     </div>
                   </div>
 
@@ -430,12 +425,16 @@ export default function AdminPage() {
                     <span className="lbl !mb-0">Покарання</span>
 
                     {draftPunishmentActive ? (
-                      <div className="flex items-center gap-2 text-[13px] text-[var(--color-muted2)]">
-                        <Avatar name={draft.name || "?"} avatarUrl={draft.avatarUrl} size={28} />
-                        <span>Зараз носить</span>
-                        <span className="font-semibold text-[var(--color-red)]">
-                          {BUILTIN_SKINS.find((s) => s.id === draftPunishmentSkinId)?.nameUk ?? draftPunishmentSkinId}
-                        </span>
+                      <div className="flex items-center gap-3 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-2">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Avatar name={draft.name || "?"} avatarUrl={draft.peppaPunishBackupAvatarUrl} size={32} />
+                          <span className="text-[10px] text-[var(--color-muted3)]">було</span>
+                        </div>
+                        <span className="text-[14px] text-[var(--color-muted3)]">→</span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Avatar name={draft.name || "?"} avatarUrl={draft.avatarUrl} size={32} />
+                          <span className="text-[10px] font-semibold text-[var(--color-red)]">зараз</span>
+                        </div>
                       </div>
                     ) : null}
 
