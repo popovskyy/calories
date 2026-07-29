@@ -28,24 +28,48 @@ export function PwaRegister() {
 
     // Якщо новий SW бере на себе контроль (після оновлення деплою), стара
     // вкладка все ще виконує JS, завантажений під попередню версію — тож
-    // перезавантажуємось один раз, щоб гарантовано підхопити свіжі чанки.
+    // перезавантажуємось, щоб підхопити свіжі чанки.
     //
-    // hadController — обов'язкова умова: sw.js робить skipWaiting + clients.claim,
-    // тож controllerchange кидається і при ПЕРШІЙ у житті реєстрації, коли
-    // жодного старого JS немає. Без цієї перевірки кожен новий відвідувач
-    // отримував повне перезавантаження одразу після першого промальовування.
+    // Рядок нижче колись влаштовував нескінченну петлю перезавантажень (у
+    // тесті — 22 за 16 секунд, тобто екран блимає без упину). Механіка: sw.js
+    // робить skipWaiting + clients.claim, тому КОЖНА інсталяція одразу кидає
+    // controllerchange → reload → сторінка реєструє воркера знову → install →
+    // claim → controllerchange → … Тому дві незалежні запобіжки:
+    //
+    //   • hadController — при першій у житті реєстрації старого JS ще немає,
+    //     перезавантажувати нічого (інакше кожен новий відвідувач отримував
+    //     reload одразу після першого промальовування);
+    //   • позначка часу в sessionStorage — якщо воркер перевстановлюється на
+    //     кожному завантаженні (а на iOS це реально трапляється), hadController
+    //     уже не рятує: з другої ітерації він завжди true. Дозволяємо не
+    //     частіше ніж раз на хвилину на вкладку — справжній деплой так само
+    //     підхопиться, а петля розривається на другому кроці.
+    const RELOAD_KEY = "calories:sw-reloaded-at";
     const hadController = navigator.serviceWorker.controller !== null;
-    let reloadedForUpdate = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (!hadController || reloadedForUpdate) return;
-      reloadedForUpdate = true;
+      if (!hadController) return;
+      let last = 0;
+      try {
+        last = Number(sessionStorage.getItem(RELOAD_KEY)) || 0;
+      } catch {
+        /* приватний режим — краще не перезавантажувати взагалі, ніж зациклитись */
+        return;
+      }
+      if (Date.now() - last < 60_000) return;
+      try {
+        sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+      } catch {
+        return;
+      }
       window.location.reload();
     });
 
     const register = async () => {
       try {
-        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-        void reg.update();
+        // Без reg.update(): браузер сам перевіряє скрипт воркера на кожній
+        // навігації, а примусова перевірка на кожному завантаженні сторінки
+        // раз за разом породжувала нового воркера й живила петлю вище.
+        await navigator.serviceWorker.register("/sw.js", { scope: "/" });
       } catch {
         // Silent — PWA install still works on iOS without SW
       }

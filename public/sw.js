@@ -1,10 +1,22 @@
-/* App-shell service worker v3: offline shell + Web Push. */
-const CACHE = "calories-shell-v3";
-const PRECACHE = ["/", "/manifest.webmanifest", "/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
+/* App-shell service worker v4: offline shell + Web Push. */
+const CACHE = "calories-shell-v4";
+// Тільки завжди-публічна статика. "/" звідси прибрано свідомо: корінь за
+// логіном, і в гостя (або з протухлою сесією) fetch прозоро йде за 307 на
+// /login — тобто в кеш під ключем "/" лягала розмітка ЕКРАНА ВХОДУ. Потім,
+// уже залогінений, користувач ловив мережевий збій, отримував з фолбека цю
+// оболонку й бачив розсипану верстку. Оболонку кореня наповнює навігаційний
+// хендлер нижче — з реальної успішної відповіді на "/".
+const PRECACHE = ["/manifest.webmanifest", "/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting()),
+    caches
+      .open(CACHE)
+      // Не addAll: він відхиляється цілком, якщо впав бодай один із запитів, і
+      // тоді воркер не інсталюється взагалі. Прогрів кеша не вартий того, щоб
+      // через один 404 лишитись без офлайну.
+      .then((cache) => Promise.allSettled(PRECACHE.map((u) => cache.add(u))))
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -31,11 +43,31 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put("/", copy));
+          // Оболонку кладемо в кеш ЛИШЕ з кореня і лише при успішній відповіді.
+          // Раніше під ключем "/" опинялась розмітка будь-якого маршруту, який
+          // відкривали останнім (/log, /profile, …) — і офлайн-фолбек віддавав
+          // чужу сторінку під адресою "/". React отримував розмітку не того
+          // екрана й гідрував її поверх дерева головної: звідси «на мобілі
+          // верстка ломається, а в браузері все норм» — на телефоні мережа
+          // рветься частіше, тож у фолбек влітали регулярно.
+          if (res.ok && url.pathname === "/") {
+            const copy = res.clone();
+            event.waitUntil(caches.open(CACHE).then((c) => c.put("/", copy)));
+          }
           return res;
         })
-        .catch(() => caches.match("/") || caches.match(request)),
+        .catch(async () => {
+          // caches.match() повертає проміс, а проміс завжди truthy — тож старий
+          // `caches.match("/") || caches.match(request)` ніколи не доходив до
+          // другої гілки, а на порожньому кеші віддавав undefined у
+          // respondWith(), і замість офлайн-оболонки був екран помилки мережі.
+          const cache = await caches.open(CACHE);
+          return (
+            (await cache.match(request)) ||
+            (await cache.match("/")) ||
+            Response.error()
+          );
+        }),
     );
     return;
   }
