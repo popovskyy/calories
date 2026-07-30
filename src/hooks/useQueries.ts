@@ -23,7 +23,6 @@ import {
   getActivities,
   getAdvice,
   getArena,
-  getDailyCards,
   getDashboard,
   getEpics,
   getForecast,
@@ -189,7 +188,6 @@ export function useSaveMeal() {
       qc.invalidateQueries({ queryKey: ["shop"] });
       qc.invalidateQueries({ queryKey: ["quests"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
-      qc.invalidateQueries({ queryKey: ["daily-cards"] });
       qc.invalidateQueries({ queryKey: ["epics"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
       // Нова вечеря змінює розбір дня — сервер перегенерує його за mealCount.
@@ -253,9 +251,8 @@ export function useDeleteMeal(date: string) {
       qc.invalidateQueries({ queryKey: ["arena"] });
       qc.invalidateQueries({ queryKey: ["streak"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
-      // Видалення може відкотити прогрес квестів/карток — перечитуємо.
+      // Видалення може відкотити прогрес квестів — перечитуємо.
       qc.invalidateQueries({ queryKey: ["quests"] });
-      qc.invalidateQueries({ queryKey: ["daily-cards"] });
       qc.invalidateQueries({ queryKey: ["epics"] });
       qc.invalidateQueries({ queryKey: ["advice"] });
     },
@@ -283,7 +280,6 @@ export function useUpdateMeal(listDate: string) {
       qc.invalidateQueries({ queryKey: ["streak"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
       qc.invalidateQueries({ queryKey: ["quests"] });
-      qc.invalidateQueries({ queryKey: ["daily-cards"] });
       qc.invalidateQueries({ queryKey: ["epics"] });
       qc.invalidateQueries({ queryKey: ["advice"] });
     },
@@ -318,7 +314,6 @@ export function useSaveActivity() {
       qc.invalidateQueries({ queryKey: ["shop"] });
       qc.invalidateQueries({ queryKey: ["quests"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
-      qc.invalidateQueries({ queryKey: ["daily-cards"] });
       qc.invalidateQueries({ queryKey: ["epics"] });
       qc.invalidateQueries({ queryKey: ["streak"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
@@ -523,16 +518,6 @@ export function useEquipTheme() {
   });
 }
 
-// --- Картки дня ---
-export function useDailyCards() {
-  return useQuery({
-    queryKey: ["daily-cards"],
-    queryFn: () => getDailyCards(),
-    staleTime: 30_000,
-    refetchOnMount: "always",
-  });
-}
-
 // --- Спорядження ---
 export function useBuyItem() {
   const qc = useQueryClient();
@@ -556,8 +541,7 @@ export function useUseItem() {
       qc.setQueryData(["shop"], res.shop);
       qc.invalidateQueries({ queryKey: ["me"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
-      // Ре-рол міняє склад карток і квестів, тож їх треба перечитати.
-      qc.invalidateQueries({ queryKey: ["daily-cards"] });
+      // Ре-рол міняє склад квестів — перечитуємо.
       qc.invalidateQueries({ queryKey: ["quests"] });
       qc.invalidateQueries({ queryKey: ["streak"] });
     },

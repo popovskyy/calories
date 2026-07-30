@@ -10,7 +10,6 @@
 
 import {
   ARENA_PRIZES,
-  DAILY_CARD_REWARDS,
   DAILY_LOG_COINS,
   DUEL_STAKE,
   IN_TARGET_COINS,
@@ -29,8 +28,6 @@ interface Profile {
   logDays: number;
   /** Днів у ±5% на тиждень. */
   inTargetDays: number;
-  /** Частка виконаних карток дня. */
-  cardRate: number;
   /** Скільки з 3 квестів тижня закриває. */
   questsDone: number;
   /** Розмір поля арени (у приватній грі зазвичай 2–4). */
@@ -68,48 +65,46 @@ const PROFILES: Profile[] = [
     name: "Ідеальний",
     logDays: 7,
     inTargetDays: 7,
-    cardRate: 1,
     questsDone: 3,
     fieldSize: 2,
     arenaPrizeDays: 7,
     arenaAlwaysFirst: true,
     duelWinRate: 0.75,
-    expected: 930,
+    // Без карток дня: ритуал+точність+серія+квести+арена+дуель ≈ 708
+    expected: 708,
   },
   {
     name: "Хороший",
     logDays: 7,
     inTargetDays: 5,
-    cardRate: 0.7,
     questsDone: 2,
     fieldSize: 4,
     arenaPrizeDays: 3.5,
     arenaAlwaysFirst: false,
     duelWinRate: 0.5,
-    expected: 560,
+    // Було 560 з картками (~122) — без карток ~438
+    expected: 438,
   },
   {
     name: "Нерівний",
     logDays: 5,
     inTargetDays: 3,
-    cardRate: 0.4,
     questsDone: 1,
     fieldSize: 4,
     arenaPrizeDays: 1,
     arenaAlwaysFirst: false,
     duelWinRate: 0,
-    expected: 250,
+    // Було 250 з картками (~50) — без карток ~200
+    expected: 200,
   },
 ];
 
 /** Середня нагорода за квест у пулі — беремо середнє, бо вибір ротаційний. */
 const AVG_QUEST = QUEST_POOL.reduce((s, q) => s + q.rewardCoins, 0) / QUEST_POOL.length;
-const CARDS_PER_DAY_MAX = DAILY_CARD_REWARDS.reduce((s, r) => s + r, 0);
 
 function weeklyIncome(p: Profile) {
   const ritual = p.logDays * DAILY_LOG_COINS;
   const accuracy = p.inTargetDays * IN_TARGET_COINS;
-  const cards = p.logDays * CARDS_PER_DAY_MAX * p.cardRate;
   // Дивіденд платиться раз на 7 днів серії — лише за безперервного логу.
   const streak = p.logDays === 7 ? STREAK_DIVIDEND_COINS : 0;
   const quests = p.questsDone * AVG_QUEST;
@@ -127,8 +122,8 @@ function weeklyIncome(p: Profile) {
   const duel =
     p.duelWinRate > 0 ? p.duelWinRate * DUEL_STAKE * 2 - DUEL_STAKE : 0;
 
-  const total = ritual + accuracy + cards + streak + quests + arena + duel;
-  return { ritual, accuracy, cards, streak, quests, arena, duel, total, slots, prizePerDay };
+  const total = ritual + accuracy + streak + quests + arena + duel;
+  return { ritual, accuracy, streak, quests, arena, duel, total, slots, prizePerDay };
 }
 
 console.log("═".repeat(72));
@@ -145,7 +140,7 @@ for (const p of PROFILES) {
 
   console.log(`\n${p.name}`);
   console.log(
-    `  ритуал ${w.ritual.toFixed(0)} · точність ${w.accuracy.toFixed(0)} · картки ${w.cards.toFixed(0)} · ` +
+    `  ритуал ${w.ritual.toFixed(0)} · точність ${w.accuracy.toFixed(0)} · ` +
       `серія ${w.streak.toFixed(0)}`,
   );
   console.log(
@@ -161,7 +156,6 @@ for (const p of PROFILES) {
 const weeklyGear =
   (ITEMS.find((i) => i.id === "shield")?.price ?? 0) +
   (ITEMS.find((i) => i.id === "quest_reroll")?.price ?? 0) +
-  (ITEMS.find((i) => i.id === "card_reroll")?.price ?? 0) * 2 +
   (ITEMS.find((i) => i.id === "doubler")?.price ?? 0);
 
 console.log(`\n${"═".repeat(72)}`);

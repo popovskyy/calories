@@ -167,25 +167,6 @@ export interface CoinTxnDTO {
   createdAt: string;
 }
 
-export interface DailyCardDTO {
-  code: string;
-  titleUk: string;
-  description: string;
-  icon: string;
-  slot: number;
-  progress: number;
-  target: number;
-  done: boolean;
-  claimed: boolean;
-  rewardCoins: number;
-}
-
-export interface DailyCardsResponse {
-  date: string;
-  cards: DailyCardDTO[];
-  granted: GrantedReward[];
-}
-
 export interface EpicNodeDTO {
   at: number;
   nameUk: string;

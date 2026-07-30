@@ -3,10 +3,9 @@ import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildShop } from "@/lib/shop";
-import { BOX_ITEM_ID, CARD_REROLL_ITEM_ID, boxFullCompensation, getItem, rollBox, type ItemDef } from "@/lib/items";
+import { BOX_ITEM_ID, boxFullCompensation, getItem, rollBox, type ItemDef } from "@/lib/items";
 import { grant, type GrantedReward } from "@/lib/reward-grant";
 import { todayYMD, weekStartYMD } from "@/lib/date";
-import { dailyCardClaimKey, pickDailyCards } from "@/lib/daily-cards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,27 +65,6 @@ export async function POST(req: NextRequest) {
 
   const limit = await limitReached(userId, def, today);
   if (limit) return NextResponse.json({ error: limit }, { status: 409 });
-
-  // Ре-рол після claim = повторна виплата нової пари; блокуємо, якщо вже забрали.
-  if (def.id === CARD_REROLL_ITEM_ID) {
-    const rerolls = await prisma.itemUse.count({
-      where: { userId, itemId: CARD_REROLL_ITEM_ID, date: today },
-    });
-    const defs = pickDailyCards(userId, today, rerolls);
-    const keys = [
-      ...defs.map((d) => dailyCardClaimKey(today, rerolls, d.code)),
-      ...defs.map((d) => `dc:${today}:${d.code}`),
-    ];
-    const claimed = await prisma.rewardClaim.count({
-      where: { userId, key: { in: keys } },
-    });
-    if (claimed > 0) {
-      return NextResponse.json(
-        { error: "Спочатку дограйте поточні картки — після нагороди перетягувати не можна" },
-        { status: 409 },
-      );
-    }
-  }
 
   // Списання одиниці й факт застосування — атомарно, інакше при збої
   // предмет зникне без ефекту (або, гірше, спрацює двічі).

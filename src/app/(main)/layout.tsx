@@ -5,7 +5,6 @@ import { Fab } from "@/components/Fab";
 import { RewardCelebrations } from "@/components/RewardCelebrations";
 import { GlobalClickFx } from "@/components/GlobalClickFx";
 import { RoutePrefetcher } from "@/components/RoutePrefetcher";
-import { PunishmentSoundtrack } from "@/components/PunishmentSoundtrack";
 import { MainTabsProvider } from "@/components/MainTabs";
 import { MainTabPanels } from "@/components/MainTabPanels";
 
@@ -21,7 +20,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <TabBar />
         <RewardCelebrations />
         <GlobalClickFx />
-        <PunishmentSoundtrack />
         <RoutePrefetcher />
       </AppFrame>
     </MainTabsProvider>

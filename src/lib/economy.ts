@@ -139,19 +139,11 @@ export const QUEST_TARGET_TOLERANCE = TARGET_OVER_TOLERANCE;
 /** «Вибух» калорій — день зіпсував дисципліну. */
 export const BLOWOUT_OVER = 0.15;
 
-// ─────────────────────────── Щоденні картки ───────────────────────────
-
-/** Скільки карток видаємо на день. */
-export const DAILY_CARDS_PER_DAY = 2;
-/** Нагороди за слотами: перша картка легша, друга — вагоміша. */
-export const DAILY_CARD_REWARDS = [10, 15];
-
 /**
- * Рідкісний бонус: стрік ≥3 і обидві картки дня закриті.
- * Раз на тиждень — не щоденний double-dip.
+ * Peppa-покарання: лише якщо net перевищує норму мінімум на стільки ккал.
+ * Легкий перебір (до +299) не змінює аватар.
  */
-export const STREAK_CARDS_COMBO_MIN_STREAK = 3;
-export const STREAK_CARDS_COMBO_COINS = 25;
+export const OVER_PUNISH_KCAL = 300;
 
 // ─────────────────────────── Еволюція маскота ───────────────────────────
 

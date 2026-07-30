@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import {
@@ -16,10 +16,16 @@ import {
   OVER_TONES,
   type OverTone,
 } from "@/components/ProgressRing";
+import {
+  SaveCelebrate,
+  FINISHER_COLOR,
+  FINISHER_TEXT,
+} from "@/components/SaveCelebrate";
+import { FINISHERS, SOUNDPACKS } from "@/lib/cosmetics";
 import { cn } from "@/lib/cn";
 import type { Goal } from "@/lib/calories";
 
-type LabTab = "weekly" | "ring";
+type LabTab = "celebrate" | "weekly" | "ring";
 type RingScenario = "under" | "inTarget" | "over";
 
 const RING_SCENARIOS: {
@@ -34,7 +40,7 @@ const RING_SCENARIOS: {
 ];
 
 export function TestPageClient() {
-  const [tab, setTab] = useState<LabTab>("ring");
+  const [tab, setTab] = useState<LabTab>("celebrate");
 
   return (
     <div className="mx-auto flex h-dvh max-w-[420px] flex-col gap-5 overflow-y-auto bg-[var(--color-bg)] px-[18px] py-4 text-[var(--color-text)]">
@@ -50,9 +56,10 @@ export function TestPageClient() {
         </div>
       </header>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(
           [
+            ["celebrate", "Фідбек їжі"],
             ["ring", "Кільце ккал"],
             ["weekly", "Звіт тижня"],
           ] as const
@@ -71,8 +78,148 @@ export function TestPageClient() {
         ))}
       </div>
 
-      {tab === "ring" ? <RingLab /> : <WeeklyLab />}
+      {tab === "celebrate" ? (
+        <CelebrateLab />
+      ) : tab === "ring" ? (
+        <RingLab />
+      ) : (
+        <WeeklyLab />
+      )}
     </div>
+  );
+}
+
+function CelebrateLab() {
+  const [inTarget, setInTarget] = useState(true);
+  const [finisher, setFinisher] = useState("confetti");
+  const [soundpack, setSoundpack] = useState("default");
+  const [open, setOpen] = useState(false);
+  const [plays, setPlays] = useState(0);
+
+  const play = useCallback(() => {
+    // Скидаємо, щоб AnimatePresence знову зіграв enter навіть при швидких кліках.
+    setOpen(false);
+    window.requestAnimationFrame(() => {
+      setOpen(true);
+      setPlays((n) => n + 1);
+    });
+  }, []);
+
+  const finisherDef = FINISHERS.find((f) => f.id === finisher);
+
+  return (
+    <>
+      <section className="mcard flex flex-col gap-3 p-[18px]">
+        <span className="lbl !mb-0">Момент</span>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={!inTarget ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
+            onClick={() => setInTarget(false)}
+          >
+            Звичайний запис
+          </button>
+          <button
+            type="button"
+            className={inTarget ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
+            onClick={() => setInTarget(true)}
+          >
+            День у ±5%
+          </button>
+        </div>
+        <p className="text-[12px] leading-snug text-[var(--color-muted3)]">
+          {inTarget
+            ? "Фінішер + акорд саундпака (+ акцент ripple/stamp)."
+            : "Лише скромне «Записано!» — без частинок і звуку."}
+        </p>
+      </section>
+
+      <section className="mcard flex flex-col gap-3 p-[18px]">
+        <span className="lbl !mb-0">Фінішер</span>
+        <div className="flex flex-wrap gap-2">
+          {FINISHERS.map((f) => {
+            const isNew = f.id === "ripple" || f.id === "stamp";
+            return (
+              <button
+                key={f.id}
+                type="button"
+                className={cn(
+                  "btn btn-sm gap-2",
+                  finisher === f.id ? "btn-primary" : "btn-ghost",
+                )}
+                onClick={() => {
+                  setFinisher(f.id);
+                  setInTarget(true);
+                }}
+              >
+                <span
+                  className="inline-block h-3 w-3 rounded-full"
+                  style={{
+                    background: f.swatch,
+                    boxShadow: `0 0 8px ${FINISHER_COLOR[f.id] ?? "#888"}88`,
+                  }}
+                />
+                {f.nameUk}
+                {isNew ? (
+                  <span className="text-[10px] opacity-80">new</span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+        {finisherDef ? (
+          <p className="text-[12px] leading-snug text-[var(--color-muted3)]">
+            {finisherDef.description}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="mcard flex flex-col gap-3 p-[18px]">
+        <span className="lbl !mb-0">Саундпак</span>
+        <div className="flex flex-wrap gap-2">
+          {SOUNDPACKS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={cn(
+                "btn btn-sm gap-2",
+                soundpack === s.id ? "btn-primary" : "btn-ghost",
+              )}
+              onClick={() => setSoundpack(s.id)}
+            >
+              <span
+                className="inline-block h-3 w-3 rounded-full"
+                style={{ background: s.swatch }}
+              />
+              {s.nameUk}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="mcard flex flex-col gap-3 p-[18px]">
+        <button type="button" className="btn btn-primary" onClick={play} data-sfx="none">
+          ▶ Програти
+        </button>
+        <p className="text-center text-[12px] text-[var(--color-muted3)]">
+          {inTarget
+            ? `${finisher} · «${FINISHER_TEXT[finisher] ?? "?"}» · ${soundpack}`
+            : "звичайний · «Записано!»"}{" "}
+          · показів: {plays}
+        </p>
+        <p className="text-center text-[11px] text-[var(--color-muted3)]">
+          Звук: увімкни в профілі, якщо тихо
+        </p>
+      </section>
+
+      <SaveCelebrate
+        open={open}
+        inTarget={inTarget}
+        finisher={finisher}
+        soundpack={soundpack}
+        onDone={() => setOpen(false)}
+      />
+    </>
   );
 }
 

@@ -5,7 +5,6 @@ import type {
   AnalyzeResult,
   ArenaResponse,
   CoinTxnDTO,
-  DailyCardsResponse,
   DashboardResponse,
   EpicsResponse,
   ForecastResponse,
@@ -277,12 +276,6 @@ export const equipCosmetic = (kind: CosmeticKind, cosmeticId: string | null) =>
     method: "POST",
     body: JSON.stringify({ kind, cosmeticId }),
   });
-
-// --- Картки дня ---
-export const getDailyCards = (date?: string) =>
-  req<DailyCardsResponse>(
-    `/api/daily-cards${date ? `?date=${encodeURIComponent(date)}` : ""}`,
-  );
 
 // --- Хроніки ---
 export const getEpics = () => req<EpicsResponse>("/api/epics");

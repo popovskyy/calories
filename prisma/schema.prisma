@@ -155,7 +155,7 @@ model UserItem {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  itemId    String // shield | quest_reroll | card_reroll | doubler | duel_coupon | box
+  itemId    String // shield | quest_reroll | doubler | duel_coupon | box
   qty       Int      @default(0)
   updatedAt DateTime @updatedAt
 

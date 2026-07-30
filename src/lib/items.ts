@@ -10,7 +10,6 @@
 
 export const SHIELD_ITEM_ID = "shield";
 export const QUEST_REROLL_ITEM_ID = "quest_reroll";
-export const CARD_REROLL_ITEM_ID = "card_reroll";
 export const DOUBLER_ITEM_ID = "doubler";
 export const BOX_ITEM_ID = "box";
 
@@ -58,22 +57,10 @@ export const ITEMS: ItemDef[] = [
     passive: false,
   },
   {
-    id: CARD_REROLL_ITEM_ID,
-    nameUk: "Ре-рол картки",
-    description:
-      "Міняє обидві картки дня на нові. Кнопка «Перетягнути» — у блоці «Картки дня».",
-    price: 15,
-    icon: "🃏",
-    maxStack: 10,
-    usesPerDay: 1,
-    usesPerWeek: null,
-    passive: false,
-  },
-  {
     id: DOUBLER_ITEM_ID,
     nameUk: "Подвоювач",
     description:
-      "Денні нагороди з сьогоднішньою датою (запис їжі, картки дня) множаться на 2. Вмикай зранку — діє до півночі. Квести, стрік і арена не подвоюються.",
+      "Денні нагороди з сьогоднішньою датою (запис їжі) множаться на 2. Вмикай зранку — діє до півночі. Квести, стрік і арена не подвоюються.",
     price: 80,
     icon: "⚡",
     maxStack: 5,
@@ -125,9 +112,8 @@ export const BOX_TABLE: BoxOutcome[] = [
   { weight: 26, coins: 70, itemId: null, labelUk: "70 монет" },
   { weight: 22, coins: 150, itemId: null, labelUk: "150 монет" },
   { weight: 10, coins: 400, itemId: null, labelUk: "400 монет — щедра скринька!" },
-  { weight: 12, coins: 0, itemId: CARD_REROLL_ITEM_ID, labelUk: "Ре-рол картки" },
-  { weight: 12, coins: 0, itemId: QUEST_REROLL_ITEM_ID, labelUk: "Ре-рол квесту" },
-  { weight: 12, coins: 0, itemId: SHIELD_ITEM_ID, labelUk: "Щит стріку" },
+  { weight: 18, coins: 0, itemId: QUEST_REROLL_ITEM_ID, labelUk: "Ре-рол квесту" },
+  { weight: 18, coins: 0, itemId: SHIELD_ITEM_ID, labelUk: "Щит стріку" },
   { weight: 6, coins: 0, itemId: DOUBLER_ITEM_ID, labelUk: "Подвоювач" },
 ];
 

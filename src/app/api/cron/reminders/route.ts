@@ -14,9 +14,6 @@ const WINBACK_SILENCE_DAYS = 3;
 /**
  * Cron: нагадування о ~20:00 Kyiv користувачам без запису їжі сьогодні.
  * Два розклади UTC (17 і 18) покривають літо/зиму; вікно 20–22 + dedupeKey.
- *
- * Не чіпаємо listDailyCards: когорта без їжі сьогодні вже провалила
- * early_start / early_finish, а listDailyCards ще й може грантити нагороди.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");

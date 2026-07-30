@@ -106,6 +106,26 @@ export const FINISHERS: CosmeticDef[] = [
     swatch: "linear-gradient(135deg,#3D2B1F,#ff8a3d)",
     sortOrder: 60,
   },
+  {
+    id: "ripple",
+    kind: "finisher",
+    nameUk: "Хвиля",
+    description:
+      "Блакитні sonar-кільця розходяться від центру з м'яким ping, напис «У хвилі!»",
+    unlock: { via: "shop", price: 230 },
+    swatch: "linear-gradient(135deg,#0E4C63,#1CB0F6)",
+    sortOrder: 70,
+  },
+  {
+    id: "stamp",
+    kind: "finisher",
+    nameUk: "Печатка",
+    description:
+      "Зелена галочка б'є в екран із ударною хвилею й тупим «туп», напис «Влучно!»",
+    unlock: { via: "shop", price: 230 },
+    swatch: "linear-gradient(135deg,#58CC02,#3d8c02)",
+    sortOrder: 80,
+  },
 ];
 
 /** Титули — рядок під ніком в арені. Половина не продається принципово. */

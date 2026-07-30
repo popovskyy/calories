@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import { ChevronDown } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { CalorieHero } from "@/components/hero/CalorieHero";
-import { DailyCardsRow } from "@/components/DailyCardsRow";
 import { EpicCard } from "@/components/EpicCard";
 import { DietAdvice } from "@/components/DietAdvice";
 import { MacroTiles } from "@/components/MacroTiles";
@@ -127,9 +126,6 @@ export function OverviewTab() {
         сьогоднішньому дню читається як продовження цифр героя.
       */}
       <DietAdvice />
-
-      {/* Картки дня — щоденна дія має бути вище за тижневу */}
-      <DailyCardsRow />
 
       <ThemeAspirationHint />
 

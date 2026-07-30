@@ -109,7 +109,7 @@ export function getPackProfile(pack: string): PackProfile {
  * Спільна брама сімейства «нагорода».
  *
  * Одна дія користувача розсилає кілька інвалідацій (`quests`, `epics`,
- * картки дня, святкування збереження) — кожна прилітає окремою подією кешу,
+ * святкування збереження) — кожна прилітає окремою подією кешу,
  * і без цієї брами той самий акорд грав би двічі-тричі поспіль, що на слух
  * читається як заїкання, а не як нагорода.
  */
@@ -159,8 +159,10 @@ const FANFARE: Record<string, { wave: OscillatorType; notes: number[]; gain: num
  *
  * Грає в будь-якій темі — на відміну від вогнища, яке живе лише у «лісі».
  * Саме завдяки цьому куплений саундпак чутно всім, а не тільки forest-гравцям.
+ * Другий аргумент — id фінішера: додає короткий акцент поверх акорду пакета
+ * (sonar ping для ripple, удар печатки для stamp).
  */
-export function playFinisher(pack = "default") {
+export function playFinisher(pack = "default", finisher = "confetti") {
   if (!soundAllowed()) return;
   if (!rewardGate(900)) return;
   const ac = getContext();
@@ -182,8 +184,53 @@ export function playFinisher(pack = "default") {
       osc.start(at);
       osc.stop(at + 0.3);
     });
+    playFinisherAccent(ac, finisher, now);
   } catch {
     /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/** Унікальний «голос» фінішера поверх акорду саундпака. */
+function playFinisherAccent(ac: AudioContext, finisher: string, now: number) {
+  if (finisher === "ripple") {
+    // М'який sonar: високий синус + тихе відлуння.
+    [0, 0.18].forEach((offset, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880 - i * 40, now + offset);
+      gain.gain.setValueAtTime(0.0001, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.09 * (1 - i * 0.45), now + offset + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.42);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.45);
+    });
+    return;
+  }
+
+  if (finisher === "stamp") {
+    // Низький «туп» + короткий високий клік печатки.
+    const thud = ac.createOscillator();
+    const thudGain = ac.createGain();
+    thud.type = "sine";
+    thud.frequency.setValueAtTime(110, now);
+    thud.frequency.exponentialRampToValueAtTime(55, now + 0.12);
+    thudGain.gain.setValueAtTime(0.18, now);
+    thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    thud.connect(thudGain).connect(ac.destination);
+    thud.start(now);
+    thud.stop(now + 0.15);
+
+    const click = ac.createOscillator();
+    const clickGain = ac.createGain();
+    click.type = "triangle";
+    click.frequency.setValueAtTime(1400, now + 0.04);
+    clickGain.gain.setValueAtTime(0.07, now + 0.04);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+    click.connect(clickGain).connect(ac.destination);
+    click.start(now + 0.04);
+    click.stop(now + 0.13);
   }
 }
 
@@ -191,7 +238,7 @@ export function playFinisher(pack = "default") {
  * Вузол хроніки («Перший кілограм» і подібні) — окремий, більший звук.
  *
  * Такі моменти трапляються кілька разів за весь шлях, тому вони НЕ мають
- * звучати як щоденна картка чи влучний день: висхідне арпеджіо на п'ять нот
+ * звучати як звичайний toast чи влучний день: висхідне арпеджіо на п'ять нот
  * плюс низький корінь і дзвінкий хвіст. Впізнається з першої ноти саме як
  * «це щось рідкісне».
  */

@@ -10,7 +10,6 @@ import {
 import { computeRanking } from "@/lib/arena";
 import { isInTarget, settleRecentQuests } from "@/lib/quests";
 import { isGoal, type Goal } from "@/lib/calories";
-import { settleDailyCards } from "@/lib/daily-cards";
 import { grant, type GrantedReward } from "@/lib/reward-grant";
 import {
   isArenaPayable,
@@ -18,6 +17,7 @@ import {
   ARENA_SETTLE_HOUR,
   DAILY_LOG_COINS,
   IN_TARGET_COINS,
+  OVER_PUNISH_KCAL,
   SETTLE_LOOKBACK_DAYS,
   STREAK_DIVIDEND_COINS,
   STREAK_MILESTONES,
@@ -63,10 +63,10 @@ async function settleClosedDay(
   }
 
   // Peppa punishment:
-  // - if user OVERs (net > target) on a closed day -> next day they get `pepa_pig`
-  // - if punishment is active AND that closed day was in-target -> revert to backup on following day
-  const isOver = totals.net > targetCalories;
-  if (!isOver && !isNormal) return;
+  // - if closed day overshoots target by ≥ OVER_PUNISH_KCAL → next day `pepa_pig`
+  // - if punishment is active AND that closed day was in-target → revert to backup
+  const isOverPunish = totals.net >= targetCalories + OVER_PUNISH_KCAL;
+  if (!isOverPunish && !isNormal) return;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -88,7 +88,7 @@ async function settleClosedDay(
         peppaPunishBackupAvatarUrl: null,
       },
     });
-  } else if (isOver) {
+  } else if (isOverPunish) {
     // Apply punishment for next day.
     // Do not overwrite backup if user is already in punishment.
     const nextBackup =
@@ -140,7 +140,6 @@ export async function evaluateMealRewards(
 
   await settleStreakRewards(userId, out);
 
-  out.push(...(await settleDailyCards(userId)));
   out.push(...(await settleRecentQuests(userId)));
   return out;
 }
