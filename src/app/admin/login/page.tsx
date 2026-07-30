@@ -34,9 +34,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    // page-scroll: body тут fixed+overflow:hidden, тож на низькому екрані
-    // (або з відкритою клавіатурою) форма інакше обрізається без скролу.
-    <div className="page-scroll no-scrollbar">
+    <div className="page-scroll">
       <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-4 px-5 py-10 pb-24">
         <div>
           <h1 className="text-[26px] font-semibold tracking-tight text-[var(--color-text)]">

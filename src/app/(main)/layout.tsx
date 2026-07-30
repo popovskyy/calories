@@ -14,7 +14,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <MainTabsProvider>
       <AppFrame>
         <AmbientLayer />
-        <main className="app-scroll no-scrollbar relative z-10 flex flex-col gap-4 px-[18px] pb-24 pt-4">
+        <main className="relative z-10 flex flex-col gap-4 px-[18px] pb-24 pt-4">
           <MainTabPanels>{children}</MainTabPanels>
         </main>
         <Fab />

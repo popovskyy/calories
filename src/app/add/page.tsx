@@ -200,7 +200,7 @@ export default function AddFoodPage() {
         </div>
       </header>
 
-      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-28 pt-4">
+      <div className="flex flex-col gap-4 px-[18px] pb-28 pt-4">
         <div className="flex gap-2">
           <span className="flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-3 py-2.5 text-[14px] font-semibold text-[#f5f4ff]">
             <UtensilsCrossed size={16} /> Їжа
@@ -332,7 +332,7 @@ export default function AddFoodPage() {
         </AnimatePresence>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-3.5">
+      <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-3.5 sticky bottom-0 z-10">
         {result ? (
           <>
             <button

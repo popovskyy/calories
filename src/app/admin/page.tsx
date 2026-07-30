@@ -252,12 +252,7 @@ export default function AdminPage() {
           : "Модерація їжі / активності";
 
   return (
-    /*
-     * .page-scroll — власний скрол-контейнер. body у цьому проєкті
-     * position:fixed + overflow:hidden (мобільний шел), тож без нього
-     * адмінка просто обрізалася по висоті екрана без можливості доскролити.
-     */
-    <div className="page-scroll no-scrollbar">
+    <div className="page-scroll">
       <div className="page-chrome border-b border-[var(--color-divider)]">
         <div className="mx-auto w-full max-w-5xl px-4 pb-2 pt-4">
           <header className="flex flex-wrap items-center justify-between gap-3">

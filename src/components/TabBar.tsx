@@ -14,8 +14,8 @@ const TABS: { id: MainTab; href: string; label: string; icon: LucideIcon }[] = [
 ];
 
 /**
- * Головні таби — кнопки (без Next Link), щоб не тригерити soft-nav і
- * scrollIntoView у .app-scroll на iOS. Лише /shop|/epics лишають Link.
+ * Головні таби — кнопки (без Next Link), щоб не тригерити soft-nav на iOS.
+ * Лише /shop|/epics лишають Link.
  */
 export function TabBar() {
   const pathname = usePathname();

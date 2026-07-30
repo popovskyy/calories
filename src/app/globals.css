@@ -728,9 +728,14 @@ html[data-theme="polonyna"] .coin-chip {
    Nocturne — плоскі таби, Forest — pill, Minecraft — хотбар-слоти.
    ============================================================ */
 .nav-bar {
-  position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 30;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
   border-top: 1px solid var(--color-divider);
   background: var(--color-nav-bg);
   padding: 10px 4px calc(env(safe-area-inset-bottom, 0px) + 20px);
@@ -849,7 +854,16 @@ html[data-theme="minecraft"] .nav-tab-label {
    FAB — кнопка «+»
    ============================================================ */
 .fab-wrap {
+  position: fixed;
+  z-index: 20;
+  right: 16px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+}
+
+@media (min-width: 420px) {
+  .fab-wrap {
+    right: calc(50% - 210px + 16px);
+  }
 }
 .fab-btn {
   position: relative;
@@ -958,22 +972,11 @@ html {
   height: 100%;
 }
 
-html,
 body {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-body {
-  /*
-   * Тільки inset:0 — без height:100dvh / -webkit-fill-available.
-   * На iOS PWA 100dvh інколи більший за реальний вебв'ю, і після зміни
-   * таба шел «роздувається»: пейдж виглядає занадто високим, з'являється
-   * зайвий скрол. inset:0 прив'язує body до видимого прямокутника.
-   */
-  position: fixed;
-  inset: 0;
-  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
   background-color: var(--color-bg);
   background-image: var(--app-bg-image);
   color: var(--color-text);
@@ -988,55 +991,22 @@ body {
   background: color-mix(in srgb, var(--color-accent) 32%, transparent);
 }
 
-/* Mobile-first app frame: full-bleed on phones, centered column on desktop */
+/* Колонка застосунку. Скрол — у document/body, не вкладений overflow. */
 .app-frame {
   width: 100%;
   max-width: 420px;
   margin: 0 auto;
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+  min-height: 100%;
   position: relative;
-  overflow: hidden;
   background-color: var(--color-bg);
   background-image: var(--app-bg-image);
-  /* без safe-area-паддінгів: viewport-fit=auto, iOS інсетить вебв'ю сам */
 }
 
-/* Єдиний вертикальний скрол шелу */
-.app-scroll {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: none;
-  touch-action: pan-y;
-}
-
-/* Не стискати секції з overflow ≠ visible у flex-колонці скрола */
-.app-scroll > *,
-.app-scroll [data-main-tab] > * {
-  flex-shrink: 0;
-}
-
-/*
- * body — position:fixed + overflow:hidden (мобільний шел), тож скрол документа
- * не працює в принципі. Будь-який екран ПОЗА .app-frame (адмінка, логін)
- * зобов'язаний мати власний скрол-контейнер, інакше контент нижче першого
- * екрана недосяжний. Це і є .page-scroll.
- */
+/* Адмінка / логін-адмін: звичайний потік, sticky-шапка окремо */
 .page-scroll {
-  position: absolute;
-  inset: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  touch-action: pan-y;
+  min-height: 100%;
 }
 
-/* Липка шапка над .page-scroll: матеріал, крізь який видно контент (не глухий бар) */
 .page-chrome {
   position: sticky;
   top: 0;
@@ -2238,113 +2208,5 @@ html[data-theme="minecraft"] .rounded-full {
   .spark-pulse,
   .conjure-ring {
     opacity: 0.8;
-  }
-}
-
-/* ============================================================
-   Tablet landscape — ширший шел + більші шрифти/іконки chrome.
-   Bottom nav лишається; без side-nav і двоколонкового home.
-   ============================================================ */
-@media (min-width: 768px) and (orientation: landscape) {
-  :root {
-    --text-caption: 14px;
-    --text-secondary: 16px;
-    --text-body: 19px;
-    --text-title: 26px;
-    --text-hero: 34px;
-  }
-
-  body {
-    font-size: 19px;
-  }
-
-  .app-frame {
-    max-width: 840px;
-    font-size: 19px;
-  }
-
-  .app-frame .app-scroll {
-    padding-left: 24px;
-    padding-right: 24px;
-    padding-bottom: 7rem;
-  }
-
-  /* Arbitrary Tailwind text-[Npx] — підняти без перепису className */
-  .app-frame .text-\[11px\] {
-    font-size: 13px;
-  }
-  .app-frame .text-\[12px\] {
-    font-size: 14px;
-  }
-  .app-frame .text-\[13px\] {
-    font-size: 15px;
-  }
-  .app-frame .text-\[14px\] {
-    font-size: 16px;
-  }
-  .app-frame .text-\[15px\] {
-    font-size: 17px;
-  }
-  .app-frame .text-\[16px\] {
-    font-size: 18px;
-  }
-  .app-frame .text-\[20px\] {
-    font-size: 22px;
-  }
-
-  .nav-bar {
-    padding: 12px 6px calc(env(safe-area-inset-bottom, 0px) + 22px);
-  }
-  .nav-tab {
-    min-height: 56px;
-    gap: 4px;
-  }
-  .nav-tab svg {
-    width: 24px;
-    height: 24px;
-  }
-  .nav-tab-label {
-    font-size: 13px;
-  }
-  html[data-theme="forest"] .nav-tab-label {
-    font-size: 13px;
-  }
-  html[data-theme="minecraft"] .nav-tab-label {
-    font-size: 18px;
-  }
-
-  .fab-wrap {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 118px);
-  }
-  .fab-btn {
-    width: 76px;
-    height: 76px;
-  }
-  .fab-btn-icon {
-    width: 38px;
-    height: 38px;
-  }
-  html[data-theme="forest"] .fab-wrap,
-  html[data-theme="polonyna"] .fab-wrap {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 122px);
-  }
-  html[data-theme="forest"] .fab-btn {
-    width: 80px;
-    height: 80px;
-  }
-  html[data-theme="forest"] .fab-btn-icon {
-    width: 40px;
-    height: 40px;
-  }
-  html[data-theme="minecraft"] .fab-wrap {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 128px);
-  }
-  html[data-theme="minecraft"] .fab-btn {
-    width: 80px;
-    height: 80px;
-  }
-  html[data-theme="minecraft"] .fab-btn-icon {
-    width: 38px;
-    height: 38px;
   }
 }

@@ -46,8 +46,7 @@ export function MainTabPanels({ children }: { children: ReactNode }) {
   }, [tab]);
 
   useEffect(() => {
-    const el = document.querySelector(".app-scroll");
-    if (el instanceof HTMLElement) el.scrollTop = 0;
+    window.scrollTo(0, 0);
   }, [tab, isExtra]);
 
   if (isExtra) {

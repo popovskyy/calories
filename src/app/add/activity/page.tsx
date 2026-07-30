@@ -146,7 +146,7 @@ export default function AddActivityPage() {
         </div>
       </header>
 
-      <div className="app-scroll no-scrollbar flex flex-col gap-4 px-[18px] pb-28 pt-4">
+      <div className="flex flex-col gap-4 px-[18px] pb-28 pt-4">
         <div className="flex gap-2">
           <button
             type="button"
@@ -249,7 +249,7 @@ export default function AddActivityPage() {
       </div>
 
       {result ? (
-        <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-3.5">
+        <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-3.5">
           <button
             type="button"
             className="btn btn-primary btn-block"
