@@ -61,7 +61,6 @@ export interface RegisterInput {
   weight: number;
   height: number;
   targetWeight?: number | null;
-  targetWeeks?: number | null;
   avatarUrl?: string | null;
   imageBase64?: string;
   imageMimeType?: string;
@@ -99,7 +98,6 @@ export interface UserInput {
   height: number;
   avatarUrl?: string | null;
   targetWeight?: number | null;
-  targetWeeks?: number | null;
 }
 export const saveUser = (input: UserInput) =>
   req<UserDTO>("/api/users", { method: "POST", body: JSON.stringify(input) });

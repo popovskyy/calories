@@ -34,7 +34,6 @@ model User {
   coins            Int                @default(0) // внутрішня валюта за звички
   theme            String             @default("nocturne")
   targetWeight     Float?
-  targetWeeks      Int?
   startWeight      Float?
   startWeightDate  String? // YYYY-MM-DD
   remindersEnabled Boolean            @default(false)

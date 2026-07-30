@@ -35,7 +35,6 @@ interface FormState {
   weight: string;
   height: string;
   targetWeight: string;
-  targetWeeks: string;
 }
 
 const currentYear = new Date().getFullYear();
@@ -49,7 +48,6 @@ const empty: FormState = {
   weight: "70",
   height: "175",
   targetWeight: "",
-  targetWeeks: "",
 };
 
 const segmentBtn = (active: boolean) =>
@@ -101,7 +99,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       weight: String(user.weight),
       height: String(user.height),
       targetWeight: user.targetWeight != null ? String(user.targetWeight) : "",
-      targetWeeks: user.targetWeeks != null ? String(user.targetWeeks) : "",
     });
     setAvatarUrl(user.avatarUrl ?? null);
     setAvatarDirty(false);
@@ -129,8 +126,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     ) {
       return null;
     }
-    const tw = form.targetWeight ? parseFloat(form.targetWeight) : null;
-    const weeks = form.targetWeeks ? parseInt(form.targetWeeks, 10) : null;
     return calcTargetCalories({
       birthYear,
       birthMonth,
@@ -138,8 +133,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       weightKg: weight,
       heightCm: height,
       goal: form.goal,
-      targetWeightKg: tw != null && Number.isFinite(tw) ? tw : null,
-      targetWeeks: weeks != null && Number.isFinite(weeks) ? weeks : null,
     });
   }, [form]);
 
@@ -194,7 +187,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         height,
         ...(avatarDirty ? { avatarUrl } : {}),
         targetWeight: form.targetWeight ? parseFloat(form.targetWeight) : null,
-        targetWeeks: form.targetWeeks ? parseInt(form.targetWeeks, 10) : null,
       });
       toast.success("Профіль оновлено");
       onOpenChange(false);
@@ -374,32 +366,15 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
           </Field>
         </div>
 
-        <div className="flex gap-3">
-          <Field
-            label="Ціль, кг"
-            hint="Разом із тижнями задає темп дефіциту"
-          >
-            <input
-              className={inputClass}
-              value={form.targetWeight}
-              onChange={set("targetWeight")}
-              inputMode="decimal"
-              placeholder="Напр. 70"
-            />
-          </Field>
-          <Field
-            label="Тижнів"
-            hint="Без цілі/тижнів — фіксований −15%"
-          >
-            <input
-              className={inputClass}
-              value={form.targetWeeks}
-              onChange={set("targetWeeks")}
-              inputMode="numeric"
-              placeholder="Напр. 12"
-            />
-          </Field>
-        </div>
+        <Field label="Ціль, кг" hint="Порожньо — ціль не відстежується">
+          <input
+            className={inputClass}
+            value={form.targetWeight}
+            onChange={set("targetWeight")}
+            inputMode="decimal"
+            placeholder="Напр. 70"
+          />
+        </Field>
 
         <div className="flex flex-col gap-1.5">
           <span className="lbl">Мета</span>
@@ -432,18 +407,8 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               <div className="mt-1 text-[14px] text-[var(--color-muted3)]">
                 {preview.age} р · BMR {preview.bmr.toLocaleString("uk-UA")} · TDEE{" "}
                 {preview.tdee.toLocaleString("uk-UA")}
-                {preview.deficitPct != null
-                  ? ` · −${preview.deficitPct}%${
-                      preview.deficitSource === "pace" ? " за темпом" : ""
-                    }`
-                  : ""}
+                {form.goal === "deficit" ? " · −15%" : ""}
               </div>
-              {preview.paceClamped ? (
-                <div className="mt-1.5 text-[13px] text-[var(--color-muted3)]">
-                  Підлога безпеки — темп лише з їжі може не встигнути; додайте
-                  рух або подовжіть строк.
-                </div>
-              ) : null}
             </>
           ) : (
             <div className="mt-1 text-[16px] text-[var(--color-muted3)]">

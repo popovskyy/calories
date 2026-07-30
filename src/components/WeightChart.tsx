@@ -22,7 +22,7 @@ interface WeightChartProps {
   startWeight: number;
   startWeightDate: string;
   targetWeight: number;
-  /** Дата, на яку запланована ціль (YYYY-MM-DD). */
+  /** Прогнозована дата досягнення цілі за поточним темпом (YYYY-MM-DD). */
   targetDate: string;
 }
 
@@ -30,7 +30,7 @@ interface FactPoint {
   t: number;
   date: string;
   weight: number;
-  /** Планова вага на цю дату — для тултипа «на скільки випереджаю». */
+  /** Прогнозована вага на цю дату — для тултипа «на скільки випереджаю». */
   plan: number;
 }
 
@@ -38,7 +38,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const ms = (ymd: string) => fromYMD(ymd).getTime();
 
 /**
- * Графік ваги: факт від старту до сьогодні на тлі планової прямої
+ * Графік ваги: факт від старту до сьогодні на тлі прогнозної прямої
  * старт → ціль. Вісь X — реальні дати (не індекс запису), вісь Y завжди
  * вміщує і старт, і ціль, тож напрямок кривої читається однозначно.
  */
@@ -260,7 +260,7 @@ export function WeightChart({
 
       <figcaption className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--color-muted3)]">
         <LegendKey color="var(--color-accent)" label="Факт" />
-        <LegendKey color="var(--color-muted3)" label="План" dashed />
+        <LegendKey color="var(--color-muted3)" label="Прогноз" dashed />
         <LegendKey color="var(--color-green)" label="Ціль" dashed />
       </figcaption>
     </figure>
@@ -388,7 +388,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps) {
           style={{ color: ahead ? "var(--color-green)" : "var(--color-red)" }}
         >
           {ahead ? "−" : "+"}
-          {fmtNum(Math.abs(vsPlan))} кг {ahead ? "від плану" : "до плану"}
+          {fmtNum(Math.abs(vsPlan))} кг {ahead ? "від прогнозу" : "до прогнозу"}
         </div>
       ) : (
         <div className="text-[var(--color-muted3)]">рівно за планом</div>

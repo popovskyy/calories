@@ -60,8 +60,6 @@ export async function POST(req: NextRequest) {
       sex: true,
       height: true,
       goal: true,
-      targetWeight: true,
-      targetWeeks: true,
     },
   });
   if (!user) {
@@ -75,8 +73,6 @@ export async function POST(req: NextRequest) {
     weightKg: weight,
     heightCm: user.height,
     goal: isGoal(user.goal) ? user.goal : "maintain",
-    targetWeightKg: user.targetWeight,
-    targetWeeks: user.targetWeeks,
   });
 
   const date = todayYMD();

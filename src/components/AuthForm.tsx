@@ -65,7 +65,6 @@ export function AuthForm() {
   const [weight, setWeight] = useState("70");
   const [height, setHeight] = useState("175");
   const [targetWeight, setTargetWeight] = useState("");
-  const [targetWeeks, setTargetWeeks] = useState("");
   const [photo, setPhoto] = useState<{ base64: string; mime: string } | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [avatarPreset, setAvatarPreset] = useState<string>(toPresetUrl("kiwi"));
@@ -79,8 +78,6 @@ export function AuthForm() {
     const w = parseFloat(weight);
     const h = parseFloat(height);
     if (!by || !bm || !(w > 0) || !(h > 0)) return null;
-    const tw = targetWeight ? parseFloat(targetWeight) : null;
-    const weeks = targetWeeks ? parseInt(targetWeeks, 10) : null;
     return calcTargetCalories({
       birthYear: by,
       birthMonth: bm,
@@ -88,20 +85,8 @@ export function AuthForm() {
       weightKg: w,
       heightCm: h,
       goal,
-      targetWeightKg: tw != null && Number.isFinite(tw) ? tw : null,
-      targetWeeks: weeks != null && Number.isFinite(weeks) ? weeks : null,
     });
-  }, [
-    mode,
-    birthYear,
-    birthMonth,
-    sex,
-    weight,
-    height,
-    goal,
-    targetWeight,
-    targetWeeks,
-  ]);
+  }, [mode, birthYear, birthMonth, sex, weight, height, goal]);
 
   const busy = loginMut.isPending || registerMut.isPending;
 
@@ -148,7 +133,6 @@ export function AuthForm() {
         weight: parseFloat(weight),
         height: parseFloat(height),
         targetWeight: targetWeight ? parseFloat(targetWeight) : null,
-        targetWeeks: targetWeeks ? parseInt(targetWeeks, 10) : null,
         avatarUrl: avatarPreset,
         imageBase64: photo?.base64,
         imageMimeType: photo?.mime,
@@ -336,28 +320,17 @@ export function AuthForm() {
             </Field>
           </div>
 
-          <div className="flex gap-3">
-            <Field label="Цільова вага, кг">
-              <input
-                className={inputClass}
-                value={targetWeight}
-                onChange={(e) => setTargetWeight(e.target.value)}
-                inputMode="decimal"
-                placeholder="опціонально (можна вводити або ні)"
-              />
-            </Field>
-            <Field label="Строк, тижнів">
-              <input
-                className={inputClass}
-                value={targetWeeks}
-                onChange={(e) => setTargetWeeks(e.target.value)}
-                inputMode="numeric"
-                placeholder="опціонально (можна вводити або ні)"
-              />
-            </Field>
-          </div>
+          <Field label="Цільова вага, кг">
+            <input
+              className={inputClass}
+              value={targetWeight}
+              onChange={(e) => setTargetWeight(e.target.value)}
+              inputMode="decimal"
+              placeholder="опціонально (можна вводити або ні)"
+            />
+          </Field>
           <p className="text-[12px] text-[var(--color-muted3)]">
-            Ціль і тижні задають темп дефіциту; порожньо — фіксований −15%
+            Порожньо — ціль не відстежується
           </p>
 
           <div className="flex flex-col gap-1.5">
@@ -380,15 +353,6 @@ export function AuthForm() {
                 {preview.targetCalories.toLocaleString("uk-UA")}{" "}
                 <span className="text-[15px] font-medium text-[var(--color-muted3)]">ккал/день</span>
               </div>
-              {preview.deficitPct != null ? (
-                <div className="mt-1 text-[13px] text-[var(--color-muted3)]">
-                  −{preview.deficitPct}%
-                  {preview.deficitSource === "pace" ? " за темпом" : ""}
-                  {preview.paceClamped
-                    ? " · підлога безпеки — темп може не встигнути"
-                    : ""}
-                </div>
-              ) : null}
             </div>
           ) : null}
 

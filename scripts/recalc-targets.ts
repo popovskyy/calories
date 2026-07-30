@@ -22,8 +22,6 @@ async function main() {
       weightKg: u.weight,
       heightCm: u.height,
       goal,
-      targetWeightKg: u.targetWeight,
-      targetWeeks: u.targetWeeks,
     });
 
     const data: {

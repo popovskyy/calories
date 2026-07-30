@@ -1,5 +1,6 @@
 /**
- * Прогноз ваги з журналу: maintenance − net за дні з їжею (без сьогодні).
+ * Прогноз ваги з журналу: maintenance − net за дні з їжею (без сьогодні),
+ * плюс ETA до цілі за фактичним темпом зважувань (без декларованого плану).
  */
 
 import { prisma } from "@/lib/prisma";
@@ -12,6 +13,8 @@ import { shiftYMD, todayYMD } from "@/lib/date";
 import type { ForecastResponse } from "@/lib/types";
 
 const DEAD_ZONE_KG = 0.3;
+/** Мінімум днів історії, щоб довіряти фактичному темпу зважувань. */
+const MIN_DAYS_FOR_PROJECTION = 3;
 
 export async function computeForecast(userId: string): Promise<ForecastResponse> {
   const user = await prisma.user.findUnique({
@@ -23,7 +26,6 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
       birthMonth: true,
       sex: true,
       targetWeight: true,
-      targetWeeks: true,
       startWeight: true,
       startWeightDate: true,
     },
@@ -35,7 +37,6 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
 
   const configured =
     user.targetWeight != null &&
-    user.targetWeeks != null &&
     user.startWeight != null &&
     !!user.startWeightDate;
 
@@ -53,7 +54,6 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
   const startWeight = user.startWeight!;
   const startWeightDate = user.startWeightDate!;
   const targetWeight = user.targetWeight!;
-  const targetWeeks = user.targetWeeks!;
   const currentWeight = user.weight;
   const today = todayYMD();
 
@@ -105,24 +105,29 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
   /** Фактична зміна ваги від старту: <0 — схудли, >0 — набрали. */
   const deltaActual = Math.round((currentWeight - startWeight) * 10) / 10;
 
-  const targetDate = shiftYMD(startWeightDate, targetWeeks * 7);
-  const daysLeft = Math.max(0, daysBetween(today, targetDate));
+  // ETA до цілі за фактичним темпом зважувань (не за декларованим планом):
+  // якщо напрямок зважувань веде до targetWeight, екстраполюємо дату.
+  let projectedDate: string | null = null;
+  let daysLeft: number | null = null;
+  let paceStatus: ForecastResponse["paceStatus"] = "unknown";
 
-  const plannedFrac =
-    totalDays + daysLeft > 0 ? totalDays / (totalDays + daysLeft) : 0;
-  const plannedWeightToday =
-    Math.round((startWeight + (targetWeight - startWeight) * plannedFrac) * 10) /
-    10;
-
-  let scheduleStatus: ForecastResponse["scheduleStatus"] = "unknown";
-  if (loggedDays > 0) {
-    const diff = currentWeight - plannedWeightToday;
-    // Для схуднення: менше ваги = ahead; для набору — навпаки
-    const losing = targetWeight < startWeight;
-    const aheadBy = losing ? -diff : diff;
-    if (Math.abs(diff) <= DEAD_ZONE_KG) scheduleStatus = "on";
-    else if (aheadBy > 0) scheduleStatus = "ahead";
-    else scheduleStatus = "behind";
+  const remainingKg = Math.round((targetWeight - currentWeight) * 10) / 10;
+  if (Math.abs(remainingKg) <= DEAD_ZONE_KG) {
+    projectedDate = today;
+    daysLeft = 0;
+    paceStatus = "progressing";
+  } else if (totalDays >= MIN_DAYS_FOR_PROJECTION) {
+    const ratePerDay = deltaActual / totalDays;
+    const progressing =
+      ratePerDay !== 0 && Math.sign(ratePerDay) === Math.sign(remainingKg);
+    if (progressing) {
+      const daysToGoal = Math.round(remainingKg / ratePerDay);
+      daysLeft = Math.max(0, daysToGoal);
+      projectedDate = shiftYMD(today, daysLeft);
+      paceStatus = "progressing";
+    } else {
+      paceStatus = "stalled";
+    }
   }
 
   return {
@@ -133,12 +138,11 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
     targetWeight,
     expectedWeight,
     deltaActual,
-    plannedWeightToday,
-    targetDate,
+    projectedDate,
     daysLeft,
     loggedDays,
     totalDays,
-    scheduleStatus,
+    paceStatus,
   };
 }
 
@@ -151,12 +155,11 @@ function emptyForecast(): ForecastResponse {
     targetWeight: null,
     expectedWeight: null,
     deltaActual: null,
-    plannedWeightToday: null,
-    targetDate: null,
+    projectedDate: null,
     daysLeft: null,
     loggedDays: 0,
     totalDays: 0,
-    scheduleStatus: "unknown",
+    paceStatus: "unknown",
   };
 }
 

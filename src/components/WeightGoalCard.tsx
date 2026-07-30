@@ -13,6 +13,7 @@ import {
   useLogWeight,
   useWeightHistory,
 } from "@/hooks/useQueries";
+import { shortDate } from "@/lib/date";
 
 export function WeightGoalCard() {
   const { user } = useCurrentUser();
@@ -56,12 +57,11 @@ export function WeightGoalCard() {
     targetWeight,
     expectedWeight,
     deltaActual,
-    plannedWeightToday,
-    targetDate,
+    projectedDate,
     daysLeft,
     loggedDays,
     totalDays,
-    scheduleStatus,
+    paceStatus,
   } = data;
 
   const totalSpan = Math.abs((startWeight ?? 0) - (targetWeight ?? 0));
@@ -78,18 +78,11 @@ export function WeightGoalCard() {
       ? Math.abs(currentWeight - targetWeight)
       : 0;
 
-  const vsPlan =
-    currentWeight != null && plannedWeightToday != null
-      ? Math.round((currentWeight - plannedWeightToday) * 10) / 10
-      : 0;
-
-  let statusLabel = "За планом";
-  if (scheduleStatus === "ahead") {
-    statusLabel = `Випереджаєте на ${Math.abs(vsPlan).toFixed(1).replace(".", ",")} кг`;
-  } else if (scheduleStatus === "behind") {
-    statusLabel = `Відстаєте на ${Math.abs(vsPlan).toFixed(1).replace(".", ",")} кг`;
-  } else if (scheduleStatus === "unknown") {
-    statusLabel = "Мало даних";
+  let statusLabel = "Мало даних";
+  if (paceStatus === "stalled") {
+    statusLabel = "Темп не веде до цілі";
+  } else if (paceStatus === "progressing" && projectedDate) {
+    statusLabel = `Ціль ≈ ${shortDate(projectedDate)}`;
   }
 
   return (
@@ -100,13 +93,17 @@ export function WeightGoalCard() {
           className="rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-semibold"
           style={{
             background:
-              scheduleStatus === "behind"
+              paceStatus === "stalled"
                 ? "color-mix(in srgb, var(--color-red) 18%, transparent)"
-                : "color-mix(in srgb, var(--color-green) 18%, transparent)",
+                : paceStatus === "progressing"
+                  ? "color-mix(in srgb, var(--color-green) 18%, transparent)"
+                  : "color-mix(in srgb, var(--color-muted3) 18%, transparent)",
             color:
-              scheduleStatus === "behind"
+              paceStatus === "stalled"
                 ? "var(--color-red)"
-                : "var(--color-green)",
+                : paceStatus === "progressing"
+                  ? "var(--color-green)"
+                  : "var(--color-muted2)",
           }}
         >
           {statusLabel}
@@ -126,13 +123,13 @@ export function WeightGoalCard() {
       {startWeight != null &&
       startWeightDate &&
       targetWeight != null &&
-      targetDate ? (
+      projectedDate ? (
         <WeightChart
           points={history?.items ?? []}
           startWeight={startWeight}
           startWeightDate={startWeightDate}
           targetWeight={targetWeight}
-          targetDate={targetDate}
+          targetDate={projectedDate}
         />
       ) : null}
 

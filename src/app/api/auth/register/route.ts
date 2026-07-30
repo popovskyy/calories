@@ -38,7 +38,6 @@ const registerSchema = z.object({
   weight: z.number().positive(),
   height: z.number().positive(),
   targetWeight: z.number().positive().nullable().optional(),
-  targetWeeks: z.number().int().min(1).max(104).nullable().optional(),
   avatarUrl: z.string().max(2_500_000).nullable().optional(),
   // фото лишаємо в API для сумісності клієнта — AI-аватар лише після апруву
   imageBase64: z.string().optional(),
@@ -62,7 +61,6 @@ export async function POST(req: NextRequest) {
     imageBase64: _photo,
     imageMimeType: _mime,
     targetWeight,
-    targetWeeks,
     ...profile
   } = parsed.data;
   const login = username.toLowerCase();
@@ -93,8 +91,6 @@ export async function POST(req: NextRequest) {
     weightKg: profile.weight,
     heightCm: profile.height,
     goal: profile.goal,
-    targetWeightKg: targetWeight ?? null,
-    targetWeeks: targetWeeks ?? null,
   });
 
   const passwordHash = await hashPassword(password);
@@ -114,7 +110,6 @@ export async function POST(req: NextRequest) {
       targetCalories,
       avatarUrl: finalAvatar,
       targetWeight: targetWeight ?? null,
-      targetWeeks: targetWeeks ?? null,
       startWeight: profile.weight,
       startWeightDate: today,
       approved: false,

@@ -39,7 +39,6 @@ export interface UserDTO {
   /** Рекорд серії — від нього залежить стадія маскота */
   maxStreak: number;
   targetWeight: number | null;
-  targetWeeks: number | null;
   startWeight: number | null;
   startWeightDate: string | null;
   remindersEnabled: boolean;
@@ -249,12 +248,13 @@ export interface ForecastResponse {
   targetWeight: number | null;
   expectedWeight: number | null;
   deltaActual: number | null;
-  plannedWeightToday: number | null;
-  targetDate: string | null;
+  /** Дата, коли за поточним темпом (з фактичних зважувань) буде ціль. */
+  projectedDate: string | null;
+  /** Днів до projectedDate. */
   daysLeft: number | null;
   loggedDays: number;
   totalDays: number;
-  scheduleStatus: "ahead" | "on" | "behind" | "unknown";
+  paceStatus: "progressing" | "stalled" | "unknown";
 }
 
 export interface ArenaEntry {

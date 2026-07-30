@@ -40,7 +40,6 @@ const updateSchema = z.object({
     .nullable()
     .optional(),
   targetWeight: z.number().positive().nullable().optional(),
-  targetWeeks: z.number().int().min(1).max(104).nullable().optional(),
 });
 
 /** GET — поточний користувач (+ sync вчорашньої арени після settle). */
@@ -77,7 +76,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { avatarUrl, targetWeight, targetWeeks, ...fields } = parsed.data;
+  const { avatarUrl, targetWeight, ...fields } = parsed.data;
 
   if (avatarUrl !== undefined) {
     const punishmentActive = await prisma.user.findUnique({
@@ -100,13 +99,8 @@ export async function POST(req: NextRequest) {
   // Якщо змінили ціль по вазі — скидаємо startWeight і startWeightDate
   const existing = await prisma.user.findUnique({
     where: { id: auth.session.userId },
-    select: { targetWeight: true, targetWeeks: true, weight: true },
+    select: { targetWeight: true, weight: true },
   });
-
-  const nextTargetWeight =
-    targetWeight !== undefined ? targetWeight : (existing?.targetWeight ?? null);
-  const nextTargetWeeks =
-    targetWeeks !== undefined ? targetWeeks : (existing?.targetWeeks ?? null);
 
   const { targetCalories } = calcTargetCalories({
     birthYear: fields.birthYear,
@@ -115,19 +109,14 @@ export async function POST(req: NextRequest) {
     weightKg: fields.weight,
     heightCm: fields.height,
     goal: fields.goal,
-    targetWeightKg: nextTargetWeight,
-    targetWeeks: nextTargetWeeks,
   });
 
   const goalChanged =
-    (targetWeight !== undefined &&
-      targetWeight !== (existing?.targetWeight ?? null)) ||
-    (targetWeeks !== undefined &&
-      targetWeeks !== (existing?.targetWeeks ?? null));
+    targetWeight !== undefined &&
+    targetWeight !== (existing?.targetWeight ?? null);
 
   const goalData: Record<string, unknown> = {};
   if (targetWeight !== undefined) goalData.targetWeight = targetWeight;
-  if (targetWeeks !== undefined) goalData.targetWeeks = targetWeeks;
   if (goalChanged) {
     goalData.startWeight = fields.weight;
     goalData.startWeightDate = todayYMD();

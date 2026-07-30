@@ -49,7 +49,6 @@ export function toUserDTO(user: UserWithSkins): UserDTO {
     soundpack: user.soundpack ?? "default",
     maxStreak: user.maxStreak ?? 0,
     targetWeight: user.targetWeight ?? null,
-    targetWeeks: user.targetWeeks ?? null,
     startWeight: user.startWeight ?? null,
     startWeightDate: user.startWeightDate ?? null,
     remindersEnabled: user.remindersEnabled,
