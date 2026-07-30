@@ -11,6 +11,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { cn } from "@/lib/cn";
+import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 
 const R = 108;
 const C = 2 * Math.PI * R;
@@ -107,25 +108,26 @@ export function ProgressRing({
   );
 
   useEffect(() => {
+    const dur = reduce ? 0 : DURATION_SHEET;
     const a1 = animate(offset, C - C * progress, {
-      duration: 1.1,
-      ease: [0.22, 1, 0.36, 1],
+      duration: dur,
+      ease: EASE_OUT,
     });
     const a2 = animate(count, consumed, {
-      duration: 1.0,
-      ease: [0.22, 1, 0.36, 1],
+      duration: dur,
+      ease: EASE_OUT,
     });
     const a3 = animate(overOffset, C - C * overProgress, {
-      duration: 1.1,
-      delay: over ? 0.35 : 0,
-      ease: [0.22, 1, 0.36, 1],
+      duration: dur,
+      delay: reduce || !over ? 0 : 0.08,
+      ease: EASE_OUT,
     });
     return () => {
       a1.stop();
       a2.stop();
       a3.stop();
     };
-  }, [progress, consumed, overProgress, over, offset, overOffset, count]);
+  }, [progress, consumed, overProgress, over, offset, overOffset, count, reduce]);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize =
@@ -154,7 +156,6 @@ export function ProgressRing({
           }}
           animate={{
             opacity: status === "over" ? [0.55, 1, 0.55] : [0.4, 0.88, 0.4],
-            scale: flare ? [1, 1.03, 1] : [1, 1.015, 1],
           }}
           transition={{
             duration: status === "over" ? 1.6 : 2.6,
@@ -263,7 +264,7 @@ export function ProgressRing({
               animate={
                 reduce
                   ? undefined
-                  : { opacity: [0.55, 1, 0.55], scale: [0.85, 1.15, 0.85] }
+                  : { opacity: [0.55, 1, 0.55] }
               }
               transition={{
                 duration: status === "over" ? 1.2 : 2,

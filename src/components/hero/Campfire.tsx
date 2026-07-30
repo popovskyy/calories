@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { CampDeer } from "@/components/ambient/CampDeer";
 import type { HeroProps } from "@/components/hero/CalorieHero";
+import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { claimRitualSound, playLogToss } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
@@ -45,6 +46,7 @@ const FIRE = {
  * /add і повернеться на Огляд лише за кілька екранів.
  */
 export function Campfire({ consumed, target, frame }: HeroProps) {
+  const reduce = useReducedMotion();
   const remaining = target - consumed;
   const over = remaining < 0;
   const fire = frame === "neon" ? FIRE.neon : FIRE.warm;
@@ -69,9 +71,12 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
 
   useEffect(() => {
-    const a = animate(count, consumed, { duration: 1.0, ease: [0.22, 1, 0.36, 1] });
+    const a = animate(count, consumed, {
+      duration: reduce ? 0 : DURATION_SHEET,
+      ease: EASE_OUT,
+    });
     return () => a.stop();
-  }, [consumed, count]);
+  }, [consumed, count, reduce]);
 
   useEffect(() => {
     if (!recalc) return;

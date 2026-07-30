@@ -1,7 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useThemeId } from "@/hooks/useThemeId";
+import { DURATION_UI, EASE_OUT } from "@/lib/motion";
 
 interface MacroTilesProps {
   protein: number;
@@ -17,11 +18,12 @@ const MACROS = [
 ];
 
 export function MacroTiles({ protein, fats, carbs, targets }: MacroTilesProps) {
+  const reduce = useReducedMotion();
   const values = { protein, fats, carbs };
   const crumbs = useThemeId() === "minecraft";
   return (
     <div className="flex w-full gap-2.5">
-      {MACROS.map((m) => {
+      {MACROS.map((m, i) => {
         const value = values[m.key];
         const target = targets[m.key];
         const over = target > 0 && value > target;
@@ -45,13 +47,13 @@ export function MacroTiles({ protein, fats, carbs, targets }: MacroTilesProps) {
             {crumbs ? (
               /* Minecraft: смужка розпадається на 5 «крихт» — інвентарний лічильник */
               <div className="flex gap-0.5 py-0.5">
-                {[0, 1, 2, 3, 4].map((i) => (
+                {[0, 1, 2, 3, 4].map((j) => (
                   <div
-                    key={i}
+                    key={j}
                     className="h-2 flex-1"
                     style={{
                       background:
-                        i < Math.round(ratio * 5)
+                        j < Math.round(ratio * 5)
                           ? over
                             ? "var(--color-red)"
                             : m.color
@@ -63,13 +65,17 @@ export function MacroTiles({ protein, fats, carbs, targets }: MacroTilesProps) {
             ) : (
               <div className="h-1 overflow-hidden rounded-[var(--radius-pill)] bg-[var(--color-track)]">
                 <motion.div
-                  className="h-full rounded-[var(--radius-pill)]"
+                  className="h-full w-full origin-left rounded-[var(--radius-pill)]"
                   style={{
                     background: over ? "var(--color-red)" : m.color,
                   }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${ratio * 100}%` }}
-                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                  initial={reduce ? false : { scaleX: 0 }}
+                  animate={{ scaleX: ratio }}
+                  transition={{
+                    duration: reduce ? 0 : DURATION_UI,
+                    ease: EASE_OUT,
+                    delay: reduce ? 0 : i * 0.04,
+                  }}
                 />
               </div>
             )}

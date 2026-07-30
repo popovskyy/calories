@@ -62,11 +62,13 @@ export function EpicCard({
       {epic.started ? (
         <>
           {/* Шкала з позначками вузлів */}
-          <div className="relative h-2 rounded-full bg-[var(--color-tile)]">
-            <div
-              className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-500"
-              style={{ width: `${pct * 100}%` }}
-            />
+          <div className="relative h-2">
+            <div className="h-full overflow-hidden rounded-full bg-[var(--color-tile)]">
+              <div
+                className="h-full w-full origin-left rounded-full bg-[var(--color-accent)] transition-transform duration-[var(--duration-ui)] ease-[var(--ease-out)]"
+                style={{ transform: `scaleX(${pct})` }}
+              />
+            </div>
             {epic.nodes.map((n) => (
               <span
                 key={n.at}

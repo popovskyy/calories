@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/cn";
+import { DURATION_UI, EASE_OUT } from "@/lib/motion";
 
 interface ProgressBarProps {
   value: number; // 0..1
@@ -13,7 +14,7 @@ interface ProgressBarProps {
 export function ProgressBar({ value, over = false, frame }: ProgressBarProps) {
   const reduce = useReducedMotion();
   const neon = frame === "neon";
-  const pct = Math.min(Math.max(value, 0), 1) * 100;
+  const pct = Math.min(Math.max(value, 0), 1);
 
   return (
     <motion.div
@@ -53,7 +54,7 @@ export function ProgressBar({ value, over = false, frame }: ProgressBarProps) {
         )}
       >
         <motion.div
-          className="h-full rounded-[var(--radius-pill)]"
+          className="h-full w-full origin-left rounded-[var(--radius-pill)]"
           style={{
             background: over
               ? "linear-gradient(90deg,#c05f6c,#e0808c)"
@@ -62,9 +63,9 @@ export function ProgressBar({ value, over = false, frame }: ProgressBarProps) {
                 : "linear-gradient(90deg,#796cbf,#b5abfc)",
             boxShadow: neon && !over ? "0 0 8px rgba(0,240,255,0.8)" : undefined,
           }}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          initial={reduce ? false : { scaleX: 0 }}
+          animate={{ scaleX: pct }}
+          transition={{ duration: reduce ? 0 : DURATION_UI, ease: EASE_OUT }}
         />
       </div>
     </motion.div>

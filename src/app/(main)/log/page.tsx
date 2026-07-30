@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Dumbbell, Trash2, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { DateSelector } from "@/components/DateSelector";
@@ -25,6 +25,7 @@ import {
 } from "@/hooks/useQueries";
 import { useAppStore } from "@/store/useAppStore";
 import { shiftYMD } from "@/lib/date";
+import { DURATION_SHEET, DURATION_UI, EASE_OUT } from "@/lib/motion";
 import type { MealDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -47,6 +48,7 @@ function LogPageInner() {
   const [editMeal, setEditMeal] = useState<MealDTO | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [tab, setTab] = useState<LogTab>("food");
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const d = searchParams.get("date");
@@ -153,107 +155,148 @@ function LogPageInner() {
         </button>
       </div>
 
-      {meals.isLoading || activities.isLoading ? (
-        <div className="flex flex-col gap-3">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-[88px] w-full rounded-[var(--radius-lg)]" />
-          ))}
-        </div>
-      ) : tab === "food" ? (
-        list.length === 0 ? (
-          <EmptyState
-            icon={UtensilsCrossed}
-            context="log"
-            action={
-              <Link href="/add" className="btn btn-primary btn-sm">
-                Додати запис
-              </Link>
-            }
-          />
+      <AnimatePresence mode="wait" initial={false}>
+        {meals.isLoading || activities.isLoading ? (
+          <motion.div
+            key="loading"
+            className="flex flex-col gap-3"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0 : DURATION_UI, ease: EASE_OUT }}
+          >
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-[88px] w-full rounded-[var(--radius-lg)]" />
+            ))}
+          </motion.div>
+        ) : tab === "food" ? (
+          <motion.div
+            key="food"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0 : DURATION_UI, ease: EASE_OUT }}
+          >
+            {list.length === 0 ? (
+              <EmptyState
+                icon={UtensilsCrossed}
+                context="log"
+                action={
+                  <Link href="/add" className="btn btn-primary btn-sm">
+                    Додати запис
+                  </Link>
+                }
+              />
+            ) : (
+              <section className="flex flex-col">
+                <AnimatePresence initial={false}>
+                  {list.map((m, i) => (
+                    <MealCard
+                      key={m.id}
+                      meal={m}
+                      index={i}
+                      onEdit={m.status === "cancelled" ? undefined : setEditMeal}
+                      onDelete={
+                        m.status === "cancelled"
+                          ? undefined
+                          : (id) =>
+                              setConfirm({
+                                kind: "meal",
+                                id,
+                                label: `«${m.description}» — ${m.calories} ккал. Дію не можна скасувати.`,
+                              })
+                      }
+                      deleting={del.isPending && del.variables === m.id}
+                    />
+                  ))}
+                </AnimatePresence>
+              </section>
+            )}
+          </motion.div>
         ) : (
-          <section className="flex flex-col">
-            <AnimatePresence initial={false}>
-              {list.map((m, i) => (
-                <MealCard
-                  key={m.id}
-                  meal={m}
-                  index={i}
-                  onEdit={m.status === "cancelled" ? undefined : setEditMeal}
-                  onDelete={
-                    m.status === "cancelled"
-                      ? undefined
-                      : (id) =>
-                          setConfirm({
-                            kind: "meal",
-                            id,
-                            label: `«${m.description}» — ${m.calories} ккал. Дію не можна скасувати.`,
-                          })
-                  }
-                  deleting={del.isPending && del.variables === m.id}
-                />
-              ))}
-            </AnimatePresence>
-          </section>
-        )
-      ) : acts.length === 0 ? (
-        <EmptyState
-          icon={Dumbbell}
-          context="log"
-          action={
-            <Link href="/add/activity" className="btn btn-primary btn-sm">
-              Додати запис
-            </Link>
-          }
-        />
-      ) : (
-        <section className="flex flex-col gap-2">
-          {acts.map((a) => (
-            <div
-              key={a.id}
-              className={cn(
-                "mcard flex items-center justify-between gap-3 p-3",
-                a.status === "cancelled" && "opacity-50 line-through",
-              )}
-            >
-              <div className="min-w-0">
-                <div className="truncate text-[15px] font-semibold text-[var(--color-text)]">
-                  {a.description}
-                </div>
-                <div className="text-[13px] text-[var(--color-muted3)]">
-                  {a.status === "cancelled"
-                    ? "Скасовано адміном"
-                    : a.durationMin
-                      ? `${a.durationMin} хв`
-                      : "активність"}
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="text-[18px] font-semibold text-[var(--color-green)]">
-                  −{a.caloriesBurned}
-                </span>
-                {a.status !== "cancelled" ? (
-                  <button
-                    type="button"
-                    className="icon-btn hover:text-[var(--color-red)]"
-                    aria-label="Видалити активність"
-                    data-sfx="destructive"
-                    disabled={delAct.isPending}
-                    onClick={() =>
-                      setConfirm({
-                        kind: "activity",
-                        id: a.id,
-                        label: `«${a.description}» — −${a.caloriesBurned} ккал. Дію не можна скасувати.`,
-                      })
-                    }
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
+          <motion.div
+            key="activity"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0 : DURATION_UI, ease: EASE_OUT }}
+          >
+            {acts.length === 0 ? (
+              <EmptyState
+                icon={Dumbbell}
+                context="log"
+                action={
+                  <Link href="/add/activity" className="btn btn-primary btn-sm">
+                    Додати запис
+                  </Link>
+                }
+              />
+            ) : (
+              <section className="flex flex-col">
+                <AnimatePresence initial={false}>
+                  {acts.map((a, i) => (
+                    <motion.div
+                      key={a.id}
+                      initial={reduce ? false : { opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{
+                        opacity: 0,
+                        x: reduce ? 0 : -24,
+                        transition: { duration: reduce ? 0 : 0.22, ease: EASE_OUT },
+                      }}
+                      transition={{
+                        duration: reduce ? 0 : DURATION_SHEET,
+                        ease: EASE_OUT,
+                        delay: reduce ? 0 : i * 0.04,
+                      }}
+                      className={cn(
+                        "mcard mb-2 flex items-center justify-between gap-3 p-3",
+                        a.status === "cancelled" && "opacity-50 line-through",
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-[15px] font-semibold text-[var(--color-text)]">
+                          {a.description}
+                        </div>
+                        <div className="text-[13px] text-[var(--color-muted3)]">
+                          {a.status === "cancelled"
+                            ? "Скасовано адміном"
+                            : a.durationMin
+                              ? `${a.durationMin} хв`
+                              : "активність"}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-[18px] font-semibold text-[var(--color-green)]">
+                          −{a.caloriesBurned}
+                        </span>
+                        {a.status !== "cancelled" ? (
+                          <button
+                            type="button"
+                            className="icon-btn hover:text-[var(--color-red)]"
+                            aria-label="Видалити активність"
+                            data-sfx="destructive"
+                            disabled={delAct.isPending}
+                            onClick={() =>
+                              setConfirm({
+                                kind: "activity",
+                                id: a.id,
+                                label: `«${a.description}» — −${a.caloriesBurned} ккал. Дію не можна скасувати.`,
+                              })
+                            }
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        ) : null}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </section>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <EditMealDialog
         open={!!editMeal}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { isInTargetFor } from "@/lib/economy";
+import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { claimRitualSound, playFoghorn, playLighthouseDing } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
@@ -54,16 +55,17 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
   const fill = useMotionValue(0);
-  const fillPct = useTransform(fill, (v) => `${v * 100}%`);
+  const fillTransform = useTransform(fill, (v) => `scaleX(${v})`);
 
   useEffect(() => {
-    const a1 = animate(count, consumed, { duration: 1.0, ease: [0.22, 1, 0.36, 1] });
-    const a2 = animate(fill, progress, { duration: 1.15, ease: [0.22, 1, 0.36, 1] });
+    const dur = reduce ? 0 : DURATION_SHEET;
+    const a1 = animate(count, consumed, { duration: dur, ease: EASE_OUT });
+    const a2 = animate(fill, progress, { duration: dur, ease: EASE_OUT });
     return () => {
       a1.stop();
       a2.stop();
     };
-  }, [consumed, progress, count, fill]);
+  }, [consumed, progress, count, fill, reduce]);
 
   useEffect(() => {
     if (!recalc) return;
@@ -128,9 +130,9 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
         {/* Прогрес — смуга світла: читається миттєво, на відміну від кута променя */}
         <div className="relative mt-3.5 h-1.5 w-[76%] overflow-hidden rounded-full bg-[#1b2836]">
           <motion.div
-            className="h-full rounded-full"
+            className="h-full w-full origin-left rounded-full"
             style={{
-              width: fillPct,
+              transform: fillTransform,
               background: `linear-gradient(90deg, color-mix(in srgb, ${barColor} 45%, transparent), ${barColor})`,
               boxShadow: `0 0 10px ${barColor}80`,
             }}

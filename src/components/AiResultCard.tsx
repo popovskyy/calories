@@ -1,8 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import type { AnalyzeResult } from "@/lib/types";
+import { DURATION_SHEET, DURATION_UI, EASE_OUT } from "@/lib/motion";
 
 const MACROS = [
   { key: "protein", label: "Білки", color: "var(--color-macro-protein)" },
@@ -11,15 +12,16 @@ const MACROS = [
 ] as const;
 
 export function AiResultCard({ result, source = "опису" }: { result: AnalyzeResult; source?: string }) {
+  const reduce = useReducedMotion();
   const values = { protein: result.protein, fats: result.fats, carbs: result.carbs };
   const maxMacro = Math.max(result.protein, result.fats, result.carbs, 1);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      initial={reduce ? false : { opacity: 0, y: 14, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97 }}
+      transition={{ duration: reduce ? 0 : DURATION_SHEET, ease: EASE_OUT }}
       className="shrink-0 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-[18px]"
       style={{ border: "1px solid var(--color-accent-800)" }}
     >
@@ -51,7 +53,7 @@ export function AiResultCard({ result, source = "опису" }: { result: Analyz
       </div>
 
       <div className="mt-4 flex gap-2.5">
-        {MACROS.map((m) => (
+        {MACROS.map((m, i) => (
           <div key={m.key} className="flex-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] p-2.5">
             <div className="flex items-baseline justify-between">
               <span className="text-[13px] text-[var(--color-muted3)]">{m.label}</span>
@@ -61,11 +63,15 @@ export function AiResultCard({ result, source = "опису" }: { result: Analyz
             </div>
             <div className="mt-2 h-1 overflow-hidden rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,var(--color-text)_8%,transparent)]">
               <motion.div
-                className="h-full rounded-[var(--radius-pill)]"
+                className="h-full w-full origin-left rounded-[var(--radius-pill)]"
                 style={{ background: m.color }}
-                initial={{ width: 0 }}
-                animate={{ width: `${(values[m.key] / maxMacro) * 100}%` }}
-                transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+                initial={reduce ? false : { scaleX: 0 }}
+                animate={{ scaleX: values[m.key] / maxMacro }}
+                transition={{
+                  duration: reduce ? 0 : DURATION_UI,
+                  ease: EASE_OUT,
+                  delay: reduce ? 0 : 0.08 + i * 0.04,
+                }}
               />
             </div>
           </div>

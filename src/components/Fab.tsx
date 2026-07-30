@@ -1,8 +1,9 @@
 "use client";
 
 import Link, { useLinkStatus } from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Plus } from "lucide-react";
+import { DURATION_UI, EASE_OUT } from "@/lib/motion";
 
 /**
  * Плаваюча кнопка «+». Видима на всіх табах — записати їжу можна з арени чи
@@ -33,19 +34,28 @@ export function Fab({ href = "/add" }: { href?: string }) {
  */
 function FabButton() {
   const { pending } = useLinkStatus();
+  const reduce = useReducedMotion();
 
   return (
     <motion.span
       data-pending={pending || undefined}
-      initial={{ scale: 0.92, opacity: 0 }}
-      animate={{ scale: pending ? 0.94 : 1, opacity: 1 }}
-      whileTap={{ scale: 0.94 }}
-      transition={{
-        // Спрінг лише на scale: спрінг по opacity осцилює навколо 1 і
-        // читається як блимання (найпомітніше на пласкій minecraft-кнопці).
-        scale: { type: "spring", stiffness: 500, damping: 26, delay: 0.05 },
-        opacity: { duration: 0.2, delay: 0.05, ease: "easeOut" },
-      }}
+      initial={reduce ? { opacity: 0 } : { scale: 0.92, opacity: 0 }}
+      animate={
+        reduce
+          ? { opacity: 1 }
+          : { scale: pending ? 0.94 : 1, opacity: 1 }
+      }
+      whileTap={reduce ? undefined : { scale: 0.94 }}
+      transition={
+        reduce
+          ? { opacity: { duration: DURATION_UI, ease: EASE_OUT } }
+          : {
+              // Спрінг лише на scale: спрінг по opacity осцилює навколо 1 і
+              // читається як блимання (найпомітніше на пласкій minecraft-кнопці).
+              scale: { type: "spring", stiffness: 500, damping: 26, delay: 0.05 },
+              opacity: { duration: DURATION_UI, delay: 0.05, ease: EASE_OUT },
+            }
+      }
       className="fab-btn flex items-center justify-center text-[#f5f4ff]"
     >
       <Plus className="fab-btn-icon" strokeWidth={2.6} />

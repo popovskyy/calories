@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { DURATION_UI, EASE_OUT } from "@/lib/motion";
 import { getThemeMeta } from "@/lib/theme-catalog";
 
 const EVENT = "theme-equip-flash";
@@ -50,7 +51,7 @@ export function ThemeEquipFlash() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduce ? 0.15 : 0.25 }}
+          transition={{ duration: reduce ? 0.15 : 0.25, ease: EASE_OUT }}
           style={{
             background: meta.previewBg,
           }}
@@ -59,7 +60,7 @@ export function ThemeEquipFlash() {
             className="absolute inset-0"
             initial={{ opacity: 0.9 }}
             animate={{ opacity: 0 }}
-            transition={{ duration: reduce ? 0.25 : 0.65, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: reduce ? 0.25 : 0.65, ease: EASE_OUT }}
             style={{
               background: `radial-gradient(50% 40% at 50% 40%, ${meta.previewAccent}88, transparent 70%)`,
             }}
@@ -68,9 +69,10 @@ export function ThemeEquipFlash() {
             <motion.p
               className="text-[22px] font-semibold tracking-wide text-white"
               style={{ fontFamily: "var(--font-display)", textShadow: "0 2px 24px rgba(0,0,0,.5)" }}
-              initial={{ opacity: 0, y: 8, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.96 }}
+              animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: reduce ? DURATION_UI : 0.25, ease: EASE_OUT }}
             >
               {meta.nameUk}
             </motion.p>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import type { HeroProps } from "@/components/hero/CalorieHero";
+import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 
 const BEVEL = {
   borderTopColor: "#45454d",
@@ -13,6 +14,7 @@ const BEVEL = {
 
 /** Minecraft-герой: блоковий бокс із числом + XP-бар під ним. */
 export function BlockHero({ consumed, target, frame }: HeroProps) {
+  const reduce = useReducedMotion();
   const neon = frame === "neon";
   const safeTarget = target > 0 ? target : 1;
   const progress = Math.min(Math.max(consumed / safeTarget, 0), 1);
@@ -22,16 +24,17 @@ export function BlockHero({ consumed, target, frame }: HeroProps) {
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
   const fill = useMotionValue(0);
-  const width = useTransform(fill, (v) => `${v * 100}%`);
+  const fillTransform = useTransform(fill, (v) => `scaleX(${v})`);
 
   useEffect(() => {
-    const a1 = animate(count, consumed, { duration: 1.0, ease: [0.22, 1, 0.36, 1] });
-    const a2 = animate(fill, progress, { duration: 1.1, ease: [0.22, 1, 0.36, 1] });
+    const dur = reduce ? 0 : DURATION_SHEET;
+    const a1 = animate(count, consumed, { duration: dur, ease: EASE_OUT });
+    const a2 = animate(fill, progress, { duration: dur, ease: EASE_OUT });
     return () => {
       a1.stop();
       a2.stop();
     };
-  }, [consumed, progress, count, fill]);
+  }, [consumed, progress, count, fill, reduce]);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[54px]" : digits >= 4 ? "text-[66px]" : "text-[80px]";
@@ -92,9 +95,9 @@ export function BlockHero({ consumed, target, frame }: HeroProps) {
         }}
       >
         <motion.div
-          className="h-full"
+          className="h-full w-full origin-left"
           style={{
-            width,
+            transform: fillTransform,
             background: over
               ? "var(--color-red)"
               : neon

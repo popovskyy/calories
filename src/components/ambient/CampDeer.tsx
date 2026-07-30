@@ -9,6 +9,7 @@ import {
   type AnimationPlaybackControls,
 } from "framer-motion";
 import { Deer, type DeerGait } from "@/components/ambient/Deer";
+import { EASE_OUT } from "@/lib/motion";
 import { playDeerStartle } from "@/lib/sfx";
 
 /**
@@ -96,7 +97,7 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
             ease: [0.45, 0.05, 0.55, 0.95],
           }),
         );
-        await track(animate(opacity, 0, { duration: 0.45, ease: "easeIn" }));
+        await track(animate(opacity, 0, { duration: 0.45, ease: EASE_OUT }));
         setGait("idle");
         await sleep(2800);
       }

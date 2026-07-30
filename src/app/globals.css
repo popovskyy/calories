@@ -761,7 +761,7 @@ html[data-theme="polonyna"] .coin-chip {
   font: inherit;
   color: var(--color-nav-idle-fg);
   transition: color var(--duration-ui) ease, background var(--duration-ui) ease,
-    transform var(--duration-press) var(--ease-out);
+    transform 80ms var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 .nav-tab[data-active="true"] {
@@ -769,9 +769,10 @@ html[data-theme="polonyna"] .coin-chip {
   background: var(--color-nav-active-bg);
 }
 
-/* Натиск має відчуватися миттєво (pointerdown) */
+/* Натиск має відчуватися миттєво (pointerdown); відпускання — швидше */
 .nav-tab:active {
   transform: scale(0.97);
+  transition-duration: var(--duration-ui), var(--duration-ui), var(--duration-press);
 }
 /*
  * Обгортка вмісту таба — звичайний flex, не display:contents.
@@ -875,10 +876,11 @@ html[data-theme="minecraft"] .nav-tab-label {
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--color-accent-400), var(--color-accent-600));
   box-shadow: var(--shadow-fab);
-  transition: transform var(--duration-press) var(--ease-out), box-shadow var(--duration-ui) ease;
+  transition: transform 80ms var(--ease-out), box-shadow var(--duration-ui) ease;
 }
 .fab-btn:active {
   transform: scale(0.94);
+  transition-duration: var(--duration-press), var(--duration-ui);
 }
 .fab-btn-icon {
   width: 32px;
@@ -1166,7 +1168,7 @@ html[data-theme="minecraft"] .rounded-full {
     filter var(--duration-ui) ease,
     opacity var(--duration-ui) ease,
     background var(--duration-ui) ease,
-    transform var(--duration-press) var(--ease-out);
+    transform 80ms var(--ease-out);
 }
 .btn:disabled {
   opacity: 0.55;
@@ -1220,7 +1222,7 @@ html[data-theme="minecraft"] .rounded-full {
   );
   cursor: pointer;
   transition:
-    transform var(--duration-press) var(--ease-out),
+    transform 80ms var(--ease-out),
     filter var(--duration-ui) ease,
     opacity var(--duration-ui) ease,
     border-color var(--duration-ui) ease;
@@ -1262,6 +1264,7 @@ html[data-theme="minecraft"] .rounded-full {
 }
 .weekly-neon-btn:not(:disabled):active {
   transform: scale(0.97);
+  transition-duration: var(--duration-press), var(--duration-ui), var(--duration-ui), var(--duration-ui);
 }
 .weekly-neon-btn__label {
   position: relative;
@@ -1383,8 +1386,10 @@ html[data-theme="minecraft"] .rounded-full {
     0 0 0 1px color-mix(in srgb, var(--em) 22%, transparent),
     0 8px 24px color-mix(in srgb, var(--em-deep) 28%, transparent);
 }
-.weekly-neon-btn--ready:not(:disabled):hover {
-  filter: brightness(1.04);
+@media (hover: hover) and (pointer: fine) {
+  .weekly-neon-btn--ready:not(:disabled):hover {
+    filter: brightness(1.04);
+  }
 }
 .weekly-neon-btn--pending {
   color: var(--em-ink);
@@ -1604,8 +1609,10 @@ html[data-theme="minecraft"] .rounded-full {
   background: transparent;
   color: var(--color-muted2);
 }
-.btn-ghost:not(:disabled):hover {
-  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:not(:disabled):hover {
+    background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  }
 }
 /* Компактна кнопка, що все одно лишається придатною для пальця (40px ціль) */
 .btn-sm {
@@ -1616,6 +1623,11 @@ html[data-theme="minecraft"] .rounded-full {
 /* Реакція на натиск, а не на відпускання — інтерфейс має відповідати миттєво */
 .btn:not(:disabled):active {
   transform: scale(0.97);
+  transition:
+    filter var(--duration-ui) ease,
+    opacity var(--duration-ui) ease,
+    background var(--duration-ui) ease,
+    transform var(--duration-press) var(--ease-out);
 }
 
 /* Квадратна іконкова кнопка з повноцінною тач-ціллю */
@@ -1630,14 +1642,20 @@ html[data-theme="minecraft"] .rounded-full {
   transition:
     color var(--duration-ui) ease,
     background var(--duration-ui) ease,
-    transform var(--duration-press) var(--ease-out);
+    transform 80ms var(--ease-out);
 }
-.icon-btn:hover {
-  background: color-mix(in srgb, var(--color-text) 6%, transparent);
-  color: var(--color-text);
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover {
+    background: color-mix(in srgb, var(--color-text) 6%, transparent);
+    color: var(--color-text);
+  }
 }
 .icon-btn:active {
   transform: scale(0.92);
+  transition:
+    color var(--duration-ui) ease,
+    background var(--duration-ui) ease,
+    transform var(--duration-press) var(--ease-out);
 }
 
 /* Видимий фокус — його не було ніде; клавіатурна навігація була сліпою */
@@ -2185,10 +2203,31 @@ html[data-theme="minecraft"] .rounded-full {
   70% { opacity: 0.28; }
 }
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  /*
+   * Не обнулюємо всі transition/animation: opacity/color мають лишатись.
+   * Прибираємо лише transform-рух на chrome і keyframe open/close.
+   */
+  .nav-tab,
+  .btn,
+  .icon-btn,
+  .fab-btn,
+  .weekly-neon-btn {
+    transition-property: color, background, filter, opacity, border-color, box-shadow !important;
+  }
+  .nav-tab:active,
+  .btn:not(:disabled):active,
+  .icon-btn:active,
+  .fab-btn:active,
+  .weekly-neon-btn:not(:disabled):active {
+    transform: none !important;
+  }
+  .dlg-overlay[data-state="open"],
+  .dlg-overlay[data-state="closed"],
+  .dlg-content[data-state="open"],
+  .dlg-content[data-state="closed"],
+  .dd-content[data-state="open"],
+  .dd-content[data-state="closed"] {
+    animation: none !important;
   }
 
   /*
@@ -2230,5 +2269,14 @@ html[data-theme="minecraft"] .rounded-full {
   .spark-pulse,
   .conjure-ring {
     opacity: 0.8;
+    animation: none !important;
+  }
+  .fab-ring,
+  .epic-next-dot,
+  .advice-fresh,
+  .pl-fog,
+  .lh-cat-eye,
+  .lh-cat-tail {
+    animation: none !important;
   }
 }

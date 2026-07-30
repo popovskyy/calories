@@ -117,9 +117,9 @@ function Body({ entry }: { entry: ArenaEntry }) {
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-[var(--color-track)]">
           <div
-            className="h-full rounded-full transition-[width] duration-500"
+            className="h-full w-full origin-left rounded-full transition-transform duration-[var(--duration-ui)] ease-[var(--ease-out)]"
             style={{
-              width: `${pct * 100}%`,
+              transform: `scaleX(${pct})`,
               background: over ? "var(--color-red)" : "var(--color-accent)",
             }}
           />
@@ -203,9 +203,9 @@ function Macro({
       </div>
       <div className="mt-1 h-1 overflow-hidden rounded-full bg-[var(--color-track)]">
         <div
-          className="h-full rounded-full"
+          className="h-full w-full origin-left rounded-full transition-transform duration-[var(--duration-ui)] ease-[var(--ease-out)]"
           style={{
-            width: `${ratio * 100}%`,
+            transform: `scaleX(${ratio})`,
             background: over ? "var(--color-red)" : color,
           }}
         />

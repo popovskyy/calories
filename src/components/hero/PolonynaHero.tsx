@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { isInTargetFor } from "@/lib/economy";
+import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { claimRitualSound, playSheepBell } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
@@ -44,16 +45,17 @@ export function PolonynaHero({ consumed, target, frame, goal = "maintain" }: Her
   // вище воно почало б налазити на смугу прогресу в текстовій зоні.
   const sunY = useTransform(rise, (v) => 196 - v * 38);
   const sunGlow = useTransform(rise, (v) => 0.25 + v * 0.45);
-  const barWidth = useTransform(rise, (v) => `${v * 100}%`);
+  const barTransform = useTransform(rise, (v) => `scaleX(${v})`);
 
   useEffect(() => {
-    const a1 = animate(count, consumed, { duration: 1.0, ease: [0.22, 1, 0.36, 1] });
-    const a2 = animate(rise, progress, { duration: 1.2, ease: [0.22, 1, 0.36, 1] });
+    const dur = reduce ? 0 : DURATION_SHEET;
+    const a1 = animate(count, consumed, { duration: dur, ease: EASE_OUT });
+    const a2 = animate(rise, progress, { duration: dur, ease: EASE_OUT });
     return () => {
       a1.stop();
       a2.stop();
     };
-  }, [consumed, progress, count, rise]);
+  }, [consumed, progress, count, rise, reduce]);
 
   useEffect(() => {
     if (!recalc) return;
@@ -102,9 +104,9 @@ export function PolonynaHero({ consumed, target, frame, goal = "maintain" }: Her
 
         <div className="relative mt-3.5 h-1.5 w-[76%] overflow-hidden rounded-full bg-[#e2d0bb]">
           <motion.div
-            className="h-full rounded-full"
+            className="h-full w-full origin-left rounded-full"
             style={{
-              width: barWidth,
+              transform: barTransform,
               background: `linear-gradient(90deg, color-mix(in srgb, ${barColor} 45%, transparent), ${barColor})`,
             }}
           />

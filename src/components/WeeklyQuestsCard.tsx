@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useQuests, useRerollQuest, useShop } from "@/hooks/useQueries";
 import { QUEST_REROLL_ITEM_ID } from "@/lib/items";
 import { humanDate } from "@/lib/date";
+import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 
 export function WeeklyQuestsCard() {
@@ -86,7 +87,7 @@ export function WeeklyQuestsCard() {
                       initial={{ opacity: reduce ? 0.5 : 0.9 }}
                       animate={{ opacity: 0 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: reduce ? 0.4 : 1.4, ease: "easeOut" }}
+                      transition={{ duration: reduce ? 0 : DURATION_SHEET, ease: EASE_OUT }}
                       style={{
                         background:
                           "radial-gradient(60% 100% at 50% 50%, color-mix(in srgb, var(--color-accent) 35%, transparent), transparent)",
@@ -132,8 +133,8 @@ export function WeeklyQuestsCard() {
                 <div className="mt-2 flex items-center gap-2">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-tile)]">
                     <div
-                      className="h-full rounded-full bg-[var(--color-accent)] transition-[width]"
-                      style={{ width: `${pct * 100}%` }}
+                      className="h-full w-full origin-left rounded-full bg-[var(--color-accent)] transition-transform duration-[var(--duration-ui)] ease-[var(--ease-out)]"
+                      style={{ transform: `scaleX(${pct})` }}
                     />
                   </div>
                   <span className="text-[12px] tabular-nums text-[var(--color-muted3)]">

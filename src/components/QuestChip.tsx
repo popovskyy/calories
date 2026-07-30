@@ -50,8 +50,8 @@ export function QuestChip({ onOpen }: { onOpen: () => void }) {
         </div>
         <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[var(--color-tile)]">
           <div
-            className="h-full rounded-full bg-[var(--color-accent)] transition-[width]"
-            style={{ width: `${pct * 100}%` }}
+            className="h-full w-full origin-left rounded-full bg-[var(--color-accent)] transition-transform duration-[var(--duration-ui)] ease-[var(--ease-out)]"
+            style={{ transform: `scaleX(${pct})` }}
           />
         </div>
       </div>

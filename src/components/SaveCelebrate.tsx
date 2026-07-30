@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Flame, Sparkles } from "lucide-react";
+import { EASE_OUT, DURATION_UI } from "@/lib/motion";
 import { playFinisher, playSaveAck } from "@/lib/sfx";
 import { haptic } from "@/lib/haptics";
 
@@ -94,7 +95,7 @@ function Particles({ finisher, reduce }: { finisher: string; reduce: boolean }) 
                 opacity: 0,
                 rotate: i % 2 === 0 ? 40 : -40,
               }}
-              transition={{ duration: 0.85, delay: i * 0.02, ease: "easeIn" }}
+              transition={{ duration: 0.85, delay: i * 0.02, ease: EASE_OUT }}
             />
           );
         }
@@ -442,12 +443,18 @@ export function SaveCelebrate({
                   ? { opacity: 0, scale: 1.14, y: -4 }
                   : { opacity: 0, y: 10, scale: 0.94, filter: "blur(4px)" }
             }
-            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={
+              reduce
+                ? { opacity: 1 }
+                : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }
+            }
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
             transition={
-              (isStamp || isNova || isBlock) && !reduce
-                ? { type: "spring", duration: 0.4, bounce: 0.35 }
-                : { type: "spring", duration: 0.4, bounce: 0.12 }
+              reduce
+                ? { duration: DURATION_UI, ease: EASE_OUT }
+                : (isStamp || isNova || isBlock)
+                  ? { type: "spring", duration: 0.4, bounce: 0.35 }
+                  : { type: "spring", duration: 0.4, bounce: 0.12 }
             }
           >
             <Particles finisher={style} reduce={!!reduce} />

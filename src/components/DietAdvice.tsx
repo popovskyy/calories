@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, RefreshCw, Sparkles } from "lucide-react";
 import { useAdvice, useForceAdvice } from "@/hooks/useQueries";
 import { WeeklyFeedbackButton } from "@/components/WeeklyFeedbackButton";
 import { todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
+import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { AdviceKind, AdviceResponse } from "@/lib/types";
 
@@ -239,7 +240,7 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
     <motion.section
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: reduce ? 0 : DURATION_SHEET, ease: EASE_OUT }}
       className={cn("mcard overflow-hidden", !seen && "advice-fresh")}
     >
       <div
@@ -297,29 +298,26 @@ function AdviceCard({ advice: data }: { advice: Ready }) {
         />
       </button>
 
-      <AnimatePresence initial={false}>
-        {open ? (
-          <motion.div
-            key="tip"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: reduce ? 0 : 0.26, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="px-[18px] pb-[18px]">
-              <div
-                className="rounded-[var(--radius-md)] bg-[var(--color-tile)] p-3.5"
-                style={{ boxShadow: `inset 2px 0 0 ${accent}` }}
-              >
-                <p className="text-[14px] leading-snug text-[var(--color-text)]">
-                  {data.tip}
-                </p>
-              </div>
+      <div
+        className="grid transition-[grid-template-rows] duration-[var(--duration-sheet)] ease-[var(--ease-out)]"
+        style={{
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transitionDuration: reduce ? "0ms" : undefined,
+        }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-[18px] pb-[18px]">
+            <div
+              className="rounded-[var(--radius-md)] bg-[var(--color-tile)] p-3.5"
+              style={{ boxShadow: `inset 2px 0 0 ${accent}` }}
+            >
+              <p className="text-[14px] leading-snug text-[var(--color-text)]">
+                {data.tip}
+              </p>
             </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+          </div>
+        </div>
+      </div>
     </motion.section>
   );
 }

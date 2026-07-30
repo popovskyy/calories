@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
 import { EPICS } from "@/lib/epics";
+import { DURATION_UI, EASE_OUT } from "@/lib/motion";
 import { playEpicFanfare, playFinisher } from "@/lib/sfx";
 import { useCurrentUser } from "@/hooks/useQueries";
 import type { GrantedReward } from "@/lib/types";
@@ -126,10 +127,10 @@ export function RewardCelebrations() {
         >
           <motion.div
             className="flex max-w-[320px] flex-col items-center gap-2 px-6 text-center"
-            initial={{ opacity: 0, y: 14, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: reduce ? 0.15 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.94 }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: reduce ? DURATION_UI : 0.4, ease: EASE_OUT }}
           >
             <span className="text-[40px] leading-none">{current.icon}</span>
             <span className="lbl text-white/60">{current.epicName}</span>

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { ThinkingLine } from "@/components/ui/ThinkingLine";
+import { DURATION_UI, EASE_OUT } from "@/lib/motion";
 
 const PHRASES = [
   "Придивляємось до селфі",
@@ -45,7 +46,7 @@ export function AvatarConjuring({
               ? { filter: "blur(3px)", opacity: 0.55, scale: 0.94 }
               : { filter: "blur(0px)", opacity: 1, scale: 1 }
           }
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: reduce ? 0 : DURATION_UI, ease: EASE_OUT }}
         >
           {children}
         </motion.div>
@@ -56,8 +57,8 @@ export function AvatarConjuring({
               className="pointer-events-none absolute inset-0"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.15 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduce ? 0 : DURATION_UI, ease: EASE_OUT }}
             >
               <div className="conjure-ring" />
               {/*
@@ -87,20 +88,22 @@ export function AvatarConjuring({
         </AnimatePresence>
       </div>
 
-      <AnimatePresence>
-        {active ? (
-          <motion.div
-            className="w-full overflow-hidden"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <ThinkingLine phrases={PHRASES} intervalMs={2000} />
-            <div className="ribbon mx-auto mt-1.5 w-32" />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <div
+        className="grid w-full transition-[grid-template-rows] duration-[var(--duration-sheet)] ease-[var(--ease-out)]"
+        style={{
+          gridTemplateRows: active ? "1fr" : "0fr",
+          transitionDuration: reduce ? "0ms" : undefined,
+        }}
+      >
+        <div className="overflow-hidden">
+          {active ? (
+            <>
+              <ThinkingLine phrases={PHRASES} intervalMs={2000} />
+              <div className="ribbon mx-auto mt-1.5 w-32" />
+            </>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
