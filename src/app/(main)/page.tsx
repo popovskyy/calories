@@ -127,13 +127,15 @@ export function OverviewTab() {
       */}
       <DietAdvice />
 
+      <WeightGoalCard />
+
       <ThemeAspirationHint />
 
       {/* Один квест тижня видимий без dump списку на home */}
       <QuestChip onOpen={openQuests} />
 
       {/*
-        Вага / квести / хроніки / графік — поза першим екраном.
+        Квести / хроніки / графік — поза першим екраном.
         Інакше головна читається як дашборд SaaS.
       */}
       <section>
@@ -145,7 +147,7 @@ export function OverviewTab() {
         >
           <span className="lbl !mb-0">Ще</span>
           <span className="flex items-center gap-1.5 text-[14px] text-[var(--color-muted3)]">
-            вага · квести · хроніки · графік
+            квести · хроніки · графік
             <ChevronDown
               size={16}
               className={cn(
@@ -162,7 +164,6 @@ export function OverviewTab() {
         >
           <div className="overflow-hidden">
             <div className="flex flex-col gap-4 pt-4">
-              <WeightGoalCard />
               <div id="weekly-quests">
                 <WeeklyQuestsCard />
               </div>

@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ChartFrame } from "@/components/ChartFrame";
 import { todayYMD, weekdayShort } from "@/lib/date";
 import type { DashboardDay } from "@/lib/types";
 
@@ -56,7 +57,7 @@ export function WeeklyChart({ days, target }: WeeklyChartProps) {
   };
 
   return (
-    <div className="h-[150px] w-full">
+    <ChartFrame className="h-[150px] w-full min-w-0">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 16, right: 4, bottom: 0, left: 4 }} barCategoryGap="26%">
           <defs>
@@ -119,6 +120,6 @@ export function WeeklyChart({ days, target }: WeeklyChartProps) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </ChartFrame>
   );
 }

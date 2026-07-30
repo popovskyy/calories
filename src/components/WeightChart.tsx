@@ -13,6 +13,7 @@ import {
   type TooltipContentProps,
   type CartesianViewBox,
 } from "recharts";
+import { ChartFrame } from "@/components/ChartFrame";
 import { fromYMD, humanDate, shortDate, todayYMD } from "@/lib/date";
 import type { WeightPoint } from "@/lib/api";
 
@@ -96,11 +97,11 @@ export function WeightChart({
 
   return (
     <figure className="m-0 min-w-0">
-      <div className="h-[186px] w-full min-w-0 overflow-hidden">
+      <ChartFrame className="h-[198px] w-full min-w-0 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={fact}
-            margin={{ top: 26, right: 14, bottom: 0, left: 0 }}
+            margin={{ top: 26, right: 14, bottom: 4, left: 0 }}
           >
             <defs>
               <linearGradient id="weight-area" x1="0" y1="0" x2="0" y2="1">
@@ -132,7 +133,7 @@ export function WeightChart({
               tickLine={false}
               axisLine={false}
               tick={<DateTick ticks={xTicks} />}
-              height={20}
+              height={26}
               interval={0}
             />
             <YAxis
@@ -256,7 +257,7 @@ export function WeightChart({
             />
           </AreaChart>
         </ResponsiveContainer>
-      </div>
+      </ChartFrame>
 
       <figcaption className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--color-muted3)]">
         <LegendKey color="var(--color-accent)" label="Факт" />
@@ -331,9 +332,9 @@ function DateTick(props: {
   return (
     <text
       x={x}
-      y={y + 12}
+      y={y + 10}
       textAnchor={isFirst ? "start" : isLast ? "end" : "middle"}
-      fill="var(--color-muted3)"
+      fill="var(--color-muted2)"
       fontSize={11}
     >
       {shortDate(ymdFromMs(value))}
