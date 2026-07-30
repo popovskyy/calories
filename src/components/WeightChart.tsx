@@ -82,12 +82,10 @@ export function WeightChart({
   const yMax = Math.ceil((hi + padY) * 2) / 2;
   const yTicks = [yMin, Math.round(((yMin + yMax) / 2) * 2) / 2, yMax];
 
-  // Підпис «сьогодні» ставимо тільки якщо він не злипається з краями.
+  // Лише старт і кінець на осі X — «сьогодні» вже підписане прямо на кривій
+  // («Зараз»), тож третій тік лише тіснив би два інших на вузькій картці.
   const span = tEnd - t0;
   const xTicks = [t0, tEnd];
-  if (tToday - t0 > span * 0.12 && tEnd - tToday > span * 0.12) {
-    xTicks.splice(1, 0, tToday);
-  }
   const nowOnRight = (last.t - t0) / span > 0.65;
   // Якщо зважувань ще нема, «Зараз» збігся б зі «Стартом» — не дублюємо.
   const showNow = fact.length > 1;
