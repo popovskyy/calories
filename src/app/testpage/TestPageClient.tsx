@@ -43,7 +43,7 @@ export function TestPageClient() {
   const [tab, setTab] = useState<LabTab>("celebrate");
 
   return (
-    <div className="mx-auto flex h-dvh max-w-[420px] flex-col gap-5 overflow-y-auto bg-[var(--color-bg)] px-[18px] py-4 text-[var(--color-text)]">
+    <div className="app-col mx-auto flex h-dvh flex-col gap-5 overflow-y-auto bg-[var(--color-bg)] px-[18px] py-4 text-[var(--color-text)]">
       <header className="flex items-center gap-2">
         <Link href="/" className="icon-btn" aria-label="Назад">
           <ChevronLeft size={18} />
