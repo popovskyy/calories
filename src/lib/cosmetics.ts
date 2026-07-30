@@ -60,7 +60,7 @@ export const FINISHERS: CosmeticDef[] = [
     kind: "finisher",
     nameUk: "Block Break",
     description:
-      "Зелені квадратики розлітаються, наче розбитий блок, напис «Блок вибито!»",
+      "Зелені квадратики розлітаються, наче розбитий блок, напис «День у нормі!» · звук кіно",
     unlock: { via: "shop", price: 200 },
     swatch: "linear-gradient(135deg,#5b9c3a,#3d6b26)",
     sortOrder: 20,
@@ -125,6 +125,16 @@ export const FINISHERS: CosmeticDef[] = [
     unlock: { via: "shop", price: 230 },
     swatch: "linear-gradient(135deg,#58CC02,#3d8c02)",
     sortOrder: 80,
+  },
+  {
+    id: "nova",
+    kind: "finisher",
+    nameUk: "Нова",
+    description:
+      "Яскравий спалах у центрі, зірки летять по спіралі, whoosh і дзвінкий хвіст — напис «NOVA!»",
+    unlock: { via: "shop", price: 320 },
+    swatch: "linear-gradient(135deg,#FFC800,#FF4B4B,#9184d9)",
+    sortOrder: 90,
   },
 ];
 

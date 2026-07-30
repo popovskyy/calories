@@ -271,8 +271,6 @@ export default function AddActivityPage() {
       <SaveCelebrate
         open={celebrate}
         inTarget={celebrateInTarget}
-        finisher={user?.finisher}
-        soundpack={user?.soundpack}
         onDone={() => {
           setCelebrate(false);
           toast.success("Додано в журнал");

@@ -16,7 +16,7 @@ import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import { useCurrentUser, useDashboard, useEpics } from "@/hooks/useQueries";
-import { calcMacroTargets } from "@/lib/calories";
+import { calcMacroTargets, calcTargetCalories } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
 
@@ -49,6 +49,16 @@ export function OverviewTab() {
   const today = dash.data?.today;
   const over = (today?.difference ?? 0) < 0;
   const macroTargets = calcMacroTargets(user.targetCalories, user.weight);
+  const { paceClamped } = calcTargetCalories({
+    birthYear: user.birthYear,
+    birthMonth: user.birthMonth,
+    sex: user.sex,
+    weightKg: user.weight,
+    heightCm: user.height,
+    goal: user.goal,
+    targetWeightKg: user.targetWeight,
+    targetWeeks: user.targetWeeks,
+  });
 
   const openQuests = () => {
     setMoreOpen(true);

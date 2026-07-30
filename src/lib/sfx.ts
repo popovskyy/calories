@@ -190,6 +190,35 @@ export function playFinisher(pack = "default", finisher = "confetti") {
   }
 }
 
+/**
+ * Підтвердження звичайного запису їжі (не ±5%).
+ * Завжди cinema: низький бас у два удари — впізнавано, але тихіше за перемогу.
+ */
+export function playSaveAck() {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  try {
+    const now = ac.currentTime;
+    const f = FANFARE.cinema!;
+    f.notes.forEach((hz, i) => {
+      const at = now + i * 0.11;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = f.wave;
+      osc.frequency.setValueAtTime(hz, at);
+      gain.gain.setValueAtTime(f.gain * 0.72, at);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.32);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(at);
+      osc.stop(at + 0.35);
+    });
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
 /** Унікальний «голос» фінішера поверх акорду саундпака. */
 function playFinisherAccent(ac: AudioContext, finisher: string, now: number) {
   if (finisher === "ripple") {
@@ -231,6 +260,35 @@ function playFinisherAccent(ac: AudioContext, finisher: string, now: number) {
     click.connect(clickGain).connect(ac.destination);
     click.start(now + 0.04);
     click.stop(now + 0.13);
+    return;
+  }
+
+  if (finisher === "nova") {
+    // Підйом whoosh (синус 180→1200) + дзвінкий хвіст із трьох високих нот.
+    const sweep = ac.createOscillator();
+    const sweepGain = ac.createGain();
+    sweep.type = "sine";
+    sweep.frequency.setValueAtTime(180, now);
+    sweep.frequency.exponentialRampToValueAtTime(1200, now + 0.38);
+    sweepGain.gain.setValueAtTime(0.0001, now);
+    sweepGain.gain.exponentialRampToValueAtTime(0.14, now + 0.08);
+    sweepGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+    sweep.connect(sweepGain).connect(ac.destination);
+    sweep.start(now);
+    sweep.stop(now + 0.45);
+
+    [988, 1319, 1760].forEach((hz, i) => {
+      const at = now + 0.28 + i * 0.07;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(hz, at);
+      gain.gain.setValueAtTime(0.08, at);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.35);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(at);
+      osc.stop(at + 0.38);
+    });
   }
 }
 

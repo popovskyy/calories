@@ -2,37 +2,39 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, Flame } from "lucide-react";
-import { playFinisher } from "@/lib/sfx";
+import { Check, Flame, Sparkles } from "lucide-react";
+import { playFinisher, playSaveAck } from "@/lib/sfx";
 import { haptic } from "@/lib/haptics";
 
 interface SaveCelebrateProps {
   open: boolean;
   onDone: () => void;
   inTarget?: boolean;
-  /** Куплений фінішер; за замовчуванням — конфеті. */
-  finisher?: string;
-  /** Куплений саундпак — визначає акорд перемоги. */
-  soundpack?: string;
+  /**
+   * Лише для /testpage — підміняє прод-фінішер.
+   * У проді завжди: blockbreak + cinema + «День у нормі!».
+   */
+  previewFinisher?: string;
+  previewSoundpack?: string;
 }
 
 /**
  * Коротке святкування після збереження прийому їжі.
  *
- * Це найчастіше побачений «моментний» екран у застосунку, тому саме він і
- * продається: висока частота показу робить дешеву анімацію дорогою за
- * сприйняттям. Усе малюється CSS/framer-motion — жодних ассетів.
+ * Звичайний запис: космос + cinema-ack + «Додано в журнал».
+ * День у ±5%: Block Break + cinema + «День у нормі!».
  */
 
 export const FINISHER_TEXT: Record<string, string> = {
   confetti: "День у нормі!",
-  blockbreak: "Блок вибито!",
+  blockbreak: "День у нормі!",
   perfect: "PERFECT!",
   cosmos: "До зірок!",
   goldrain: "Золотий день!",
   fireflies: "Ліс аплодує",
   ripple: "У хвилі!",
   stamp: "Влучно!",
+  nova: "NOVA!",
 };
 
 export const FINISHER_COLOR: Record<string, string> = {
@@ -44,9 +46,11 @@ export const FINISHER_COLOR: Record<string, string> = {
   fireflies: "#ff8a3d",
   ripple: "#1CB0F6",
   stamp: "#58CC02",
+  nova: "#FFC800",
 };
 
 const CONFETTI_PALETTE = ["#FFC800", "#FF86D0", "#1CB0F6", "#58CC02", "#FF9600"];
+const NOVA_PALETTE = ["#FFC800", "#FF86D0", "#9184d9", "#FF4B4B", "#fff6d6"];
 
 /** Частинки / короткі ефекти фінішера: форма й траєкторія залежать від стилю. */
 function Particles({ finisher, reduce }: { finisher: string; reduce: boolean }) {
@@ -54,6 +58,7 @@ function Particles({ finisher, reduce }: { finisher: string; reduce: boolean }) 
 
   if (finisher === "ripple") return <RippleRings />;
   if (finisher === "stamp") return <StampShock />;
+  if (finisher === "nova") return <NovaBurst />;
 
   const color = FINISHER_COLOR[finisher] ?? "var(--color-accent)";
   const square = finisher === "blockbreak";
@@ -286,31 +291,137 @@ function StampShock() {
   );
 }
 
+/**
+ * Преміум-фінішер: спалах у центрі + зірки по спіралі.
+ * Має читатись крутіше за звичайний космос (який тепер базовий ack).
+ */
+function NovaBurst() {
+  return (
+    <>
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 rounded-full"
+        style={{
+          width: 20,
+          height: 20,
+          marginLeft: -10,
+          marginTop: -10,
+          background:
+            "radial-gradient(circle, #fff6d6 0%, #FFC800 35%, #FF4B4B88 65%, transparent 70%)",
+        }}
+        initial={{ scale: 0.2, opacity: 0 }}
+        animate={{ scale: [0.2, 4.2, 5.2], opacity: [0, 0.95, 0] }}
+        transition={{ duration: 0.85, times: [0, 0.35, 1], ease: [0.16, 1, 0.3, 1] }}
+      />
+      {[0, 1].map((i) => (
+        <motion.span
+          key={`ring-${i}`}
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 rounded-full"
+          style={{
+            width: 32,
+            height: 32,
+            marginLeft: -16,
+            marginTop: -16,
+            border: `1.5px solid ${NOVA_PALETTE[i]!}`,
+            boxShadow: `0 0 14px ${NOVA_PALETTE[i]}66`,
+          }}
+          initial={{ scale: 0.3, opacity: 0.9, rotate: 0 }}
+          animate={{ scale: 3.6 + i * 0.6, opacity: 0, rotate: i === 0 ? 40 : -50 }}
+          transition={{
+            duration: 0.9,
+            delay: 0.05 + i * 0.1,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        />
+      ))}
+      {Array.from({ length: 12 }).map((_, i) => {
+        const base = (i / 12) * Math.PI * 2;
+        const color = NOVA_PALETTE[i % NOVA_PALETTE.length]!;
+        const r1 = 18;
+        const r2 = 72;
+        const spin = 1.1;
+        return (
+          <motion.span
+            key={`star-${i}`}
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2"
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: "3.5px solid transparent",
+              borderRight: "3.5px solid transparent",
+              borderBottom: `6px solid ${color}`,
+              filter: `drop-shadow(0 0 5px ${color})`,
+              marginLeft: -3.5,
+              marginTop: -3,
+            }}
+            initial={{
+              x: Math.cos(base) * r1,
+              y: Math.sin(base) * r1,
+              opacity: 0,
+              scale: 0.4,
+              rotate: 0,
+            }}
+            animate={{
+              x: Math.cos(base + spin) * r2,
+              y: Math.sin(base + spin) * r2,
+              opacity: [0, 1, 0],
+              scale: [0.4, 1.15, 0.5],
+              rotate: 200,
+            }}
+            transition={{
+              duration: 0.95,
+              delay: i * 0.018,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 export function SaveCelebrate({
   open,
   onDone,
   inTarget,
-  finisher = "confetti",
-  soundpack = "default",
+  previewFinisher,
+  previewSoundpack,
 }: SaveCelebrateProps) {
   const reduce = useReducedMotion();
 
+  // Прод-фіксовані пари; preview* — лише лаб на /testpage.
+  const style = inTarget ? (previewFinisher ?? "blockbreak") : "cosmos";
+  const pack = inTarget ? (previewSoundpack ?? "cinema") : "cinema";
+
   useEffect(() => {
     if (!open) return;
-    // Акорд лише за влучний день — щоб звук лишався нагородою, а не фоном.
     if (inTarget) {
-      playFinisher(soundpack, finisher);
+      playFinisher(pack, style);
       haptic("success");
+    } else {
+      playSaveAck();
+      haptic("confirm");
     }
-    const t = window.setTimeout(onDone, reduce ? 400 : 1100);
+    const t = window.setTimeout(
+      onDone,
+      reduce ? 400 : style === "nova" ? 1200 : 1100,
+    );
     return () => window.clearTimeout(t);
-  }, [open, onDone, reduce, inTarget, soundpack, finisher]);
+  }, [open, onDone, reduce, inTarget, pack, style]);
 
-  // Фінішер — нагорода саме за влучний день; звичайний запис лишається скромним.
-  const style = inTarget ? finisher : "confetti";
   const color = FINISHER_COLOR[style] ?? "var(--color-accent)";
   const isStamp = inTarget && style === "stamp";
+  const isNova = inTarget && style === "nova";
   const isPerfect = style === "perfect";
+  const isBlock = inTarget && style === "blockbreak";
+
+  const label = inTarget
+    ? style === "blockbreak"
+      ? "День у нормі!"
+      : (FINISHER_TEXT[style] ?? "День у нормі!")
+    : "Додано в журнал";
 
   return (
     <AnimatePresence>
@@ -327,19 +438,19 @@ export function SaveCelebrate({
             initial={
               reduce
                 ? { opacity: 0 }
-                : isStamp
-                  ? { opacity: 0, scale: 1.18, y: -6 }
+                : isStamp || isNova || isBlock
+                  ? { opacity: 0, scale: 1.14, y: -4 }
                   : { opacity: 0, y: 10, scale: 0.94, filter: "blur(4px)" }
             }
             animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={
-              isStamp && !reduce
-                ? { type: "spring", duration: 0.38, bounce: 0.35 }
+              (isStamp || isNova || isBlock) && !reduce
+                ? { type: "spring", duration: 0.4, bounce: 0.35 }
                 : { type: "spring", duration: 0.4, bounce: 0.12 }
             }
           >
-            {inTarget ? <Particles finisher={style} reduce={!!reduce} /> : null}
+            <Particles finisher={style} reduce={!!reduce} />
 
             {isStamp ? (
               <motion.span
@@ -354,22 +465,33 @@ export function SaveCelebrate({
               >
                 <Check size={28} strokeWidth={3} />
               </motion.span>
+            ) : isNova ? (
+              <motion.span
+                style={{ color }}
+                initial={reduce ? false : { scale: 0.4, opacity: 0, rotate: -40 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                transition={{ type: "spring", duration: 0.45, bounce: 0.42 }}
+              >
+                <Sparkles size={36} />
+              </motion.span>
             ) : (
-              <Flame
-                size={36}
-                style={{ color: inTarget ? color : "var(--color-accent)" }}
-              />
+              <Flame size={36} style={{ color }} />
             )}
             <motion.p
               className="text-[17px] font-semibold text-[var(--color-text)]"
-              // «PERFECT!» б'є в екран — дрібна деталь, заради якої його й купують
               initial={
-                isPerfect && !reduce ? { scale: 1.6, opacity: 0 } : false
+                (isPerfect || isNova || isBlock) && !reduce
+                  ? { scale: isNova ? 1.85 : 1.35, opacity: 0 }
+                  : false
               }
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", duration: 0.35, bounce: 0.45 }}
+              transition={{
+                type: "spring",
+                duration: 0.38,
+                bounce: isNova ? 0.5 : 0.35,
+              }}
             >
-              {inTarget ? (FINISHER_TEXT[style] ?? "День у нормі!") : "Записано!"}
+              {label}
             </motion.p>
           </motion.div>
         </motion.div>
