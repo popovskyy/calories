@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { lastNDays, todayYMD } from "@/lib/date";
+import { todayYMD, weekDays, weekStartYMD } from "@/lib/date";
 import {
   calcMaintenanceCalories,
   isGoal,
@@ -25,14 +25,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Профіль не знайдено" }, { status: 404 });
   }
 
-  const dates = lastNDays(end, 7);
+  // Календарний тиждень Пн→end (не rolling «останні 7 днів»).
+  const weekDates = weekDays(weekStartYMD(end)).filter((d) => d <= end);
+
   const [meals, activities] = await Promise.all([
     prisma.mealLog.findMany({
-      where: { userId, date: { in: dates }, status: { not: "cancelled" } },
+      where: { userId, date: { in: weekDates }, status: { not: "cancelled" } },
       select: { date: true, calories: true, protein: true, fats: true, carbs: true },
     }),
     prisma.activityLog.findMany({
-      where: { userId, date: { in: dates }, status: { not: "cancelled" } },
+      where: { userId, date: { in: weekDates }, status: { not: "cancelled" } },
       select: { date: true, caloriesBurned: true },
     }),
   ]);
@@ -41,7 +43,7 @@ export async function GET(req: NextRequest) {
     string,
     { c: number; burned: number; p: number; f: number; cb: number }
   >();
-  for (const d of dates) byDate.set(d, { c: 0, burned: 0, p: 0, f: 0, cb: 0 });
+  for (const d of weekDates) byDate.set(d, { c: 0, burned: 0, p: 0, f: 0, cb: 0 });
   for (const m of meals) {
     const agg = byDate.get(m.date);
     if (!agg) continue;
@@ -55,6 +57,11 @@ export async function GET(req: NextRequest) {
     if (!agg) continue;
     agg.burned += a.caloriesBurned;
   }
+
+  // Обрізати порожні дні на початку (до першого дня з їжею).
+  const firstLoggedIdx = weekDates.findIndex((d) => (byDate.get(d)?.c ?? 0) > 0);
+  const dates =
+    firstLoggedIdx > 0 ? weekDates.slice(firstLoggedIdx) : weekDates;
 
   const target = user.targetCalories;
   const goal = isGoal(user.goal) ? user.goal : "maintain";
@@ -83,10 +90,26 @@ export async function GET(req: NextRequest) {
     };
   });
 
+  // Завжди повертаємо рядок за `end` (навіть якщо графік обрізав leading empty).
+  const endAgg = byDate.get(end) ?? { c: 0, burned: 0, p: 0, f: 0, cb: 0 };
+  const endNet = endAgg.c - endAgg.burned;
+  const todayRow: DashboardDay = days.find((d) => d.date === end) ?? {
+    date: end,
+    totalCalories: endNet,
+    consumedCalories: endAgg.c,
+    burnedCalories: endAgg.burned,
+    targetCalories: target,
+    protein: endAgg.p,
+    fats: endAgg.f,
+    carbs: endAgg.cb,
+    status: dayBarStatus(endNet, target, maintenance, goal),
+    difference: target - endNet,
+  };
+
   const payload: DashboardResponse = {
     userId,
     days,
-    today: days[days.length - 1],
+    today: todayRow,
   };
   return NextResponse.json(payload);
 }
