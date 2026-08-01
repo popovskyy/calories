@@ -88,16 +88,17 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const [pokeKey, setPokeKey] = useState(0);
   const treeTossing = treeTossKey !== null;
 
-  // База від калорій; колоди — дрібний бонус, поки немає перебору
+  // Scale з heroHeat (перебір = half mega). Колоди — лише до перебору.
   const logBoost =
-    heat.overBy > 0
+    heat.extinguished || heat.warn
       ? 0
       : Math.min(logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_LOG_CAP);
-  const fireScale = heat.extinguished
-    ? 0
-    : Math.max(0.1, heat.intensity + logBoost) * 1.12;
-  const fireOpacity = heat.extinguished ? 0 : 0.35 + heat.intensity * 0.65;
-  const flaring = !heat.extinguished && heat.overBy <= 0 && (active || treeTossing);
+  const fireScale = heat.extinguished ? 0 : heat.fireScale + logBoost;
+  const fireOpacity = heat.extinguished ? 0 : 0.45 + heat.intensity * 0.55;
+  // Поки не out — ЗАВЖДИ горить (flicker). Іскри теж — навіть на half/small.
+  const alive = !heat.extinguished;
+  const showSparks = alive && !reduce;
+  const flaring = alive && !heat.warn && (active || treeTossing);
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -167,14 +168,13 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         </div>
       </div>
 
-      {/* ореол — сила від калорій; при out — немає */}
-      {!heat.extinguished ? (
+      {/* ореол — scale від size; пульс через CSS-клас (не inline animation) */}
+      {alive ? (
         <div
-          className="fire-glow pointer-events-none absolute -bottom-1 left-1/2 h-[120px] w-[160px]"
+          className="fire-glow fire-glow-live pointer-events-none absolute -bottom-1 left-1/2 h-[120px] w-[160px]"
           style={{
             background:
               `radial-gradient(50% 60% at 50% 80%, ${fire.glow}, transparent 70%)`,
-            animation: heat.overBy > 0 ? undefined : "fireGlow 2.8s ease-in-out infinite",
             transform: `translateX(-50%) scale(${fireScale})`,
             transformOrigin: "50% 100%",
             opacity: 0.25 + heat.intensity * 0.7,
@@ -182,7 +182,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         />
       ) : null}
 
-      {/* попередження при переборі +100 */}
+      {/* попередження з першої зайвої ккал — полум'я при цьому ще горить */}
       {heat.warn ? (
         <div
           className="pointer-events-none absolute bottom-[118px] left-1/2 z-[4] w-[90%] -translate-x-1/2 text-center text-[11px] font-bold leading-tight"
@@ -219,9 +219,9 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
       <CampTree side="left" onLogToss={() => onTreeLogToss("left")} />
       <CampTree side="right" onLogToss={() => onTreeLogToss("right")} />
 
-      {/* вогонь + дрова + каміння — компактне кострище; тап — шкварчання + poke */}
+      {/* вогонь + дрова + каміння — вище кострище під tall flame; тап — шкварчання + poke */}
       <div
-        className="absolute bottom-0 left-1/2 z-[2] h-[130px] w-[140px] cursor-pointer touch-manipulation"
+        className="absolute bottom-0 left-1/2 z-[2] h-[150px] w-[150px] cursor-pointer touch-manipulation"
         style={{ transform: "translateX(-50%)", WebkitTapHighlightColor: "transparent" }}
         onPointerDown={(e) => {
           e.preventDefault();
@@ -235,8 +235,8 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
           if (!reduce) setPokeKey((k) => k + 1);
         }}
       >
-        {/* полум'я — ховаємо повністю при out (інакше flame* keyframes світять крізь opacity) */}
-        {!heat.extinguished ? (
+        {/* полум'я — ховаємо лише при out; flicker завжди через CSS-класи */}
+        {alive ? (
           <div
             className="absolute inset-0"
             style={{
@@ -259,73 +259,70 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                 style={{
                   transformOrigin: "50% 100%",
                   animation:
-                    pokeKey > 0 && !flaring && !reduce && heat.overBy <= 0
+                    pokeKey > 0 && !flaring && !reduce
                       ? "firePoke 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
                       : undefined,
                 }}
               >
+                {/*
+                  Inline animation + CSS-клас: перебір НІКОЛИ не може
+                  поставити animation: undefined (баг на main).
+                */}
                 <div
-                  className="flame absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
+                  className="flame flame-big absolute bottom-[12px] left-1/2 -ml-[16px] h-[100px] w-[32px]"
                   style={{
                     borderRadius: FLAME_RADIUS,
                     background: fire.big,
                     filter: "blur(.35px)",
-                    animation: heat.overBy > 0 ? undefined : "flameBig 0.95s linear infinite",
-                    opacity: heat.overBy > 0 ? 0.55 + heat.intensity * 0.4 : undefined,
+                    animation: "flameBig 0.95s linear infinite",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[14px] left-1/2 -ml-[6px] h-11 w-[13px]"
+                  className="flame flame-mid absolute bottom-[14px] left-1/2 -ml-[9px] h-[68px] w-[18px]"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.mid,
-                    animation: heat.overBy > 0 ? undefined : "flameMid 0.72s linear infinite",
-                    opacity: heat.overBy > 0 ? 0.5 + heat.intensity * 0.4 : undefined,
+                    animation: "flameMid 0.72s linear infinite",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[62px] left-1/2 -ml-[3px] h-3.5 w-1.5 rounded-full"
+                  className="flame flame-tip absolute bottom-[88px] left-1/2 -ml-[4px] h-5 w-2 rounded-full"
                   style={{
                     background: fire.tip,
                     filter: "blur(1px)",
-                    animation: heat.overBy > 0 ? undefined : "flameTip 0.9s linear infinite",
-                    opacity: heat.intensity,
+                    animation: "flameTip 0.9s linear infinite",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[11px] left-[36%] h-[28px] w-[11px]"
+                  className="flame flame-side absolute bottom-[11px] left-[32%] h-[44px] w-[15px]"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.side,
-                    animation: heat.overBy > 0 ? undefined : "flameSide 0.88s linear infinite",
                     transformOrigin: "50% 100%",
-                    opacity: heat.overBy > 0 ? heat.intensity : undefined,
+                    animation: "flameSide 0.88s linear infinite",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[11px] left-[58%] h-[24px] w-2.5"
+                  className="flame flame-side-alt absolute bottom-[11px] left-[58%] h-[38px] w-[13px]"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.side,
-                    animation:
-                      heat.overBy > 0 ? undefined : "flameSide 1.05s linear .28s infinite",
                     transformOrigin: "50% 100%",
-                    opacity: heat.overBy > 0 ? heat.intensity : undefined,
+                    animation: "flameSide 1.05s linear .28s infinite",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
+                  className="flame flame-mid-alt absolute bottom-[13px] left-[44%] h-[56px] w-[12px]"
                   style={{
                     borderRadius: "50% 50% 45% 45% / 68% 68% 32% 32%",
                     background: fire.mid,
-                    opacity: heat.overBy > 0 ? heat.intensity * 0.7 : 0.75,
-                    animation:
-                      heat.overBy > 0 ? undefined : "flameMid 0.8s linear .15s infinite",
+                    opacity: 0.75,
                     transformOrigin: "50% 100%",
+                    animation: "flameMid 0.8s linear .15s infinite",
                   }}
                 />
 
-                {!reduce && heat.overBy <= 0 ? (
+                {showSparks ? (
                   <>
                     <div
                       className="fire-spark absolute bottom-14 left-1/2 h-1 w-1 rounded-full"
