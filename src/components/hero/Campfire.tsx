@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { CampDeer } from "@/components/ambient/CampDeer";
+import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { claimRitualSound, playLogToss } from "@/lib/sfx";
@@ -10,6 +11,9 @@ import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 
 const FLAME_RADIUS = "50% 50% 46% 46% / 66% 66% 34% 34%";
+const TREE_TOSS_MS = 2600;
+const FIRE_SCALE_PER_LOG = 0.1;
+const FIRE_SCALE_MAX = 1.45;
 
 /**
  * Палітра вогню. Куплена рамка «Неон» не просто ховалась у лісовій темі —
@@ -44,6 +48,9 @@ const FIRE = {
  * (додали / змінили / видалили запис), а не тапом по «+». Сигнал переживає
  * навігацію, тож ритуал відпрацює й тоді, коли користувач збереже їжу на
  * /add і повернеться на Огляд лише за кілька екранів.
+ *
+ * Окремо — ambient-дерево: рубаєш → кидаєш колоди → полум'я росте локально,
+ * без armRecalc.
  */
 export function Campfire({ consumed, target, frame }: HeroProps) {
   const reduce = useReducedMotion();
@@ -56,7 +63,9 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const { user } = useCurrentUser();
   const pack = user?.soundpack ?? "default";
   const packRef = useRef(pack);
-  packRef.current = pack;
+  useEffect(() => {
+    packRef.current = pack;
+  }, [pack]);
 
   /*
    * Стану ритуалу в React немає взагалі: увесь таймлайн (дровина .85s, спалах
@@ -66,6 +75,12 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
    */
   const active = recalc !== null;
   const ritualKey = recalc?.id ?? "idle";
+
+  const [logsFed, setLogsFed] = useState(0);
+  const [treeTossKey, setTreeTossKey] = useState<number | null>(null);
+  const treeTossing = treeTossKey !== null;
+  const fireScale = Math.min(1 + logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_MAX);
+  const flaring = active || treeTossing;
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -84,6 +99,18 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
     const t = window.setTimeout(consumeRecalc, 2600);
     return () => window.clearTimeout(t);
   }, [recalc, consumeRecalc]);
+
+  useEffect(() => {
+    if (treeTossKey === null) return;
+    const t = window.setTimeout(() => setTreeTossKey(null), TREE_TOSS_MS);
+    return () => window.clearTimeout(t);
+  }, [treeTossKey]);
+
+  const onTreeLogToss = useCallback(() => {
+    playLogToss(packRef.current);
+    setLogsFed((n) => n + 1);
+    setTreeTossKey(Date.now());
+  }, []);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[52px]" : "text-[62px]";
@@ -114,146 +141,156 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         </div>
       </div>
 
-      {/* ореол */}
+      {/* ореол — трохи росте разом із підкинутими колодами */}
       <div
-        className="fire-glow pointer-events-none absolute -bottom-2.5 left-1/2 h-[150px] w-[230px] -translate-x-1/2"
+        className="fire-glow pointer-events-none absolute -bottom-2.5 left-1/2 h-[150px] w-[230px]"
         style={{
           background:
             `radial-gradient(50% 60% at 50% 80%, ${fire.glow}, transparent 70%)`,
           animation: "fireGlow 3.6s ease-in-out infinite",
+          transform: `translateX(-50%) scale(${fireScale})`,
+          transformOrigin: "50% 100%",
         }}
       />
 
-      {/* олень біля вогнища — FSM у CampDeer (патруль + втеча без remount) */}
-      <CampDeer ritualActive={active} />
+      {/* олень біля вогнища — тікає і від meal-ритуалу, і від колоди з дерева */}
+      <CampDeer ritualActive={active || treeTossing} />
 
-      {/* вогонь + дрова + каміння: єдиний стек, що спалахує на .56s */}
+      {/* сосна праворуч: ріст → рубання → дрова */}
+      <CampTree onLogToss={onTreeLogToss} />
+
+      {/* вогонь + дрова + каміння: батько тримає logsFed scale, дитина — flare */}
       <div
-        key={`fire-${ritualKey}`}
         className="absolute bottom-0 left-1/2 z-[2] h-[150px] w-[196px]"
         style={{
-          transform: "translateX(-50%)",
+          transform: `translateX(-50%) scale(${fireScale})`,
           transformOrigin: "50% 100%",
-          animation: active ? "fireFlare 2.6s forwards" : undefined,
         }}
       >
         <div
-          className="flame absolute bottom-[14px] left-1/2 -ml-[13px] h-[74px] w-[26px]"
+          key={`fire-${ritualKey}-${treeTossKey ?? "idle"}`}
+          className="relative h-full w-full"
           style={{
-            borderRadius: FLAME_RADIUS,
-            background: fire.big,
-            filter: "blur(.4px)",
-            animation: "flameBig 1.5s ease-in-out infinite",
+            transformOrigin: "50% 100%",
+            animation: flaring ? "fireFlare 2.6s forwards" : undefined,
           }}
-        />
-        <div
-          className="flame absolute bottom-4 left-1/2 -ml-[7px] h-12 w-[15px]"
-          style={{
-            borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-            background: fire.mid,
-            animation: "flameMid 1.1s ease-in-out infinite",
-          }}
-        />
-        <div
-          className="flame absolute bottom-[74px] left-1/2 -ml-[4px] h-4 w-2 rounded-full"
-          style={{
-            background: fire.tip,
-            filter: "blur(1px)",
-            animation: "flameTip 1.7s ease-in-out infinite",
-          }}
-        />
-        <div
-          className="flame absolute bottom-3 left-[38%] h-[34px] w-[14px]"
-          style={{
-            borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-            background: fire.side,
-            animation: "flameMid 1.35s ease-in-out .3s infinite",
-          }}
-        />
-        <div
-          className="flame absolute bottom-3 left-[58%] h-[30px] w-3"
-          style={{
-            borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-            background: fire.side,
-            animation: "flameMid 1.5s ease-in-out .6s infinite",
-          }}
-        />
+        >
+          <div
+            className="flame absolute bottom-[14px] left-1/2 -ml-[13px] h-[74px] w-[26px]"
+            style={{
+              borderRadius: FLAME_RADIUS,
+              background: fire.big,
+              filter: "blur(.4px)",
+              animation: "flameBig 1.5s ease-in-out infinite",
+            }}
+          />
+          <div
+            className="flame absolute bottom-4 left-1/2 -ml-[7px] h-12 w-[15px]"
+            style={{
+              borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+              background: fire.mid,
+              animation: "flameMid 1.1s ease-in-out infinite",
+            }}
+          />
+          <div
+            className="flame absolute bottom-[74px] left-1/2 -ml-[4px] h-4 w-2 rounded-full"
+            style={{
+              background: fire.tip,
+              filter: "blur(1px)",
+              animation: "flameTip 1.7s ease-in-out infinite",
+            }}
+          />
+          <div
+            className="flame absolute bottom-3 left-[38%] h-[34px] w-[14px]"
+            style={{
+              borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+              background: fire.side,
+              animation: "flameMid 1.35s ease-in-out .3s infinite",
+            }}
+          />
+          <div
+            className="flame absolute bottom-3 left-[58%] h-[30px] w-3"
+            style={{
+              borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+              background: fire.side,
+              animation: "flameMid 1.5s ease-in-out .6s infinite",
+            }}
+          />
 
-        {/* дрова */}
-        <div className="absolute bottom-0 left-1/2 -ml-[85px] h-11 w-[170px]">
-          <div
-            className="absolute bottom-1.5 left-1.5 h-5 w-[118px] rounded-[10px]"
-            style={{
-              background: "linear-gradient(#a97a4c,#6b4626)",
-              transform: "rotate(-9deg)",
-              boxShadow: "inset 0 -4px 0 rgba(0,0,0,.28)",
-            }}
-          />
-          <div
-            className="absolute bottom-2.5 right-1 h-5 w-[112px] rounded-[10px]"
-            style={{
-              background: "linear-gradient(#9a6d42,#5d3c20)",
-              transform: "rotate(11deg)",
-              boxShadow: "inset 0 -4px 0 rgba(0,0,0,.28)",
-            }}
-          />
-          <div
-            className="absolute bottom-0 left-[26px] h-[18px] w-[118px] rounded-[9px]"
-            style={{
-              background: "linear-gradient(#8a6039,#4d3220)",
-              transform: "rotate(-3deg)",
-            }}
-          />
-          <div
-            className="absolute bottom-4 left-[52px] h-[22px] w-[22px] rounded-full"
-            style={{
-              background: "radial-gradient(circle at 40% 40%, #ffd0a0, #a97a4c)",
-              boxShadow: "inset 0 0 0 3px #6b4626",
-            }}
-          />
-          <div
-            className="absolute bottom-5 right-11 h-[18px] w-[18px] rounded-full"
-            style={{
-              background: "radial-gradient(circle at 40% 40%, #ffd0a0, #9a6d42)",
-              boxShadow: "inset 0 0 0 3px #5d3c20",
-            }}
-          />
-        </div>
+          {/* дрова */}
+          <div className="absolute bottom-0 left-1/2 -ml-[85px] h-11 w-[170px]">
+            <div
+              className="absolute bottom-1.5 left-1.5 h-5 w-[118px] rounded-[10px]"
+              style={{
+                background: "linear-gradient(#a97a4c,#6b4626)",
+                transform: "rotate(-9deg)",
+                boxShadow: "inset 0 -4px 0 rgba(0,0,0,.28)",
+              }}
+            />
+            <div
+              className="absolute bottom-2.5 right-1 h-5 w-[112px] rounded-[10px]"
+              style={{
+                background: "linear-gradient(#9a6d42,#5d3c20)",
+                transform: "rotate(11deg)",
+                boxShadow: "inset 0 -4px 0 rgba(0,0,0,.28)",
+              }}
+            />
+            <div
+              className="absolute bottom-0 left-[26px] h-[18px] w-[118px] rounded-[9px]"
+              style={{
+                background: "linear-gradient(#8a6039,#4d3220)",
+                transform: "rotate(-3deg)",
+              }}
+            />
+            <div
+              className="absolute bottom-4 left-[52px] h-[22px] w-[22px] rounded-full"
+              style={{
+                background: "radial-gradient(circle at 40% 40%, #ffd0a0, #a97a4c)",
+                boxShadow: "inset 0 0 0 3px #6b4626",
+              }}
+            />
+            <div
+              className="absolute bottom-5 right-11 h-[18px] w-[18px] rounded-full"
+              style={{
+                background: "radial-gradient(circle at 40% 40%, #ffd0a0, #9a6d42)",
+                boxShadow: "inset 0 0 0 3px #5d3c20",
+              }}
+            />
+          </div>
 
-        {/* каміння по дузі */}
-        <div className="absolute -bottom-2 left-1/2 -ml-[98px] h-[34px] w-[196px]">
-          <div
-            className="absolute bottom-0 left-0 h-[26px] w-9"
-            style={{
-              borderRadius: "14px 12px 8px 8px",
-              background: "linear-gradient(#5b6660,#39423e)",
-            }}
-          />
-          <div
-            className="absolute -bottom-0.5 left-[34px] h-[22px] w-[30px] rounded-xl"
-            style={{ background: "linear-gradient(#4e5853,#333a37)" }}
-          />
-          <div
-            className="absolute -bottom-1 left-[70px] h-6 w-11 rounded-[14px]"
-            style={{ background: "linear-gradient(#5b6660,#39423e)" }}
-          />
-          <div
-            className="absolute -bottom-0.5 right-8 h-[22px] w-8 rounded-xl"
-            style={{ background: "linear-gradient(#4e5853,#333a37)" }}
-          />
-          <div
-            className="absolute bottom-0 right-0 h-[26px] w-9"
-            style={{
-              borderRadius: "12px 14px 8px 8px",
-              background: "linear-gradient(#5b6660,#39423e)",
-            }}
-          />
+          {/* каміння по дузі */}
+          <div className="absolute -bottom-2 left-1/2 -ml-[98px] h-[34px] w-[196px]">
+            <div
+              className="absolute bottom-0 left-0 h-[26px] w-9"
+              style={{
+                borderRadius: "14px 12px 8px 8px",
+                background: "linear-gradient(#5b6660,#39423e)",
+              }}
+            />
+            <div
+              className="absolute -bottom-0.5 left-[34px] h-[22px] w-[30px] rounded-xl"
+              style={{ background: "linear-gradient(#4e5853,#333a37)" }}
+            />
+            <div
+              className="absolute -bottom-1 left-[70px] h-6 w-11 rounded-[14px]"
+              style={{ background: "linear-gradient(#5b6660,#39423e)" }}
+            />
+            <div
+              className="absolute -bottom-0.5 right-8 h-[22px] w-8 rounded-xl"
+              style={{ background: "linear-gradient(#4e5853,#333a37)" }}
+            />
+            <div
+              className="absolute bottom-0 right-0 h-[26px] w-9"
+              style={{
+                borderRadius: "12px 14px 8px 8px",
+                background: "linear-gradient(#5b6660,#39423e)",
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* ритуал: дровина летить справа згори, за нею — три іскри.
-          Анімації forwards, тож після завершення вузли невидимі й просто
-          чекають, доки сигнал згасне */}
+      {/* meal-ритуал: дровина летить справа згори */}
       {active ? (
         <div key={`toss-${ritualKey}`}>
           <div
@@ -288,6 +325,37 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
               boxShadow: `0 0 10px ${fire.spark[1]}`,
               ["--dx" as string]: "16px",
               animation: "sparkBurst 1.2s ease-out .65s forwards",
+            }}
+          />
+        </div>
+      ) : null}
+
+      {/* колода з дерева — коротша дуга з правого боку */}
+      {treeTossing && !reduce ? (
+        <div key={`tree-toss-${treeTossKey}`}>
+          <div
+            className="toss-log absolute bottom-[34px] left-1/2 z-[2] -ml-[32px] h-4 w-16 rounded-[8px]"
+            style={{
+              background: "linear-gradient(#b5844f,#6b4626)",
+              boxShadow: "inset 0 -3px 0 rgba(0,0,0,.3)",
+              animation: "treeLogToss .7s cubic-bezier(.3,.1,.5,1) forwards",
+            }}
+          />
+          <div
+            className="fire-spark absolute bottom-20 left-1/2 z-[2] h-1.5 w-1.5 rounded-full"
+            style={{
+              background: fire.spark[0],
+              boxShadow: `0 0 10px ${fire.spark[0]}`,
+              animation: "sparkBurst 1s ease-out .35s forwards",
+            }}
+          />
+          <div
+            className="fire-spark absolute bottom-[78px] left-[54%] z-[2] h-1 w-1 rounded-full"
+            style={{
+              background: fire.spark[1],
+              boxShadow: `0 0 10px ${fire.spark[1]}`,
+              ["--dx" as string]: "14px",
+              animation: "sparkBurst 1.1s ease-out .42s forwards",
             }}
           />
         </div>

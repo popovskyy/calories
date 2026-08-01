@@ -2029,10 +2029,35 @@ html[data-theme="minecraft"] .rounded-full {
   70% { transform: translate(4px, 4px) rotate(14deg); opacity: 1; }
   100% { transform: translate(4px, 4px) rotate(14deg); opacity: 0; }
 }
+/* Колода з дерева праворуч від вогню — коротша дуга */
+@keyframes treeLogToss {
+  0% { transform: translate(72px, -8px) rotate(8deg); opacity: 0; }
+  10% { opacity: 1; }
+  68% { transform: translate(2px, 2px) rotate(-12deg); opacity: 1; }
+  100% { transform: translate(2px, 2px) rotate(-12deg); opacity: 0; }
+}
 @keyframes sparkBurst {
   0% { transform: translate(0, 0) scale(1); opacity: 0; }
   20% { opacity: 1; }
   100% { transform: translate(var(--dx, 0px), -90px) scale(0.3); opacity: 0; }
+}
+/* Саджанець → сосна: scale від основи */
+@keyframes treeGrow {
+  0% { transform: scaleY(0.12) scaleX(0.55); opacity: 0.55; }
+  18% { opacity: 1; }
+  100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+}
+@keyframes treeChopShake {
+  0%,
+  100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  55% { transform: translateX(4px); }
+  80% { transform: translateX(-2px); }
+}
+@keyframes treeFall {
+  0% { transform: rotate(var(--lean, 10deg)) translateY(0); opacity: 1; }
+  55% { transform: rotate(68deg) translateY(6px); opacity: 1; }
+  100% { transform: rotate(78deg) translateY(14px); opacity: 0; }
 }
 @keyframes fog {
   0% { transform: translateX(-8%); opacity: 0.85; }
@@ -2136,20 +2161,21 @@ html[data-theme="minecraft"] .rounded-full {
 /*
  * Ритуал підкидання дровини — суцільно на CSS-таймлайні 2.6s, без станів у React.
  * Тайминги ті самі, що в макеті: .56s дровина долітає, 1.7s вогонь осідає.
+ * Лише scale: translate тримає батьківський стек (разом із logsFed scale).
  */
 @keyframes fireFlare {
   0%,
   21.5% {
-    transform: translateX(-50%) scale(1);
+    transform: scale(1);
     animation-timing-function: cubic-bezier(0.2, 1.5, 0.4, 1);
   }
   26%,
   60% {
-    transform: translateX(-50%) scale(1.28);
+    transform: scale(1.28);
   }
   65%,
   100% {
-    transform: translateX(-50%) scale(1);
+    transform: scale(1);
   }
 }
 /* Компактний спалах у Журналі: розгорівся й згас */
@@ -2247,6 +2273,15 @@ html[data-theme="minecraft"] .rounded-full {
   .fire-spark,
   .toss-log {
     display: none !important;
+  }
+  .camp-tree-grow,
+  .camp-tree-shake,
+  .camp-tree-fall {
+    animation: none !important;
+  }
+  .camp-tree-grow {
+    transform: none !important;
+    opacity: 1 !important;
   }
   .fire-glow,
   .flame,

@@ -551,6 +551,54 @@ export function playDeerStartle() {
 }
 
 /**
+ * Удар сокири по дереву біля вогнища — короткий тріск + щільний «стук».
+ * Без whoosh (той лишається для польоту дровини), гучніший за deer startle.
+ */
+export function playWoodChop() {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  try {
+    const now = ac.currentTime;
+
+    // Короткий шумовий «хрусь» кори
+    const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.08), ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      const env = 1 - i / data.length;
+      data[i] = (Math.random() * 2 - 1) * 0.55 * env;
+    }
+    const noise = ac.createBufferSource();
+    noise.buffer = buffer;
+    const band = ac.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.setValueAtTime(900, now);
+    band.Q.setValueAtTime(0.8, now);
+    const noiseGain = ac.createGain();
+    noiseGain.gain.setValueAtTime(0.16, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+    noise.connect(band).connect(noiseGain).connect(ac.destination);
+    noise.start(now);
+    noise.stop(now + 0.08);
+
+    // Удар по стовбуру
+    const osc = ac.createOscillator();
+    const oscGain = ac.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + 0.055);
+    oscGain.gain.setValueAtTime(0.14, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.065);
+    osc.connect(oscGain).connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 0.07);
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
+/**
  * Тап по навігаційній посилці (таби внизу, лінки на інші сторінки).
  *
  * Навмисно тихіший і нижчий за базовий клік: перехід між сторінками не
