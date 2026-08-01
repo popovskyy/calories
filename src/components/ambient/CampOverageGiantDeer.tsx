@@ -17,7 +17,6 @@ function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
-/** Палітра camp-оленя — лише голова. */
 const P = {
   head: "#2a1a0f",
   ear: "#b5717d",
@@ -28,10 +27,7 @@ const P = {
   snout: "#080503",
 } as const;
 
-/**
- * Чисто голова оленя: viewBox обрізаний під роги+морду (з повного 120×170).
- * Страшний погляд при переборі.
- */
+/** Голова оленя (обрізаний viewBox з повного силуету). */
 function DeerHeadSvg({ className }: { className?: string }) {
   return (
     <svg
@@ -82,14 +78,14 @@ function DeerHeadSvg({ className }: { className?: string }) {
 }
 
 /**
- * При переборі: голова оленя виглядає З‑ЗА КРАЮ САМОГО ЕКРАНА (як з рамки
- * айфона) — fixed overlay на весь viewport, ~пів екрана, не в герої додатку.
+ * При переборі: голова оленя виглядає З‑ЗА КРАЮ ЕКРАНА ТЕЛЕФОНА
+ * (fixed portal на весь viewport) — не в рамці вогнища додатку.
  */
 export function CampOverageGiantDeer({ active }: { active: boolean }) {
   const reduce = useReducedMotion();
   const x = useMotionValue(0);
   const opacity = useMotionValue(0);
-  const [side, setSide] = useState<"left" | "right">("left");
+  const scaleX = useMotionValue(1);
   const [show, setShow] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
   const ctrls = useRef<AnimationPlaybackControls[]>([]);
@@ -131,52 +127,54 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
       await sleep(rand(900, 1800));
 
       while (alive()) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        // Голова ~пів екрана по висоті, ширина пропорційна
+        const headW = Math.min(vw * 0.55, vh * 0.42);
         const fromLeft = Math.random() < 0.5;
-        setSide(fromLeft ? "left" : "right");
 
-        // За межею viewport → в кадр лише частина голови (~45vw peek)
-        const off = fromLeft ? "-58vw" : "58vw";
-        const peek = fromLeft ? "-8vw" : "8vw";
+        // Повністю за «рамкою» айфона → виглядає ~55% голови
+        const off = fromLeft ? -(headW + 16) : vw + 8;
+        const peek = fromLeft ? -(headW * 0.35) : vw - headW * 0.65;
 
+        scaleX.set(fromLeft ? 1 : -1);
         x.set(off);
         opacity.set(0);
         setShow(true);
         playDeerStartle();
 
-        track(animate(opacity, 1, { duration: 0.35, ease: [...EASE_SOFT] }));
+        track(animate(opacity, 1, { duration: 0.32, ease: [...EASE_SOFT] }));
         await track(
           animate(x, peek, {
-            duration: rand(0.85, 1.25),
+            duration: rand(0.85, 1.2),
             ease: [0.18, 0.9, 0.22, 1],
           }),
         );
         if (!alive()) break;
 
-        // Дивиться з‑за «рамки» телефону
         await sleep(rand(1600, 2800));
         if (!alive()) break;
 
-        // Інколи трохи глибше заглядає
-        if (Math.random() < 0.5) {
-          const deeper = fromLeft ? "2vw" : "-2vw";
+        if (Math.random() < 0.55) {
+          const deeper = fromLeft ? -(headW * 0.18) : vw - headW * 0.82;
           await track(
             animate(x, deeper, {
-              duration: rand(0.45, 0.7),
+              duration: rand(0.4, 0.65),
               ease: [...EASE_SOFT],
             }),
           );
           if (!alive()) break;
-          await sleep(rand(600, 1100));
+          await sleep(rand(700, 1200));
         }
 
         await track(
           animate(x, off, {
-            duration: rand(0.55, 0.9),
+            duration: rand(0.55, 0.85),
             ease: [0.45, 0.05, 0.55, 0.95],
           }),
         );
         if (!alive()) break;
-        await track(animate(opacity, 0, { duration: 0.2 }));
+        await track(animate(opacity, 0, { duration: 0.18 }));
         setShow(false);
 
         await sleep(rand(4000, 8000));
@@ -200,20 +198,16 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
     >
       {show ? (
         <motion.div
-          className="absolute top-[16vh] will-change-transform"
+          className="absolute top-[14vh] left-0 will-change-transform"
           style={{
             x,
             opacity,
-            [side === "left" ? "left" : "right"]: 0,
-            // Дзеркало з правого краю — морда дивиться в екран
-            scaleX: side === "right" ? -1 : 1,
-            width: "52vw",
-            maxWidth: 280,
-            filter: "drop-shadow(0 12px 28px rgba(0,0,0,.55))",
+            scaleX,
+            width: "min(55vw, 42vh)",
+            filter: "drop-shadow(0 16px 32px rgba(0,0,0,.6))",
           }}
         >
-          {/* ~пів висоти екрана — тільки голова */}
-          <DeerHeadSvg className="h-[48vh] w-full max-h-[360px]" />
+          <DeerHeadSvg className="h-[50vh] w-full max-h-[420px]" />
         </motion.div>
       ) : null}
     </div>,
