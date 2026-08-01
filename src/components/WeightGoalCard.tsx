@@ -269,30 +269,38 @@ function fmtKg(v: number | null | undefined): string {
   return `${v.toFixed(1).replace(".", ",")} кг`;
 }
 
-/** Пояснення глибини дефіциту: план −15% vs факт −10% тощо. */
+/** Пояснення глибини дефіциту простими словами (без жаргону «у плані»). */
 function deficitPaceNote(
   stance: string | undefined,
   avgPct: number | null | undefined,
   plannedPct: number | null | undefined,
 ): string | null {
   if (avgPct == null || plannedPct == null || plannedPct <= 0) return null;
-  const fact =
-    avgPct === 0
-      ? "біля підтримки"
-      : avgPct < 0
-        ? `дефіцит ≈ ${avgPct}%`
-        : `профіцит ≈ +${avgPct}%`;
+
+  // avgPct: −16 = їсть на 16% менше за підтримку; +5 = на 5% більше.
+  if (avgPct > 3) {
+    return `За журналом їси ≈ на ${avgPct}% більше, ніж треба щоб вага стояла — так до цілі не йде.`;
+  }
+
+  const depth = Math.abs(avgPct);
+  const vsPlan =
+    depth === plannedPct
+      ? `як у плані (${plannedPct}%)`
+      : depth > plannedPct
+        ? `трохи глибше за план (${plannedPct}%)`
+        : `м’якше за план (${plannedPct}%)`;
+
   switch (stance) {
     case "on_plan":
-      return `${fact} від підтримки — у плані (−${plannedPct}%).`;
+      return `За журналом їси ≈ на ${depth}% менше, ніж треба щоб вага стояла — ${vsPlan}, темп нормальний.`;
     case "shallow":
-      return `${fact} від підтримки при плані −${plannedPct}%: дефіцит є, темп м’якший — можна щільніше до плану.`;
+      return `За журналом дефіцит ≈ ${depth}% (план ${plannedPct}%) — худнеш, але повільніше. Можна ближче до плану.`;
     case "deep":
-      return `${fact} від підтримки — глибше за план (−${plannedPct}%).`;
+      return `За журналом їси ≈ на ${depth}% менше за підтримку — ${vsPlan}. Стеж, щоб не було замало.`;
     case "maintenance":
-      return `${fact}: майже без дефіциту при плані −${plannedPct}% — темп до цілі слабкий.`;
+      return `Майже без дефіциту (план ${plannedPct}%) — до цілі майже не рухаєшся.`;
     case "surplus":
-      return `${fact} над підтримкою — журнал тягне вагу вгору, не до цілі.`;
+      return `За журналом більше за підтримку — вага може рости, не падати.`;
     default:
       return null;
   }
