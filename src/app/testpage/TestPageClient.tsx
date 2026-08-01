@@ -90,12 +90,16 @@ export function TestPageClient() {
 }
 
 function CelebrateLab() {
-  const [inTarget, setInTarget] = useState(true);
+  type Moment = "normal" | "inTarget" | "over";
+  const [moment, setMoment] = useState<Moment>("inTarget");
   const [useProd, setUseProd] = useState(true);
   const [finisher, setFinisher] = useState("blockbreak");
   const [soundpack, setSoundpack] = useState("cinema");
   const [open, setOpen] = useState(false);
   const [plays, setPlays] = useState(0);
+
+  const inTarget = moment === "inTarget";
+  const over = moment === "over";
 
   const play = useCallback(() => {
     setOpen(false);
@@ -108,7 +112,9 @@ function CelebrateLab() {
   const finisherDef = FINISHERS.find((f) => f.id === finisher);
   const prodLabel = inTarget
     ? "blockbreak · «День у нормі!» · cinema"
-    : "cosmos · «Додано в журнал» · cinema";
+    : over
+      ? "рандомна свинка + мем"
+      : "cosmos · «Додано в журнал» · cinema";
 
   return (
     <>
@@ -117,23 +123,32 @@ function CelebrateLab() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className={!inTarget ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
-            onClick={() => setInTarget(false)}
+            className={moment === "normal" ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
+            onClick={() => setMoment("normal")}
           >
             Звичайний запис
           </button>
           <button
             type="button"
-            className={inTarget ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
-            onClick={() => setInTarget(true)}
+            className={moment === "inTarget" ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
+            onClick={() => setMoment("inTarget")}
           >
             День у ±5%
           </button>
+          <button
+            type="button"
+            className={moment === "over" ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
+            onClick={() => setMoment("over")}
+          >
+            Перебір · свинка
+          </button>
         </div>
         <p className="text-[12px] leading-snug text-[var(--color-muted3)]">
-          {inTarget
+          {moment === "inTarget"
             ? "Прод: Block Break + cinema · «День у нормі!»"
-            : "Прод: космос + cinema · «Додано в журнал»"}
+            : moment === "over"
+              ? "Прод: рандомна свинка + мемна фраза"
+              : "Прод: космос + cinema · «Додано в журнал»"}
         </p>
       </section>
 
@@ -152,7 +167,7 @@ function CelebrateLab() {
             className={!useProd ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
             onClick={() => {
               setUseProd(false);
-              setInTarget(true);
+              setMoment("inTarget");
             }}
           >
             Експеримент
@@ -240,6 +255,7 @@ function CelebrateLab() {
       <SaveCelebrate
         open={open}
         inTarget={inTarget}
+        over={over}
         previewFinisher={useProd || !inTarget ? undefined : finisher}
         previewSoundpack={useProd || !inTarget ? undefined : soundpack}
         onDone={() => setOpen(false)}

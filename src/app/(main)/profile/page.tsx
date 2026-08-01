@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { KeyRound, LogOut, Pencil, ShoppingBag } from "lucide-react";
+import { FlaskConical, KeyRound, LogOut, Pencil, ShoppingBag } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { CoinIcon } from "@/components/icons/CurrencyIcons";
@@ -133,6 +133,25 @@ export function ProfileTab() {
           </div>
         </div>
       </button>
+
+      {process.env.NODE_ENV === "development" ? (
+        <Link
+          href="/testpage"
+          className="mcard flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[var(--color-accent-300)]">
+            <FlaskConical size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[16px] font-semibold text-[var(--color-text)]">
+              Testpage
+            </div>
+            <div className="text-[13px] text-[var(--color-muted3)]">
+              Dev-лаб анімацій
+            </div>
+          </div>
+        </Link>
+      ) : null}
 
       <UserFormDialog open={formOpen} onOpenChange={setFormOpen} user={user} />
       <ChangePasswordDialog open={pwdOpen} onOpenChange={setPwdOpen} />

@@ -49,6 +49,7 @@ export default function AddFoodPage() {
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [celebrateInTarget, setCelebrateInTarget] = useState(false);
+  const [celebrateOver, setCelebrateOver] = useState(false);
 
   const analyze = useAnalyzeMeal();
   const save = useSaveMeal();
@@ -92,8 +93,11 @@ export default function AddFoodPage() {
       const prev = today?.totalCalories ?? 0;
       const target = user?.targetCalories ?? today?.targetCalories ?? 0;
       const nextTotal = prev + savedCalories;
-      const inTarget = target > 0 && Math.abs(nextTotal - target) <= target * 0.05;
+      const inTarget =
+        target > 0 && Math.abs(nextTotal - target) <= target * 0.05;
+      const over = target > 0 && nextTotal > target && !inTarget;
       setCelebrateInTarget(inTarget);
+      setCelebrateOver(over);
       setCelebrate(true);
     },
     [dash.data?.today, user?.targetCalories],
@@ -378,8 +382,10 @@ export default function AddFoodPage() {
       <SaveCelebrate
         open={celebrate}
         inTarget={celebrateInTarget}
+        over={celebrateOver}
         onDone={() => {
           setCelebrate(false);
+          setCelebrateOver(false);
           toast.success("Додано в журнал");
           router.replace("/log");
         }}

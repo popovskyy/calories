@@ -1,16 +1,46 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Flame, Sparkles } from "lucide-react";
 import { EASE_OUT, DURATION_UI } from "@/lib/motion";
 import { playFinisher, playSaveAck } from "@/lib/sfx";
 import { haptic } from "@/lib/haptics";
 
+const OVER_PIGS = [
+  "/over-pigs/1.jpg",
+  "/over-pigs/2.jpg",
+  "/over-pigs/3.jpg",
+] as const;
+
+const OVER_PHRASES = [
+  "Ого, ще?",
+  "Це вже не перекус — це стиль життя",
+  "Калорії здаються без бою",
+  "Норма сказала «пока»",
+  "Сьогодні день відкритих холодильників",
+  "Трохи зайшло… і ще трохи",
+  "Дефіцит? Не чули",
+  "Диван киває схвально",
+  "Ще один укус для перемоги",
+  "Журнал плаче, ти жуєш",
+  "Це був план? Ок, тримаємо курс",
+  "Перебір зайшов як рідний",
+  "Свинський бізнес як завжди",
+  "Завтра дієта, сьогодні — легенда",
+  "Кільце вже червоне, а ти сміливий",
+] as const;
+
+function pickOne<T extends readonly string[]>(list: T): T[number] {
+  return list[Math.floor(Math.random() * list.length)]!;
+}
+
 interface SaveCelebrateProps {
   open: boolean;
   onDone: () => void;
   inTarget?: boolean;
+  /** Явний перебір калорій — свинка підморгує замість звичайного ack. */
+  over?: boolean;
   /**
    * Лише для /testpage — підміняє прод-фінішер.
    * У проді завжди: blockbreak + cinema + «День у нормі!».
@@ -24,6 +54,7 @@ interface SaveCelebrateProps {
  *
  * Звичайний запис: космос + cinema-ack + «Додано в журнал».
  * День у ±5%: Block Break + cinema + «День у нормі!».
+ * Явний перебір: рандомне фото свинки + «Ого, ще?».
  */
 
 export const FINISHER_TEXT: Record<string, string> = {
@@ -383,34 +414,57 @@ function NovaBurst() {
   );
 }
 
+function pickOverPig(): string {
+  return pickOne(OVER_PIGS);
+}
+
+function pickOverPhrase(): string {
+  return pickOne(OVER_PHRASES);
+}
+
 export function SaveCelebrate({
   open,
   onDone,
   inTarget,
+  over,
   previewFinisher,
   previewSoundpack,
 }: SaveCelebrateProps) {
   const reduce = useReducedMotion();
+  const [pigSrc, setPigSrc] = useState<string>(OVER_PIGS[0]);
+  const [overPhrase, setOverPhrase] = useState<string>(OVER_PHRASES[0]);
+
+  // Пріоритет: inTarget > over > звичайний ack.
+  const isOver = !!over && !inTarget;
 
   // Прод-фіксовані пари; preview* — лише лаб на /testpage.
   const style = inTarget ? (previewFinisher ?? "blockbreak") : "cosmos";
   const pack = inTarget ? (previewSoundpack ?? "cinema") : "cinema";
 
   useEffect(() => {
+    if (!open || !isOver) return;
+    setPigSrc(pickOverPig());
+    setOverPhrase(pickOverPhrase());
+  }, [open, isOver]);
+
+  useEffect(() => {
     if (!open) return;
     if (inTarget) {
       playFinisher(pack, style);
       haptic("success");
+    } else if (isOver) {
+      playSaveAck();
+      haptic("destructive");
     } else {
       playSaveAck();
       haptic("confirm");
     }
     const t = window.setTimeout(
       onDone,
-      reduce ? 400 : style === "nova" ? 1200 : 1100,
+      reduce ? 500 : isOver ? 2000 : style === "nova" ? 1600 : inTarget ? 1500 : 1400,
     );
     return () => window.clearTimeout(t);
-  }, [open, onDone, reduce, inTarget, pack, style]);
+  }, [open, onDone, reduce, inTarget, isOver, pack, style]);
 
   const color = FINISHER_COLOR[style] ?? "var(--color-accent)";
   const isStamp = inTarget && style === "stamp";
@@ -422,26 +476,38 @@ export function SaveCelebrate({
     ? style === "blockbreak"
       ? "День у нормі!"
       : (FINISHER_TEXT[style] ?? "День у нормі!")
-    : "Додано в журнал";
+    : isOver
+      ? overPhrase
+      : "Додано в журнал";
 
   return (
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center"
+          className={
+            isOver
+              ? "pointer-events-none fixed inset-0 z-[60] flex items-start justify-center pt-[18vh]"
+              : "pointer-events-none fixed inset-0 z-[60] flex items-center justify-center"
+          }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
         >
           <motion.div
-            className="relative flex flex-col items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-8 py-6 shadow-[var(--shadow-card-lg)]"
+            className={
+              isOver
+                ? "relative flex w-fit max-w-[13rem] flex-col items-center gap-3 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card-lg)]"
+                : "relative flex flex-col items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--color-surface)] px-8 py-6 shadow-[var(--shadow-card-lg)]"
+            }
             initial={
               reduce
                 ? { opacity: 0 }
-                : isStamp || isNova || isBlock
-                  ? { opacity: 0, scale: 1.14, y: -4 }
-                  : { opacity: 0, y: 10, scale: 0.94, filter: "blur(4px)" }
+                : isOver
+                  ? { opacity: 0, scale: 1.06, y: -18 }
+                  : isStamp || isNova || isBlock
+                    ? { opacity: 0, scale: 1.14, y: -4 }
+                    : { opacity: 0, y: 10, scale: 0.94, filter: "blur(4px)" }
             }
             animate={
               reduce
@@ -452,14 +518,31 @@ export function SaveCelebrate({
             transition={
               reduce
                 ? { duration: DURATION_UI, ease: EASE_OUT }
-                : (isStamp || isNova || isBlock)
+                : isStamp || isNova || isBlock || isOver
                   ? { type: "spring", duration: 0.4, bounce: 0.35 }
                   : { type: "spring", duration: 0.4, bounce: 0.12 }
             }
           >
-            <Particles finisher={style} reduce={!!reduce} />
+            {!isOver ? <Particles finisher={style} reduce={!!reduce} /> : null}
 
-            {isStamp ? (
+            {isOver ? (
+              <motion.div
+                className="overflow-hidden rounded-[var(--radius-md)]"
+                initial={reduce ? false : { scale: 0.82, opacity: 0, rotate: -3 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                transition={{ type: "spring", duration: 0.45, bounce: 0.38 }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={pigSrc}
+                  alt=""
+                  width={160}
+                  height={160}
+                  className="h-40 w-40 object-cover"
+                  draggable={false}
+                />
+              </motion.div>
+            ) : isStamp ? (
               <motion.span
                 className="flex h-9 w-9 items-center justify-center rounded-full"
                 style={{
@@ -485,9 +568,13 @@ export function SaveCelebrate({
               <Flame size={36} style={{ color }} />
             )}
             <motion.p
-              className="text-[17px] font-semibold text-[var(--color-text)]"
+              className={
+                isOver
+                  ? "w-full text-center text-[17px] font-semibold leading-snug text-[var(--color-text)]"
+                  : "text-[17px] font-semibold text-[var(--color-text)]"
+              }
               initial={
-                (isPerfect || isNova || isBlock) && !reduce
+                (isPerfect || isNova || isBlock || isOver) && !reduce
                   ? { scale: isNova ? 1.85 : 1.35, opacity: 0 }
                   : false
               }
