@@ -193,6 +193,15 @@ export function plannedDeficitPct(goal: Goal): number {
   return goal === "deficit" ? Math.round((1 - DEFICIT_FACTOR) * 100) : 0;
 }
 
+/** Фактичний % плану від поточної підтримки й денної цілі (не хардкод 15). */
+export function plannedDeficitPctFromTargets(
+  maintenance: number,
+  target: number,
+): number {
+  if (maintenance <= 0) return 0;
+  return Math.round(((maintenance - target) / maintenance) * 100);
+}
+
 /** % відхилення net від maintenance: −10 = дефіцит 10%, +5 = профіцит 5%. */
 export function pctVsMaintenance(netKcal: number, maintenance: number): number {
   if (maintenance <= 0) return 0;
@@ -229,6 +238,55 @@ export function classifyCalorieStance(input: {
   return "on_plan";
 }
 
+/**
+ * Вердикт журналу за СУМОЮ за період (не лише середнім %), щоб дні з
+ * перебором 2500+ при цілі ~2000 не маскувались «середнім −16%».
+ */
+export function classifyLedgerStance(input: {
+  balanceVsTarget: number;
+  balanceVsMaintenance: number;
+  loggedDays: number;
+  daysOverTarget: number;
+  target: number;
+  maintenance: number;
+  goal: Goal;
+}): CalorieStance {
+  const {
+    balanceVsTarget,
+    balanceVsMaintenance,
+    loggedDays,
+    daysOverTarget,
+    target,
+    maintenance,
+    goal,
+  } = input;
+  if (loggedDays <= 0 || maintenance <= 0) return "maintenance";
+
+  const avgVsTarget = balanceVsTarget / loggedDays;
+  const avgVsMaint = balanceVsMaintenance / loggedDays;
+  const band = Math.max(40, Math.round(target * 0.05));
+  // Багато днів над ціллю — навіть якщо хтось «відіграв» недоїданням
+  const overTargetHeavy = daysOverTarget >= Math.ceil(loggedDays / 2);
+
+  if (goal === "maintain") {
+    if (Math.abs(avgVsTarget) <= band) return "on_plan";
+    if (avgVsTarget > band) return "surplus";
+    return "deep";
+  }
+
+  // Над підтримкою в сумі або в середньому — справжній профіцит
+  if (avgVsMaint > maintenance * 0.03 || balanceVsMaintenance > maintenance * 0.5) {
+    return "surplus";
+  }
+  // Над денною ціллю в сумі / часто над ціллю, але ще під TDEE — м'який темп
+  if (avgVsTarget > band || (overTargetHeavy && balanceVsTarget > 0)) {
+    if (Math.abs(avgVsMaint) <= maintenance * 0.03) return "maintenance";
+    return "shallow";
+  }
+  if (avgVsTarget < -Math.round(target * 0.08)) return "deep";
+  return "on_plan";
+}
+
 /** Короткий український ярлик для промптів і UI. */
 export function stanceLabelUk(stance: CalorieStance, goal: Goal): string {
   if (goal === "maintain") {
@@ -245,9 +303,9 @@ export function stanceLabelUk(stance: CalorieStance, goal: Goal): string {
   }
   switch (stance) {
     case "on_plan":
-      return "дефіцит у плані (−15% від підтримки)";
+      return "дефіцит у плані відносно денної цілі";
     case "shallow":
-      return "м'який дефіцит (є, але слабший за план)";
+      return "м'який дефіцит (є, але слабший за план / були перебори)";
     case "deep":
       return "глибший дефіцит за план";
     case "maintenance":

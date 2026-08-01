@@ -7,8 +7,9 @@ import OpenAI from "openai";
 import { AiError, gptApiKey } from "@/lib/ai-error";
 import {
   classifyCalorieStance,
+  classifyLedgerStance,
   pctVsMaintenance,
-  plannedDeficitPct,
+  plannedDeficitPctFromTargets,
   stanceLabelUk,
   type Goal,
 } from "@/lib/calories";
@@ -253,34 +254,56 @@ function formatStanceBlock(input: {
   target: number;
   goal: Goal;
   scopeLabel: string;
+  /** Якщо є — вердикт за сумою періоду, а не лише середнім. */
+  ledger?: {
+    balanceVsTarget: number;
+    balanceVsMaintenance: number;
+    loggedDays: number;
+    daysOverTarget: number;
+  };
 }): string {
-  const { netKcal, maintenance, target, goal, scopeLabel } = input;
+  const { netKcal, maintenance, target, goal, scopeLabel, ledger } = input;
   const vsMaint = pctVsMaintenance(netKcal, maintenance);
-  const planned = plannedDeficitPct(goal);
-  const stance = classifyCalorieStance({
-    netKcal,
-    maintenance,
-    target,
-    goal,
-  });
+  const planned = plannedDeficitPctFromTargets(maintenance, target);
+  const stance = ledger
+    ? classifyLedgerStance({
+        balanceVsTarget: ledger.balanceVsTarget,
+        balanceVsMaintenance: ledger.balanceVsMaintenance,
+        loggedDays: ledger.loggedDays,
+        daysOverTarget: ledger.daysOverTarget,
+        target,
+        maintenance,
+        goal,
+      })
+    : classifyCalorieStance({
+        netKcal,
+        maintenance,
+        target,
+        goal,
+      });
   const vsMaintLabel =
     vsMaint === 0
       ? "рівно підтримка"
       : vsMaint < 0
-        ? `дефіцит ≈ ${vsMaint}% від підтримки`
+        ? `дефіцит ≈ ${Math.abs(vsMaint)}% від підтримки`
         : `профіцит ≈ +${vsMaint}% над підтримкою`;
   const planLine =
     goal === "deficit"
       ? `План дефіциту: −${planned}% від підтримки → денна ціль ${target} ккал.`
       : `План: триматись біля підтримки → денна ціль ${target} ккал.`;
+  const ledgerLine = ledger
+    ? `Сума vs ціль: ${ledger.balanceVsTarget >= 0 ? "+" : ""}${Math.round(ledger.balanceVsTarget)} ккал; vs підтримка: ${ledger.balanceVsMaintenance >= 0 ? "+" : ""}${Math.round(ledger.balanceVsMaintenance)} ккал; днів над ціллю: ${ledger.daysOverTarget}/${ledger.loggedDays}.`
+    : "";
 
   return `${scopeLabel}:
 Підтримка (TDEE): ${maintenance} ккал. ${planLine}
-Факт (net): ${netKcal} ккал → ${vsMaintLabel}.
+Факт (net середнє): ${netKcal} ккал → ${vsMaintLabel}.
+${ledgerLine}
 Готова оцінка темпу: ${stance} — ${stanceLabelUk(stance, goal)}.
-Інтерпретація для тебе: "shallow" / м'який дефіцит = НЕ зрив; "surplus" =
-профіцит лише над підтримкою; "on_plan" = у плані; "maintenance" = майже
-без дефіциту; "deep" = глибше за план.`;
+Інтерпретація для тебе: орієнтуйся на СУМУ vs ціль і дні над ціллю, не лише
+на середній %. "shallow" = дефіцит є, але слабший за план / були перебори;
+"surplus" = профіцит над підтримкою; "on_plan" = у плані; "maintenance" =
+майже без дефіциту; "deep" = глибше за план.`;
 }
 
 function buildDayPrompt(input: AdviceInput): string {
@@ -406,6 +429,13 @@ function buildWeekPrompt(input: WeekAdviceInput): string {
   const planned = input.targetCalories * logged.length;
   const eaten = logged.reduce((s, d) => s + d.calories, 0);
   const weekBalance = eaten - planned;
+  const balanceVsMaint = logged.reduce(
+    (s, d) => s + (d.calories - input.maintenanceCalories),
+    0,
+  );
+  const daysOverTarget = logged.filter(
+    (d) => d.calories > input.targetCalories,
+  ).length;
   const balanceLabel =
     logged.length === 0
       ? "немає днів із записами"
@@ -422,7 +452,13 @@ function buildWeekPrompt(input: WeekAdviceInput): string {
           maintenance: input.maintenanceCalories,
           target: input.targetCalories,
           goal: input.goal,
-          scopeLabel: "Калорійний темп тижня (середнє за дні з їжею)",
+          scopeLabel: "Калорійний темп тижня (сума + середнє за дні з їжею)",
+          ledger: {
+            balanceVsTarget: weekBalance,
+            balanceVsMaintenance: balanceVsMaint,
+            loggedDays: logged.length,
+            daysOverTarget,
+          },
         })
       : "Калорійний темп тижня: недостатньо записів.";
 

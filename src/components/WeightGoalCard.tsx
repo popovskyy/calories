@@ -14,6 +14,7 @@ import {
   useWeightHistory,
 } from "@/hooks/useQueries";
 import { shortDate } from "@/lib/date";
+import type { ForecastResponse } from "@/lib/types";
 
 export function WeightGoalCard() {
   const { user } = useCurrentUser();
@@ -62,9 +63,6 @@ export function WeightGoalCard() {
     loggedDays,
     totalDays,
     paceStatus,
-    avgDeficitPct,
-    plannedDeficitPct,
-    calorieStance,
   } = data;
 
   const totalSpan = Math.abs((startWeight ?? 0) - (targetWeight ?? 0));
@@ -87,12 +85,6 @@ export function WeightGoalCard() {
   } else if (paceStatus === "progressing" && projectedDate) {
     statusLabel = `Ціль ≈ ${shortDate(projectedDate)}`;
   }
-
-  const deficitNote = deficitPaceNote(
-    calorieStance,
-    avgDeficitPct,
-    plannedDeficitPct,
-  );
 
   return (
     <section className="mcard flex flex-col gap-3 p-[18px]">
@@ -139,36 +131,220 @@ export function WeightGoalCard() {
           startWeightDate={startWeightDate}
           targetWeight={targetWeight}
           targetDate={projectedDate}
+          ledgerWeight={expectedWeight}
         />
       ) : null}
 
-      <div>
-        <p className="text-[15px] font-semibold text-[var(--color-text)]">
-          Прогноз за журналом: {fmtKg(expectedWeight)}
-        </p>
-        <p className="mt-0.5 text-[13px] text-[var(--color-muted3)]">
-          за журналом — дані за {loggedDays} {pluralDays(loggedDays)} з{" "}
-          {totalDays}
-        </p>
-        {deficitNote ? (
-          <p className="mt-1 text-[13px] text-[var(--color-muted2)]">
-            {deficitNote}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex items-center justify-between text-[13px] text-[var(--color-muted2)]">
-        <span>
-          Залишилось {remainingKg.toFixed(1).replace(".", ",")} кг · {daysLeft}{" "}
-          {pluralDays(daysLeft ?? 0)}
-        </span>
-      </div>
+      <JournalForecastBlock data={data} remainingKg={remainingKg} />
 
       <p className="text-[11px] text-[var(--color-muted3)]">
         Оцінка орієнтовна: 7700 ккал ≈ 1 кг
       </p>
     </section>
   );
+}
+
+/** Блок «журнал vs ваги» — окремі рядки, без суцільного дрібного тексту. */
+function JournalForecastBlock({
+  data,
+  remainingKg,
+}: {
+  data: ForecastResponse;
+  remainingKg: number;
+}) {
+  const {
+    startWeight,
+    currentWeight,
+    expectedWeight,
+    loggedDays,
+    totalDays,
+    daysLeft,
+    paceStatus,
+    projectedDate,
+    maintenanceKcal,
+    targetKcal,
+    avgNetKcal,
+    balanceVsTargetKcal,
+    balanceVsMaintenanceKcal,
+    daysOverTarget,
+    calorieStance,
+    plannedDeficitPct,
+  } = data;
+
+  const scaleVsLedger =
+    currentWeight != null && expectedWeight != null
+      ? Math.round((currentWeight - expectedWeight) * 10) / 10
+      : null;
+
+  const balanceLine = formatBalanceLine(
+    balanceVsTargetKcal,
+    balanceVsMaintenanceKcal,
+    targetKcal,
+    daysOverTarget,
+    loggedDays,
+  );
+  const stanceLine = stanceSummary(
+    calorieStance,
+    plannedDeficitPct,
+    avgNetKcal,
+    maintenanceKcal,
+  );
+  const factVsLedgerLine = scaleGapLine(scaleVsLedger, calorieStance);
+
+  return (
+    <div className="flex flex-col gap-2.5 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-3">
+      <div>
+        <div className="text-[12px] font-medium uppercase tracking-wide text-[var(--color-muted3)]">
+          Вага за калоріями
+        </div>
+        <div className="mt-0.5 text-[18px] font-semibold tabular-nums text-[var(--color-text)]">
+          {fmtKg(expectedWeight)}
+        </div>
+        <p className="mt-0.5 text-[13px] text-[var(--color-muted2)]">
+          від старту {fmtKg(startWeight)} · журнал{" "}
+          {loggedDays}/{totalDays} {pluralDays(totalDays)}
+        </p>
+      </div>
+
+      {factVsLedgerLine ? (
+        <p
+          className="text-[13px] leading-snug"
+          style={{
+            color:
+              scaleVsLedger != null && scaleVsLedger < -0.15
+                ? "var(--color-green)"
+                : scaleVsLedger != null && scaleVsLedger > 0.15
+                  ? "var(--color-red)"
+                  : "var(--color-muted2)",
+          }}
+        >
+          {factVsLedgerLine}
+        </p>
+      ) : null}
+
+      <div className="h-px bg-[var(--color-divider)]" />
+
+      <div>
+        <div className="text-[12px] font-medium uppercase tracking-wide text-[var(--color-muted3)]">
+          Баланс журналу
+        </div>
+        {balanceLine ? (
+          <p className="mt-0.5 text-[14px] font-medium leading-snug text-[var(--color-text)]">
+            {balanceLine}
+          </p>
+        ) : (
+          <p className="mt-0.5 text-[13px] text-[var(--color-muted2)]">
+            Немає днів із записами їжі
+          </p>
+        )}
+        {stanceLine ? (
+          <p className="mt-1 text-[13px] leading-snug text-[var(--color-muted2)]">
+            {stanceLine}
+          </p>
+        ) : null}
+        {maintenanceKcal != null && targetKcal != null && avgNetKcal != null ? (
+          <p className="mt-1 text-[12px] tabular-nums text-[var(--color-muted3)]">
+            ціль {targetKcal} · підтримка {maintenanceKcal} · середнє{" "}
+            {avgNetKcal} ккал/день
+          </p>
+        ) : null}
+      </div>
+
+      <div className="h-px bg-[var(--color-divider)]" />
+
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-[13px] text-[var(--color-muted2)]">
+        <span>
+          Залишилось {remainingKg.toFixed(1).replace(".", ",")} кг
+        </span>
+        <span>
+          {paceStatus === "progressing" && projectedDate
+            ? `≈ ${daysLeft} ${pluralDays(daysLeft ?? 0)} · ${shortDate(projectedDate)}`
+            : paceStatus === "stalled"
+              ? "темп зважувань не до цілі"
+              : "мало зважувань для дати"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function formatBalanceLine(
+  vsTarget: number | null | undefined,
+  vsMaint: number | null | undefined,
+  target: number | null | undefined,
+  daysOver: number,
+  logged: number,
+): string | null {
+  if (vsTarget == null || logged <= 0) return null;
+  const abs = Math.abs(vsTarget);
+  const overHint =
+    daysOver > 0
+      ? ` · ${daysOver} ${pluralDays(daysOver)} над ціллю`
+      : "";
+  if (Math.abs(vsTarget) < Math.max(80, Math.round((target ?? 2000) * 0.02) * logged)) {
+    const maintBit =
+      vsMaint != null && Math.abs(vsMaint) >= 80
+        ? vsMaint < 0
+          ? ` (від підтримки ще −${Math.abs(vsMaint)} ккал)`
+          : ` (над підтримкою +${vsMaint} ккал)`
+        : "";
+    return `Біля денної цілі за період${maintBit}${overHint}`;
+  }
+  if (vsTarget > 0) {
+    return `Профіцит ≈ +${abs} ккал над денною ціллю${overHint}`;
+  }
+  return `Дефіцит ≈ −${abs} ккал від денної цілі${overHint}`;
+}
+
+function stanceSummary(
+  stance: ForecastResponse["calorieStance"] | undefined,
+  plannedPct: number | null | undefined,
+  avgNet: number | null | undefined,
+  maintenance: number | null | undefined,
+): string | null {
+  if (!stance || stance === "unknown" || plannedPct == null || plannedPct <= 0) {
+    return null;
+  }
+  const depth =
+    avgNet != null && maintenance != null && maintenance > 0
+      ? Math.abs(Math.round(((avgNet - maintenance) / maintenance) * 100))
+      : null;
+
+  switch (stance) {
+    case "on_plan":
+      return depth != null
+        ? `Темп ≈ −${depth}% від підтримки (план −${plannedPct}%) — ок.`
+        : `Темп у межах плану (−${plannedPct}% від підтримки).`;
+    case "shallow":
+      return `Дефіцит м’якший за план (−${plannedPct}%): худнеш повільніше, бо були дні над ціллю.`;
+    case "deep":
+      return `Глибше за план (−${plannedPct}%) — стеж, щоб не було замало їжі.`;
+    case "maintenance":
+      return `Майже без дефіциту при плані −${plannedPct}% — до цілі майже не рухає журнал.`;
+    case "surplus":
+      return `Журнал у профіциті над підтримкою — калорії тягнуть вагу вгору, не до цілі.`;
+    default:
+      return null;
+  }
+}
+
+function scaleGapLine(
+  scaleVsLedger: number | null,
+  stance: ForecastResponse["calorieStance"] | undefined,
+): string | null {
+  if (scaleVsLedger == null || Math.abs(scaleVsLedger) < 0.15) {
+    return "На вагах і за калоріями зараз близько.";
+  }
+  if (scaleVsLedger < 0) {
+    // current < expected → lighter on scale than journal predicts
+    const gap = Math.abs(scaleVsLedger).toFixed(1).replace(".", ",");
+    if (stance === "surplus" || stance === "shallow" || stance === "maintenance") {
+      return `На вагах легше на ${gap} кг, ніж каже журнал — але за калоріями темп слабкий або з переборами.`;
+    }
+    return `На вагах легше на ${gap} кг, ніж каже журнал (факт попереду калорій).`;
+  }
+  const gap = scaleVsLedger.toFixed(1).replace(".", ",");
+  return `На вагах важче на ${gap} кг, ніж каже журнал — калорії ще не «наздогнали» ваги.`;
 }
 
 /** Швидке зважування: одне поле і кнопка — без відкриття форми профілю. */
@@ -267,35 +443,6 @@ function Tile({
 function fmtKg(v: number | null | undefined): string {
   if (v == null) return "—";
   return `${v.toFixed(1).replace(".", ",")} кг`;
-}
-
-/** Пояснення глибини дефіциту: план −15% vs факт −10% тощо. */
-function deficitPaceNote(
-  stance: string | undefined,
-  avgPct: number | null | undefined,
-  plannedPct: number | null | undefined,
-): string | null {
-  if (avgPct == null || plannedPct == null || plannedPct <= 0) return null;
-  const fact =
-    avgPct === 0
-      ? "біля підтримки"
-      : avgPct < 0
-        ? `дефіцит ≈ ${avgPct}%`
-        : `профіцит ≈ +${avgPct}%`;
-  switch (stance) {
-    case "on_plan":
-      return `${fact} від підтримки — у плані (−${plannedPct}%).`;
-    case "shallow":
-      return `${fact} від підтримки при плані −${plannedPct}%: дефіцит є, темп м’якший — можна щільніше до плану.`;
-    case "deep":
-      return `${fact} від підтримки — глибше за план (−${plannedPct}%).`;
-    case "maintenance":
-      return `${fact}: майже без дефіциту при плані −${plannedPct}% — темп до цілі слабкий.`;
-    case "surplus":
-      return `${fact} над підтримкою — журнал тягне вагу вгору, не до цілі.`;
-    default:
-      return null;
-  }
 }
 
 function pluralDays(n: number): string {
