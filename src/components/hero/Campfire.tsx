@@ -88,14 +88,16 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const [pokeKey, setPokeKey] = useState(0);
   const treeTossing = treeTossKey !== null;
 
-  // База від калорій; колоди — дрібний бонус, поки не warning/out
+  // База від калорій; колоди — дрібний бонус, поки немає перебору
   const logBoost =
-    heat.extinguished || heat.warn
+    heat.overBy > 0
       ? 0
       : Math.min(logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_LOG_CAP);
-  const fireScale = heat.extinguished ? 0.08 : Math.max(0.12, heat.intensity + logBoost) * 1.15;
-  const fireOpacity = heat.extinguished ? 0.12 : 0.45 + heat.intensity * 0.55;
-  const flaring = !heat.extinguished && (active || treeTossing);
+  const fireScale = heat.extinguished
+    ? 0
+    : Math.max(0.1, heat.intensity + logBoost) * 1.12;
+  const fireOpacity = heat.extinguished ? 0 : 0.35 + heat.intensity * 0.65;
+  const flaring = !heat.extinguished && heat.overBy <= 0 && (active || treeTossing);
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -165,18 +167,20 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         </div>
       </div>
 
-      {/* ореол — сила від калорій */}
-      <div
-        className="fire-glow pointer-events-none absolute -bottom-1 left-1/2 h-[120px] w-[160px]"
-        style={{
-          background:
-            `radial-gradient(50% 60% at 50% 80%, ${fire.glow}, transparent 70%)`,
-          animation: heat.extinguished ? undefined : "fireGlow 2.8s ease-in-out infinite",
-          transform: `translateX(-50%) scale(${fireScale})`,
-          transformOrigin: "50% 100%",
-          opacity: heat.extinguished ? 0.08 : 0.35 + heat.intensity * 0.65,
-        }}
-      />
+      {/* ореол — сила від калорій; при out — немає */}
+      {!heat.extinguished ? (
+        <div
+          className="fire-glow pointer-events-none absolute -bottom-1 left-1/2 h-[120px] w-[160px]"
+          style={{
+            background:
+              `radial-gradient(50% 60% at 50% 80%, ${fire.glow}, transparent 70%)`,
+            animation: heat.overBy > 0 ? undefined : "fireGlow 2.8s ease-in-out infinite",
+            transform: `translateX(-50%) scale(${fireScale})`,
+            transformOrigin: "50% 100%",
+            opacity: 0.25 + heat.intensity * 0.7,
+          }}
+        />
+      ) : null}
 
       {/* попередження при переборі +100 */}
       {heat.warn ? (
@@ -231,132 +235,159 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
           if (!reduce) setPokeKey((k) => k + 1);
         }}
       >
-        {/* полум'я — висота від калорій (+ легкий бонус від колод) */}
-        <div
-          className="absolute inset-0"
-          style={{
-            transform: `scale(${fireScale})`,
-            transformOrigin: "50% 100%",
-            opacity: fireOpacity,
-          }}
-        >
+        {/* полум'я — ховаємо повністю при out (інакше flame* keyframes світять крізь opacity) */}
+        {!heat.extinguished ? (
           <div
-            key={`flames-${ritualKey}-${treeTossKey ?? "idle"}`}
             className="absolute inset-0"
             style={{
+              transform: `scale(${fireScale})`,
               transformOrigin: "50% 100%",
-              animation: flaring ? "fireFlare 2.6s forwards" : undefined,
+              opacity: fireOpacity,
             }}
           >
             <div
-              key={`poke-${pokeKey}`}
+              key={`flames-${ritualKey}-${treeTossKey ?? "idle"}`}
               className="absolute inset-0"
               style={{
                 transformOrigin: "50% 100%",
-                animation:
-                  pokeKey > 0 && !flaring && !reduce
-                    ? "firePoke 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
-                    : undefined,
+                animation: flaring ? "fireFlare 2.6s forwards" : undefined,
               }}
             >
-            <div
-              className="flame absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
-              style={{
-                borderRadius: FLAME_RADIUS,
-                background: fire.big,
-                filter: "blur(.35px)",
-                animation: "flameBig 0.95s linear infinite",
-              }}
-            />
-            <div
-              className="flame absolute bottom-[14px] left-1/2 -ml-[6px] h-11 w-[13px]"
-              style={{
-                borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-                background: fire.mid,
-                animation: "flameMid 0.72s linear infinite",
-              }}
-            />
-            <div
-              className="flame absolute bottom-[62px] left-1/2 -ml-[3px] h-3.5 w-1.5 rounded-full"
-              style={{
-                background: fire.tip,
-                filter: "blur(1px)",
-                animation: "flameTip 0.9s linear infinite",
-              }}
-            />
-            <div
-              className="flame absolute bottom-[11px] left-[36%] h-[28px] w-[11px]"
-              style={{
-                borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-                background: fire.side,
-                animation: "flameSide 0.88s linear infinite",
-                transformOrigin: "50% 100%",
-              }}
-            />
-            <div
-              className="flame absolute bottom-[11px] left-[58%] h-[24px] w-2.5"
-              style={{
-                borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-                background: fire.side,
-                animation: "flameSide 1.05s linear .28s infinite",
-                transformOrigin: "50% 100%",
-              }}
-            />
-            {/* додатковий «язик» для щільності */}
-            <div
-              className="flame absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
-              style={{
-                borderRadius: "50% 50% 45% 45% / 68% 68% 32% 32%",
-                background: fire.mid,
-                opacity: 0.75,
-                animation: "flameMid 0.8s linear .15s infinite",
-                transformOrigin: "50% 100%",
-              }}
-            />
+              <div
+                key={`poke-${pokeKey}`}
+                className="absolute inset-0"
+                style={{
+                  transformOrigin: "50% 100%",
+                  animation:
+                    pokeKey > 0 && !flaring && !reduce && heat.overBy <= 0
+                      ? "firePoke 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
+                      : undefined,
+                }}
+              >
+                <div
+                  className="flame absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
+                  style={{
+                    borderRadius: FLAME_RADIUS,
+                    background: fire.big,
+                    filter: "blur(.35px)",
+                    animation: heat.overBy > 0 ? undefined : "flameBig 0.95s linear infinite",
+                    opacity: heat.overBy > 0 ? 0.55 + heat.intensity * 0.4 : undefined,
+                  }}
+                />
+                <div
+                  className="flame absolute bottom-[14px] left-1/2 -ml-[6px] h-11 w-[13px]"
+                  style={{
+                    borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                    background: fire.mid,
+                    animation: heat.overBy > 0 ? undefined : "flameMid 0.72s linear infinite",
+                    opacity: heat.overBy > 0 ? 0.5 + heat.intensity * 0.4 : undefined,
+                  }}
+                />
+                <div
+                  className="flame absolute bottom-[62px] left-1/2 -ml-[3px] h-3.5 w-1.5 rounded-full"
+                  style={{
+                    background: fire.tip,
+                    filter: "blur(1px)",
+                    animation: heat.overBy > 0 ? undefined : "flameTip 0.9s linear infinite",
+                    opacity: heat.intensity,
+                  }}
+                />
+                <div
+                  className="flame absolute bottom-[11px] left-[36%] h-[28px] w-[11px]"
+                  style={{
+                    borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                    background: fire.side,
+                    animation: heat.overBy > 0 ? undefined : "flameSide 0.88s linear infinite",
+                    transformOrigin: "50% 100%",
+                    opacity: heat.overBy > 0 ? heat.intensity : undefined,
+                  }}
+                />
+                <div
+                  className="flame absolute bottom-[11px] left-[58%] h-[24px] w-2.5"
+                  style={{
+                    borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                    background: fire.side,
+                    animation:
+                      heat.overBy > 0 ? undefined : "flameSide 1.05s linear .28s infinite",
+                    transformOrigin: "50% 100%",
+                    opacity: heat.overBy > 0 ? heat.intensity : undefined,
+                  }}
+                />
+                <div
+                  className="flame absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
+                  style={{
+                    borderRadius: "50% 50% 45% 45% / 68% 68% 32% 32%",
+                    background: fire.mid,
+                    opacity: heat.overBy > 0 ? heat.intensity * 0.7 : 0.75,
+                    animation:
+                      heat.overBy > 0 ? undefined : "flameMid 0.8s linear .15s infinite",
+                    transformOrigin: "50% 100%",
+                  }}
+                />
 
-            {!reduce ? (
-              <>
-                <div
-                  className="fire-spark absolute bottom-14 left-1/2 h-1 w-1 rounded-full"
-                  style={{
-                    background: fire.spark[0],
-                    boxShadow: `0 0 6px ${fire.spark[0]}`,
-                    ["--ex" as string]: "-6px",
-                    animation: "emberRise 1.45s ease-out infinite",
-                  }}
-                />
-                <div
-                  className="fire-spark absolute bottom-12 left-[42%] h-[3px] w-[3px] rounded-full"
-                  style={{
-                    background: fire.spark[1],
-                    boxShadow: `0 0 6px ${fire.spark[1]}`,
-                    ["--ex" as string]: "10px",
-                    animation: "emberRise 1.7s ease-out .35s infinite",
-                  }}
-                />
-                <div
-                  className="fire-spark absolute bottom-16 left-[56%] h-0.5 w-0.5 rounded-full"
-                  style={{
-                    background: fire.spark[2],
-                    boxShadow: `0 0 5px ${fire.spark[2]}`,
-                    ["--ex" as string]: "-12px",
-                    animation: "emberRise 1.25s ease-out .7s infinite",
-                  }}
-                />
-                <div
-                  className="fire-spark absolute bottom-[50px] left-[48%] h-[2px] w-[2px] rounded-full"
-                  style={{
-                    background: fire.spark[0],
-                    boxShadow: `0 0 5px ${fire.spark[0]}`,
-                    ["--ex" as string]: "8px",
-                    animation: "emberRise 1.55s ease-out 1.05s infinite",
-                  }}
-                />
-              </>
-            ) : null}
+                {!reduce && heat.overBy <= 0 ? (
+                  <>
+                    <div
+                      className="fire-spark absolute bottom-14 left-1/2 h-1 w-1 rounded-full"
+                      style={{
+                        background: fire.spark[0],
+                        boxShadow: `0 0 6px ${fire.spark[0]}`,
+                        ["--ex" as string]: "-6px",
+                        animation: "emberRise 1.45s ease-out infinite",
+                      }}
+                    />
+                    <div
+                      className="fire-spark absolute bottom-12 left-[42%] h-[3px] w-[3px] rounded-full"
+                      style={{
+                        background: fire.spark[1],
+                        boxShadow: `0 0 6px ${fire.spark[1]}`,
+                        ["--ex" as string]: "10px",
+                        animation: "emberRise 1.7s ease-out .35s infinite",
+                      }}
+                    />
+                    <div
+                      className="fire-spark absolute bottom-16 left-[56%] h-0.5 w-0.5 rounded-full"
+                      style={{
+                        background: fire.spark[2],
+                        boxShadow: `0 0 5px ${fire.spark[2]}`,
+                        ["--ex" as string]: "-12px",
+                        animation: "emberRise 1.25s ease-out .7s infinite",
+                      }}
+                    />
+                    <div
+                      className="fire-spark absolute bottom-[50px] left-[48%] h-[2px] w-[2px] rounded-full"
+                      style={{
+                        background: fire.spark[0],
+                        boxShadow: `0 0 5px ${fire.spark[0]}`,
+                        ["--ex" as string]: "8px",
+                        animation: "emberRise 1.55s ease-out 1.05s infinite",
+                      }}
+                    />
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          /* холодне вугілля замість полум'я */
+          <div className="pointer-events-none absolute inset-0" aria-hidden>
+            <div
+              className="absolute bottom-[18px] left-1/2 h-3 w-10 -translate-x-1/2 rounded-full"
+              style={{
+                background: "radial-gradient(circle, #3a2a22 0%, #1a120e 70%)",
+                boxShadow: "0 0 8px rgba(40,20,10,.4)",
+              }}
+            />
+            <div
+              className="absolute bottom-[22px] left-[42%] h-2 w-2 rounded-full opacity-40"
+              style={{ background: "#2a1c14" }}
+            />
+            <div
+              className="absolute bottom-[20px] left-[55%] h-1.5 w-2.5 rounded-full opacity-35"
+              style={{ background: "#241810" }}
+            />
+          </div>
+        )}
 
         {/* дрова — компактніші */}
         <div className="absolute bottom-0 left-1/2 -ml-[58px] h-8 w-[116px]">

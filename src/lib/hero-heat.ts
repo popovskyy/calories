@@ -1,16 +1,16 @@
 /**
  * Візуальна «сила» вогню / лампи від денних калорій (net на герої).
  *
- * 0 → ледь жевріє; до цілі росте; від +100 — загасає з попередженням;
- * від +300 — тухне (як Peppa OVER_PUNISH_KCAL).
+ * До цілі — росте. Будь-який перебір одразу гасить силу;
+ * від +100 — попередження; від +300 — повністю тухне.
  */
 
 import { OVER_PUNISH_KCAL } from "@/lib/economy";
 
-/** Починає загасати й показує попередження. */
+/** Текст «обережно…». */
 export const HERO_HEAT_WARN_OVER_KCAL = 100;
 
-/** Повністю тухне. */
+/** Повністю тухне (як Peppa). */
 export const HERO_HEAT_OUT_OVER_KCAL = OVER_PUNISH_KCAL;
 
 export type HeroHeatPhase = "rising" | "full" | "warning" | "out";
@@ -34,35 +34,42 @@ export function heroHeatFromCalories(consumed: number, target: number): HeroHeat
   const overBy = consumed - safeTarget;
   const progress = Math.min(1, Math.max(0, consumed / safeTarget));
 
-  let phase: HeroHeatPhase;
-  if (overBy >= HERO_HEAT_OUT_OVER_KCAL) phase = "out";
-  else if (overBy >= HERO_HEAT_WARN_OVER_KCAL) phase = "warning";
-  else if (progress >= 0.97) phase = "full";
-  else phase = "rising";
-
-  let intensity: number;
-  if (phase === "out") {
-    intensity = 0;
-  } else if (phase === "warning") {
-    const span = HERO_HEAT_OUT_OVER_KCAL - HERO_HEAT_WARN_OVER_KCAL;
-    const t = clamp((overBy - HERO_HEAT_WARN_OVER_KCAL) / span, 0, 1);
-    // +100 → ~0.92, +300 → ~0.08 (ще жевріє перед «out»)
-    intensity = 0.92 - t * 0.84;
-  } else {
-    // 0 ккал → ледь (0.14), ціль → 1
-    intensity = 0.14 + progress * 0.86;
+  // Перебір: лінійно гасне від першої зайвої ккал → 0 на +300
+  if (overBy >= HERO_HEAT_OUT_OVER_KCAL) {
+    return {
+      overBy,
+      progress: 1,
+      phase: "out",
+      intensity: 0,
+      warn: false,
+      extinguished: true,
+    };
   }
+
+  if (overBy > 0) {
+    const t = overBy / HERO_HEAT_OUT_OVER_KCAL; // 0..1
+    const intensity = Math.max(0.04, 1 - t);
+    const warn = overBy >= HERO_HEAT_WARN_OVER_KCAL;
+    return {
+      overBy,
+      progress: 1,
+      phase: warn ? "warning" : "full",
+      intensity,
+      warn,
+      extinguished: false,
+    };
+  }
+
+  // Недобір / рівно ціль
+  const phase: HeroHeatPhase = progress >= 0.97 ? "full" : "rising";
+  const intensity = 0.14 + progress * 0.86;
 
   return {
     overBy,
     progress,
     phase,
     intensity,
-    warn: phase === "warning",
-    extinguished: phase === "out",
+    warn: false,
+    extinguished: false,
   };
-}
-
-function clamp(n: number, lo: number, hi: number) {
-  return Math.min(hi, Math.max(lo, n));
 }
