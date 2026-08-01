@@ -88,16 +88,18 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const [pokeKey, setPokeKey] = useState(0);
   const treeTossing = treeTossKey !== null;
 
-  // База від калорій; колоди — дрібний бонус, поки немає перебору
+  // База від калорій; колоди — дрібний бонус, поки не warning/out
   const logBoost =
-    heat.overBy > 0
+    heat.extinguished || heat.warn
       ? 0
       : Math.min(logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_LOG_CAP);
   const fireScale = heat.extinguished
     ? 0
     : Math.max(0.1, heat.intensity + logBoost) * 1.12;
   const fireOpacity = heat.extinguished ? 0 : 0.35 + heat.intensity * 0.65;
-  const flaring = !heat.extinguished && heat.overBy <= 0 && (active || treeTossing);
+  // Легкий перебір (+40 тощо) — ще горить живо; ритуал/іскри гасимо лише від warning
+  const healthy = !heat.extinguished && !heat.warn;
+  const flaring = healthy && (active || treeTossing);
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -174,7 +176,11 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
           style={{
             background:
               `radial-gradient(50% 60% at 50% 80%, ${fire.glow}, transparent 70%)`,
-            animation: heat.overBy > 0 ? undefined : "fireGlow 2.8s ease-in-out infinite",
+            animation: reduce
+              ? undefined
+              : heat.warn
+                ? "fireGlow 4.2s ease-in-out infinite"
+                : "fireGlow 2.8s ease-in-out infinite",
             transform: `translateX(-50%) scale(${fireScale})`,
             transformOrigin: "50% 100%",
             opacity: 0.25 + heat.intensity * 0.7,
@@ -253,119 +259,133 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                 animation: flaring ? "fireFlare 2.6s forwards" : undefined,
               }}
             >
+            <div
+              key={`poke-${pokeKey}`}
+              className="absolute inset-0"
+              style={{
+                transformOrigin: "50% 100%",
+                animation:
+                  pokeKey > 0 && !flaring && !reduce && healthy
+                    ? "firePoke 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
+                    : undefined,
+              }}
+            >
               <div
-                key={`poke-${pokeKey}`}
-                className="absolute inset-0"
+                className="flame absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
                 style={{
-                  transformOrigin: "50% 100%",
-                  animation:
-                    pokeKey > 0 && !flaring && !reduce && heat.overBy <= 0
-                      ? "firePoke 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
-                      : undefined,
+                  borderRadius: FLAME_RADIUS,
+                  background: fire.big,
+                  filter: "blur(.35px)",
+                  animation: reduce
+                    ? undefined
+                    : heat.warn
+                      ? "flameBig 1.35s linear infinite"
+                      : "flameBig 0.95s linear infinite",
                 }}
-              >
-                <div
-                  className="flame absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
-                  style={{
-                    borderRadius: FLAME_RADIUS,
-                    background: fire.big,
-                    filter: "blur(.35px)",
-                    animation: heat.overBy > 0 ? undefined : "flameBig 0.95s linear infinite",
-                    opacity: heat.overBy > 0 ? 0.55 + heat.intensity * 0.4 : undefined,
-                  }}
-                />
-                <div
-                  className="flame absolute bottom-[14px] left-1/2 -ml-[6px] h-11 w-[13px]"
-                  style={{
-                    borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-                    background: fire.mid,
-                    animation: heat.overBy > 0 ? undefined : "flameMid 0.72s linear infinite",
-                    opacity: heat.overBy > 0 ? 0.5 + heat.intensity * 0.4 : undefined,
-                  }}
-                />
-                <div
-                  className="flame absolute bottom-[62px] left-1/2 -ml-[3px] h-3.5 w-1.5 rounded-full"
-                  style={{
-                    background: fire.tip,
-                    filter: "blur(1px)",
-                    animation: heat.overBy > 0 ? undefined : "flameTip 0.9s linear infinite",
-                    opacity: heat.intensity,
-                  }}
-                />
-                <div
-                  className="flame absolute bottom-[11px] left-[36%] h-[28px] w-[11px]"
-                  style={{
-                    borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-                    background: fire.side,
-                    animation: heat.overBy > 0 ? undefined : "flameSide 0.88s linear infinite",
-                    transformOrigin: "50% 100%",
-                    opacity: heat.overBy > 0 ? heat.intensity : undefined,
-                  }}
-                />
-                <div
-                  className="flame absolute bottom-[11px] left-[58%] h-[24px] w-2.5"
-                  style={{
-                    borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-                    background: fire.side,
-                    animation:
-                      heat.overBy > 0 ? undefined : "flameSide 1.05s linear .28s infinite",
-                    transformOrigin: "50% 100%",
-                    opacity: heat.overBy > 0 ? heat.intensity : undefined,
-                  }}
-                />
-                <div
-                  className="flame absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
-                  style={{
-                    borderRadius: "50% 50% 45% 45% / 68% 68% 32% 32%",
-                    background: fire.mid,
-                    opacity: heat.overBy > 0 ? heat.intensity * 0.7 : 0.75,
-                    animation:
-                      heat.overBy > 0 ? undefined : "flameMid 0.8s linear .15s infinite",
-                    transformOrigin: "50% 100%",
-                  }}
-                />
+              />
+              <div
+                className="flame absolute bottom-[14px] left-1/2 -ml-[6px] h-11 w-[13px]"
+                style={{
+                  borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                  background: fire.mid,
+                  animation: reduce
+                    ? undefined
+                    : heat.warn
+                      ? "flameMid 1.05s linear infinite"
+                      : "flameMid 0.72s linear infinite",
+                }}
+              />
+              <div
+                className="flame absolute bottom-[62px] left-1/2 -ml-[3px] h-3.5 w-1.5 rounded-full"
+                style={{
+                  background: fire.tip,
+                  filter: "blur(1px)",
+                  animation: reduce ? undefined : "flameTip 0.9s linear infinite",
+                  opacity: heat.warn ? heat.intensity : undefined,
+                }}
+              />
+              <div
+                className="flame absolute bottom-[11px] left-[36%] h-[28px] w-[11px]"
+                style={{
+                  borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                  background: fire.side,
+                  animation: reduce
+                    ? undefined
+                    : heat.warn
+                      ? "flameSide 1.2s linear infinite"
+                      : "flameSide 0.88s linear infinite",
+                  transformOrigin: "50% 100%",
+                }}
+              />
+              <div
+                className="flame absolute bottom-[11px] left-[58%] h-[24px] w-2.5"
+                style={{
+                  borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                  background: fire.side,
+                  animation: reduce
+                    ? undefined
+                    : heat.warn
+                      ? "flameSide 1.4s linear .28s infinite"
+                      : "flameSide 1.05s linear .28s infinite",
+                  transformOrigin: "50% 100%",
+                }}
+              />
+              <div
+                className="flame absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
+                style={{
+                  borderRadius: "50% 50% 45% 45% / 68% 68% 32% 32%",
+                  background: fire.mid,
+                  opacity: heat.warn ? Math.max(0.35, heat.intensity * 0.75) : 0.75,
+                  animation: reduce
+                    ? undefined
+                    : heat.warn
+                      ? "flameMid 1.1s linear .15s infinite"
+                      : "flameMid 0.8s linear .15s infinite",
+                  transformOrigin: "50% 100%",
+                }}
+              />
 
-                {!reduce && heat.overBy <= 0 ? (
-                  <>
-                    <div
-                      className="fire-spark absolute bottom-14 left-1/2 h-1 w-1 rounded-full"
-                      style={{
-                        background: fire.spark[0],
-                        boxShadow: `0 0 6px ${fire.spark[0]}`,
-                        ["--ex" as string]: "-6px",
-                        animation: "emberRise 1.45s ease-out infinite",
-                      }}
-                    />
-                    <div
-                      className="fire-spark absolute bottom-12 left-[42%] h-[3px] w-[3px] rounded-full"
-                      style={{
-                        background: fire.spark[1],
-                        boxShadow: `0 0 6px ${fire.spark[1]}`,
-                        ["--ex" as string]: "10px",
-                        animation: "emberRise 1.7s ease-out .35s infinite",
-                      }}
-                    />
-                    <div
-                      className="fire-spark absolute bottom-16 left-[56%] h-0.5 w-0.5 rounded-full"
-                      style={{
-                        background: fire.spark[2],
-                        boxShadow: `0 0 5px ${fire.spark[2]}`,
-                        ["--ex" as string]: "-12px",
-                        animation: "emberRise 1.25s ease-out .7s infinite",
-                      }}
-                    />
-                    <div
-                      className="fire-spark absolute bottom-[50px] left-[48%] h-[2px] w-[2px] rounded-full"
-                      style={{
-                        background: fire.spark[0],
-                        boxShadow: `0 0 5px ${fire.spark[0]}`,
-                        ["--ex" as string]: "8px",
-                        animation: "emberRise 1.55s ease-out 1.05s infinite",
-                      }}
-                    />
-                  </>
-                ) : null}
-              </div>
+              {!reduce && healthy ? (
+                <>
+                  <div
+                    className="fire-spark absolute bottom-14 left-1/2 h-1 w-1 rounded-full"
+                    style={{
+                      background: fire.spark[0],
+                      boxShadow: `0 0 6px ${fire.spark[0]}`,
+                      ["--ex" as string]: "-6px",
+                      animation: "emberRise 1.45s ease-out infinite",
+                    }}
+                  />
+                  <div
+                    className="fire-spark absolute bottom-12 left-[42%] h-[3px] w-[3px] rounded-full"
+                    style={{
+                      background: fire.spark[1],
+                      boxShadow: `0 0 6px ${fire.spark[1]}`,
+                      ["--ex" as string]: "10px",
+                      animation: "emberRise 1.7s ease-out .35s infinite",
+                    }}
+                  />
+                  <div
+                    className="fire-spark absolute bottom-16 left-[56%] h-0.5 w-0.5 rounded-full"
+                    style={{
+                      background: fire.spark[2],
+                      boxShadow: `0 0 5px ${fire.spark[2]}`,
+                      ["--ex" as string]: "-12px",
+                      animation: "emberRise 1.25s ease-out .7s infinite",
+                    }}
+                  />
+                  <div
+                    className="fire-spark absolute bottom-[50px] left-[48%] h-[2px] w-[2px] rounded-full"
+                    style={{
+                      background: fire.spark[0],
+                      boxShadow: `0 0 5px ${fire.spark[0]}`,
+                      ["--ex" as string]: "8px",
+                      animation: "emberRise 1.55s ease-out 1.05s infinite",
+                    }}
+                  />
+                </>
+              ) : null}
+            </div>
             </div>
           </div>
         ) : (

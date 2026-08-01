@@ -1,13 +1,13 @@
 /**
  * Візуальна «сила» вогню / лампи від денних калорій (net на герої).
  *
- * До цілі — росте. Будь-який перебір одразу гасить силу;
- * від +100 — попередження; від +300 — повністю тухне.
+ * До цілі — росте. Легкий перебір (до +100) лишає повне полум'я;
+ * від +100 — попередження й поступове загасання; від +300 — тухне.
  */
 
 import { OVER_PUNISH_KCAL } from "@/lib/economy";
 
-/** Текст «обережно…». */
+/** Починає загасати й показує попередження. */
 export const HERO_HEAT_WARN_OVER_KCAL = 100;
 
 /** Повністю тухне (як Peppa). */
@@ -34,7 +34,6 @@ export function heroHeatFromCalories(consumed: number, target: number): HeroHeat
   const overBy = consumed - safeTarget;
   const progress = Math.min(1, Math.max(0, consumed / safeTarget));
 
-  // Перебір: лінійно гасне від першої зайвої ккал → 0 на +300
   if (overBy >= HERO_HEAT_OUT_OVER_KCAL) {
     return {
       overBy,
@@ -46,30 +45,36 @@ export function heroHeatFromCalories(consumed: number, target: number): HeroHeat
     };
   }
 
-  if (overBy > 0) {
-    const t = overBy / HERO_HEAT_OUT_OVER_KCAL; // 0..1
-    const intensity = Math.max(0.04, 1 - t);
-    const warn = overBy >= HERO_HEAT_WARN_OVER_KCAL;
+  if (overBy >= HERO_HEAT_WARN_OVER_KCAL) {
+    const span = HERO_HEAT_OUT_OVER_KCAL - HERO_HEAT_WARN_OVER_KCAL;
+    const t = clamp((overBy - HERO_HEAT_WARN_OVER_KCAL) / span, 0, 1);
+    // +100 → ~0.92, +300 → ~0.08 (ще жевріє перед «out»)
+    // Scale з origin знизу дає відчуття «сповзання» полум'я.
     return {
       overBy,
       progress: 1,
-      phase: warn ? "warning" : "full",
-      intensity,
-      warn,
+      phase: "warning",
+      intensity: 0.92 - t * 0.84,
+      warn: true,
       extinguished: false,
     };
   }
 
-  // Недобір / рівно ціль
-  const phase: HeroHeatPhase = progress >= 0.97 ? "full" : "rising";
-  const intensity = 0.14 + progress * 0.86;
+  // Недобір / рівно ціль / легкий перебір (< +100) — горить на повну силу прогресу
+  const phase: HeroHeatPhase = progress >= 0.97 || overBy > 0 ? "full" : "rising";
+  const intensity =
+    overBy > 0 ? 1 : 0.14 + progress * 0.86;
 
   return {
     overBy,
-    progress,
+    progress: overBy > 0 ? 1 : progress,
     phase,
     intensity,
     warn: false,
     extinguished: false,
   };
+}
+
+function clamp(n: number, lo: number, hi: number) {
+  return Math.min(hi, Math.max(lo, n));
 }
