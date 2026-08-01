@@ -16,10 +16,12 @@ import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import { useCurrentUser, useDashboard, useEpics } from "@/hooks/useQueries";
-import { calcMacroTargets } from "@/lib/calories";
+import { calcMacroTargets, calcMaintenanceCalories } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
+import { weekFilledStats } from "@/lib/week-stats";
 import type { DashboardDay } from "@/lib/types";
+import type { Goal } from "@/lib/calories";
 
 const WeeklyChart = dynamic(
   () => import("@/components/WeeklyChart").then((m) => m.WeeklyChart),
@@ -211,6 +213,14 @@ export function OverviewTab() {
                       <WeekAvgLine
                         days={dash.data.days}
                         target={user.targetCalories}
+                        maintenance={calcMaintenanceCalories({
+                          birthYear: user.birthYear,
+                          birthMonth: user.birthMonth,
+                          sex: user.sex,
+                          weightKg: user.weight,
+                          heightCm: user.height,
+                        })}
+                        goal={user.goal}
                       />
                     ) : null}
                   </div>
@@ -236,19 +246,21 @@ export function OverviewTab() {
   );
 }
 
-/** Середнє net за дні з записами їжі: сума ÷ кількість заповнених днів. */
+/** Середнє + норми: підтримка (без дефіциту), ціль дефіциту, факт середнє. */
 function WeekAvgLine({
   days,
   target,
+  maintenance,
+  goal,
 }: {
   days: DashboardDay[];
   target: number;
+  maintenance: number;
+  goal: Goal;
 }) {
-  const filled = days.filter((d) => (d.consumedCalories ?? 0) > 0 || d.totalCalories > 0);
-  if (filled.length === 0) return null;
-  const avg = Math.round(
-    filled.reduce((s, d) => s + d.totalCalories, 0) / filled.length,
-  );
+  const stats = weekFilledStats(days, target);
+  if (!stats) return null;
+  const { avgNetKcal: avg, loggedDays } = stats;
   const delta = avg - target;
   const deltaLabel =
     Math.abs(delta) < 30
@@ -257,11 +269,19 @@ function WeekAvgLine({
         ? `+${delta.toLocaleString("uk-UA")} до цілі`
         : `−${Math.abs(delta).toLocaleString("uk-UA")} від цілі`;
 
+  const normsLine =
+    goal === "deficit"
+      ? `підтримка ${maintenance.toLocaleString("uk-UA")} · дефіцит ${target.toLocaleString("uk-UA")}`
+      : `підтримка ${maintenance.toLocaleString("uk-UA")}`;
+
   return (
-    <p className="mt-0.5 text-[13px] tabular-nums text-[var(--color-muted2)]">
-      середнє {avg.toLocaleString("uk-UA")} · {filled.length}{" "}
-      {pluralDaysUk(filled.length)} · {deltaLabel}
-    </p>
+    <div className="mt-0.5 space-y-0.5 text-[13px] tabular-nums text-[var(--color-muted2)]">
+      <p>
+        середнє {avg.toLocaleString("uk-UA")} · {loggedDays}{" "}
+        {pluralDaysUk(loggedDays)} · {deltaLabel}
+      </p>
+      <p className="text-[12px] text-[var(--color-muted3)]">{normsLine}</p>
+    </div>
   );
 }
 

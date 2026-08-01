@@ -9,16 +9,19 @@ import { WeightChart } from "@/components/WeightChart";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   useCurrentUser,
+  useDashboard,
   useForecast,
   useLogWeight,
   useWeightHistory,
 } from "@/hooks/useQueries";
 import { shortDate } from "@/lib/date";
+import { weekFilledStats, type WeekFilledStats } from "@/lib/week-stats";
 import type { ForecastResponse } from "@/lib/types";
 
 export function WeightGoalCard() {
   const { user } = useCurrentUser();
   const { data, isLoading } = useForecast();
+  const dash = useDashboard();
   const { data: history } = useWeightHistory();
   const [formOpen, setFormOpen] = useState(false);
 
@@ -61,6 +64,12 @@ export function WeightGoalCard() {
     daysLeft,
     paceStatus,
   } = data;
+
+  const target = user?.targetCalories ?? data.targetKcal ?? 0;
+  const weekStats =
+    dash.data && target > 0
+      ? weekFilledStats(dash.data.days, target)
+      : null;
 
   const totalSpan = Math.abs((startWeight ?? 0) - (targetWeight ?? 0));
   const done =
@@ -131,7 +140,12 @@ export function WeightGoalCard() {
         />
       ) : null}
 
-      <SimpleBalanceBlock data={data} remainingKg={remainingKg} />
+      <SimpleBalanceBlock
+        weekStats={weekStats}
+        target={target}
+        remainingKg={remainingKg}
+        forecast={data}
+      />
 
       <p className="text-[11px] text-[var(--color-muted3)]">
         Оцінка орієнтовна: 7700 ккал ≈ 1 кг
@@ -141,29 +155,28 @@ export function WeightGoalCard() {
 }
 
 /**
- * Простий баланс: сума net за дні з записами vs денна ціль × ті самі дні.
- * Без «ваги за калоріями» і % від підтримки.
+ * Баланс цього тижня — ті самі цифри, що «Цей тиждень» (dashboard),
+ * не forecast від старту цілі.
  */
 function SimpleBalanceBlock({
-  data,
+  weekStats,
+  target,
   remainingKg,
+  forecast,
 }: {
-  data: ForecastResponse;
+  weekStats: WeekFilledStats | null;
+  target: number;
   remainingKg: number;
+  forecast: ForecastResponse;
 }) {
-  const {
-    loggedDays,
-    daysLeft,
-    paceStatus,
-    projectedDate,
-    targetKcal,
-    avgNetKcal,
-    balanceVsTargetKcal,
-  } = data;
+  const { daysLeft, paceStatus, projectedDate } = forecast;
+  const loggedDays = weekStats?.loggedDays ?? 0;
+  const avgNetKcal = weekStats?.avgNetKcal ?? null;
+  const balanceVsTargetKcal = weekStats?.balanceVsTargetKcal ?? null;
 
   const balanceLine = formatTargetBalance(
     balanceVsTargetKcal,
-    targetKcal,
+    target,
     loggedDays,
   );
 
@@ -171,7 +184,7 @@ function SimpleBalanceBlock({
     <div className="flex flex-col gap-2 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-3">
       <div>
         <div className="text-[12px] font-medium uppercase tracking-wide text-[var(--color-muted3)]">
-          Баланс за період
+          Баланс за тиждень
         </div>
         {balanceLine ? (
           <p className="mt-0.5 text-[14px] font-medium leading-snug text-[var(--color-text)]">
@@ -182,9 +195,10 @@ function SimpleBalanceBlock({
             Немає днів із записами їжі
           </p>
         )}
-        {targetKcal != null && avgNetKcal != null && loggedDays > 0 ? (
+        {avgNetKcal != null && loggedDays > 0 ? (
           <p className="mt-1 text-[13px] tabular-nums text-[var(--color-muted2)]">
-            середнє {avgNetKcal} · ціль {targetKcal} ккал/день · {loggedDays}{" "}
+            середнє {avgNetKcal.toLocaleString("uk-UA")} · ціль{" "}
+            {target.toLocaleString("uk-UA")} ккал/день · {loggedDays}{" "}
             {pluralDays(loggedDays)} із записами
           </p>
         ) : null}
@@ -222,9 +236,9 @@ function formatTargetBalance(
     return `Біля денної цілі за ${logged} ${pluralDays(logged)} із записами`;
   }
   if (vsTarget > 0) {
-    return `Профіцит ≈ +${abs} ккал над денною ціллю · ${logged} ${pluralDays(logged)} із записами`;
+    return `Профіцит ≈ +${abs.toLocaleString("uk-UA")} ккал над денною ціллю · ${logged} ${pluralDays(logged)} із записами`;
   }
-  return `Дефіцит ≈ −${abs} ккал від денної цілі · ${logged} ${pluralDays(logged)} із записами`;
+  return `Дефіцит ≈ −${abs.toLocaleString("uk-UA")} ккал від денної цілі · ${logged} ${pluralDays(logged)} із записами`;
 }
 
 /** Швидке зважування: одне поле і кнопка — без відкриття форми профілю. */
