@@ -81,7 +81,7 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
 
   // Сила лампи від калорій (той самий heroHeat, що й у вогнища).
   const lampPower = heat.extinguished ? 0.04 : heat.intensity;
-  const lampDim = heat.extinguished || heat.warn;
+  const lampDim = heat.extinguished || heat.dying;
 
   // Куплена рамка «Неон» перефарбовує світло маяка — інакше преміум-тема
   // просто з'їдала покупку (рамки не було видно взагалі).
