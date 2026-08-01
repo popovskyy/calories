@@ -89,15 +89,15 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
   return (
     <div
       /* Ближче до вогню, щоб не вилазити за край екрана */
-      className={`absolute bottom-[16px] z-[3] w-[86px] touch-manipulation select-none ${
-        side === "left" ? "left-[6%]" : "right-[6%]"
+      className={`absolute bottom-[16px] z-[3] w-[100px] touch-manipulation select-none overflow-visible ${
+        side === "left" ? "left-[5%]" : "right-[5%]"
       }`}
       aria-hidden
     >
       {showTree ? (
         <button
           type="button"
-          className={`relative mx-auto block h-[140px] w-[80px] border-0 bg-transparent p-0 ${
+          className={`relative mx-auto block h-[140px] w-[92px] overflow-visible border-0 bg-transparent p-0 ${
             canChop ? "cursor-pointer" : "cursor-default"
           }`}
           style={{
@@ -114,8 +114,23 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
         >
           <span className="absolute inset-0 z-[2]" />
 
+          {/* Сокира з’являється й б’є в стовбур */}
+          {canChop && shakeKey > 0 && !reduce ? (
+            <div
+              key={`axe-${shakeKey}`}
+              className="camp-axe"
+              style={{
+                animation: `${
+                  side === "left" ? "axeSwingLeft" : "axeSwingRight"
+                } 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards`,
+              }}
+            >
+              <AxeVisual />
+            </div>
+          ) : null}
+
           <div
-            className="pointer-events-none absolute inset-0"
+            className="pointer-events-none absolute inset-0 overflow-visible"
             style={
               phase === "falling" && !reduce
                 ? {
@@ -139,16 +154,22 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
               style={
                 canChop && shakeKey > 0 && !reduce
                   ? {
-                      animation: "treeChopHit 0.28s cubic-bezier(0.22, 1, 0.36, 1)",
+                      /* удар синхронно з моментом контакту сокири (~52%) */
+                      animation:
+                        "treeChopHit 0.28s 0.18s cubic-bezier(0.22, 1, 0.36, 1) both",
                       ["--hit-dir" as string]: String(leanSign),
                     }
                   : undefined
               }
             >
               <PineVisual chops={chops} />
-              {/* Тріски при ударі */}
               {canChop && shakeKey > 0 && !reduce ? (
-                <span key={`chip-${shakeKey}`} className="tree-chips" aria-hidden />
+                <span
+                  key={`chip-${shakeKey}`}
+                  className="tree-chips"
+                  style={{ animation: "treeChipFly 0.35s ease-out 0.18s both forwards" }}
+                  aria-hidden
+                />
               ) : null}
             </div>
           </div>
@@ -192,6 +213,49 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function AxeVisual() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden>
+      {/* держак */}
+      <path
+        d="M22 8 L12 30"
+        stroke="#6b4424"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M21.2 9.2 L12.8 28.5"
+        stroke="#a67a42"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        opacity="0.7"
+      />
+      {/* обух / лезо */}
+      <path
+        d="M18 6.5
+           C22 4.5 28 5 30.5 8.5
+           C31.5 10 31 12 29 13.2
+           L20 17.5
+           L17.5 12.5
+           Z"
+        fill="#8a96a3"
+      />
+      <path
+        d="M19.5 8
+           C23 6.5 27.5 7 29.2 9.5
+           C29.8 10.5 29.4 11.6 28 12.4
+           L21 15.5
+           L19 11.2
+           Z"
+        fill="#c5d0db"
+        opacity="0.85"
+      />
+      {/* кріплення */}
+      <circle cx="20.5" fill="#3d2814" cy="13.5" r="1.6" />
+    </svg>
   );
 }
 

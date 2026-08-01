@@ -2096,6 +2096,62 @@ html[data-theme="minecraft"] .rounded-full {
   }
   100% { transform: translateX(0) rotate(0deg) scale(1, 1); }
 }
+/* Сокира: замах → удар у стовбур → зникає */
+@keyframes axeSwingRight {
+  0% {
+    opacity: 0;
+    transform: translate(22px, -18px) rotate(-70deg) scale(0.6);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(16px, -12px) rotate(-58deg) scale(1);
+  }
+  52% {
+    opacity: 1;
+    transform: translate(-2px, 10px) rotate(22deg) scale(1.05);
+  }
+  68% {
+    opacity: 1;
+    transform: translate(1px, 8px) rotate(12deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(14px, -4px) rotate(-25deg) scale(0.8);
+  }
+}
+@keyframes axeSwingLeft {
+  0% {
+    opacity: 0;
+    transform: translate(-22px, -18px) rotate(70deg) scale(0.6) scaleX(-1);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-16px, -12px) rotate(58deg) scale(1) scaleX(-1);
+  }
+  52% {
+    opacity: 1;
+    transform: translate(2px, 10px) rotate(-22deg) scale(1.05) scaleX(-1);
+  }
+  68% {
+    opacity: 1;
+    transform: translate(-1px, 8px) rotate(-12deg) scale(1) scaleX(-1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-14px, -4px) rotate(25deg) scale(0.8) scaleX(-1);
+  }
+}
+.camp-axe {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  bottom: 34%;
+  width: 36px;
+  height: 36px;
+  margin-left: -18px;
+  z-index: 4;
+  transform-origin: 70% 85%;
+}
 @keyframes treeFall {
   0% { transform: rotate(var(--lean, 10deg)) translateY(0) scale(1); opacity: 1; }
   55% { transform: rotate(calc(var(--lean, 10deg) * 3.2)) translateY(4px) scale(0.98); opacity: 1; }
@@ -2349,8 +2405,12 @@ html[data-theme="minecraft"] .rounded-full {
   .camp-tree-grow,
   .camp-tree-shake,
   .camp-tree-fall,
+  .camp-axe,
   .tree-chips {
     animation: none !important;
+  }
+  .camp-axe {
+    display: none !important;
   }
   .camp-tree-grow {
     transform: none !important;
