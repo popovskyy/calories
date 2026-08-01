@@ -246,6 +246,11 @@ export interface ForecastResponse {
   startWeightDate: string | null;
   currentWeight: number | null;
   targetWeight: number | null;
+  /**
+   * Вага, яку «прогнозує» журнал калорій від старту (не майбутня вага).
+   * Порівнюй із currentWeight: якщо expected > current при схудненні —
+   * на вагах ти легший, ніж каже калорійний трек.
+   */
   expectedWeight: number | null;
   deltaActual: number | null;
   /** Дата, коли за поточним темпом (з фактичних зважувань) буде ціль. */
@@ -255,15 +260,34 @@ export interface ForecastResponse {
   loggedDays: number;
   totalDays: number;
   paceStatus: "progressing" | "stalled" | "unknown";
+  /** Підтримка (TDEE) ккал/день. */
+  maintenanceKcal: number | null;
+  /** Денна ціль ккал. */
+  targetKcal: number | null;
+  /** Середній net (їжа − активність) за дні з записами. */
+  avgNetKcal: number | null;
   /**
-   * Середній % net vs підтримка за дні з їжею (від’ємне = дефіцит).
-   * null якщо немає логів або не дефіцитна ціль без даних.
+   * Сума (net − target) за дні з їжею.
+   * >0 профіцит над ціллю, <0 дефіцит відносно цілі.
+   */
+  balanceVsTargetKcal: number | null;
+  /**
+   * Сума (net − maintenance). >0 профіцит над підтримкою (набір).
+   */
+  balanceVsMaintenanceKcal: number | null;
+  /** Скільки днів net був вище денної цілі. */
+  daysOverTarget: number;
+  /** Скільки днів net був вище підтримки. */
+  daysOverMaintenance: number;
+  /**
+   * Середній % net vs підтримка (від’ємне = дефіцит).
+   * Для UI; вердикт темпу дивись calorieStance + balanceVsTargetKcal.
    */
   avgDeficitPct: number | null;
-  /** Плановий % дефіциту від підтримки (15 на цілі deficit, 0 на maintain). */
+  /** Плановий % дефіциту: (maintenance − target) / maintenance. */
   plannedDeficitPct: number | null;
   /**
-   * Темп журналу відносно плану калорій:
+   * Темп журналу відносно плану калорій (за сумою періоду):
    * on_plan | shallow | deep | maintenance | surplus | unknown
    */
   calorieStance:

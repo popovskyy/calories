@@ -1,18 +1,22 @@
 /**
  * Прогноз ваги з журналу: maintenance − net за дні з їжею (без сьогодні),
- * плюс ETA до цілі за фактичним темпом зважувань (без декларованого плану).
- * Також класифікує глибину дефіциту (план −15% vs факт −10% тощо).
+ * плюс ETA до цілі за фактичним темпом зважувань.
+ *
+ * Важливо:
+ * - `expectedWeight` — вага ЗА КАЛОРІЯМИ від старту, не «завтрашній прогноз».
+ * - Вердикт темпу (`calorieStance`) — за СУМОЮ vs денна ціль і підтримка,
+ *   щоб дні з перебором не маскувались середнім %.
  */
 
 import { prisma } from "@/lib/prisma";
 import {
   calcMaintenanceCalories,
   calcTargetCalories,
-  classifyCalorieStance,
+  classifyLedgerStance,
   isGoal,
   isSex,
   pctVsMaintenance,
-  plannedDeficitPct,
+  plannedDeficitPctFromTargets,
   KCAL_PER_KG,
   type CalorieStance,
 } from "@/lib/calories";
@@ -115,12 +119,22 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
 
   let deficitSum = 0;
   let netSum = 0;
+  let balanceVsTarget = 0;
+  let balanceVsMaintenance = 0;
+  let daysOverTarget = 0;
+  let daysOverMaintenance = 0;
+
   for (const g of mealGroups) {
     const consumed = g._sum.calories ?? 0;
     const burned = burnedByDate.get(g.date) ?? 0;
     const net = consumed - burned;
+    // Фізика ваги — відносно підтримки (TDEE), не денної цілі.
     deficitSum += maintenance - net;
     netSum += net;
+    balanceVsTarget += net - target;
+    balanceVsMaintenance += net - maintenance;
+    if (net > target) daysOverTarget += 1;
+    if (net > maintenance) daysOverMaintenance += 1;
   }
 
   const loggedDays = mealGroups.length;
@@ -130,23 +144,31 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
   /** Фактична зміна ваги від старту: <0 — схудли, >0 — набрали. */
   const deltaActual = Math.round((currentWeight - startWeight) * 10) / 10;
 
+  let avgNetKcal: number | null = null;
   let avgDeficitPct: number | null = null;
   let calorieStance: ForecastResponse["calorieStance"] = "unknown";
-  const planned = plannedDeficitPct(goal);
+  const planned = plannedDeficitPctFromTargets(maintenance, target);
+
+  let balanceVsTargetKcal: number | null = null;
+  let balanceVsMaintenanceKcal: number | null = null;
 
   if (loggedDays > 0) {
-    const avgNet = Math.round(netSum / loggedDays);
-    avgDeficitPct = pctVsMaintenance(avgNet, maintenance);
-    calorieStance = classifyCalorieStance({
-      netKcal: avgNet,
-      maintenance,
+    avgNetKcal = Math.round(netSum / loggedDays);
+    avgDeficitPct = pctVsMaintenance(avgNetKcal, maintenance);
+    balanceVsTargetKcal = Math.round(balanceVsTarget);
+    balanceVsMaintenanceKcal = Math.round(balanceVsMaintenance);
+    calorieStance = classifyLedgerStance({
+      balanceVsTarget,
+      balanceVsMaintenance,
+      loggedDays,
+      daysOverTarget,
       target,
+      maintenance,
       goal,
     }) satisfies CalorieStance;
   }
 
-  // ETA до цілі за фактичним темпом зважувань (не за декларованим планом):
-  // якщо напрямок зважувань веде до targetWeight, екстраполюємо дату.
+  // ETA до цілі за фактичним темпом зважувань (не за калорійним треком).
   let projectedDate: string | null = null;
   let daysLeft: number | null = null;
   let paceStatus: ForecastResponse["paceStatus"] = "unknown";
@@ -183,6 +205,13 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
     loggedDays,
     totalDays,
     paceStatus,
+    maintenanceKcal: maintenance,
+    targetKcal: target,
+    avgNetKcal,
+    balanceVsTargetKcal,
+    balanceVsMaintenanceKcal,
+    daysOverTarget,
+    daysOverMaintenance,
     avgDeficitPct,
     plannedDeficitPct: planned,
     calorieStance,
@@ -203,6 +232,13 @@ function emptyForecast(): ForecastResponse {
     loggedDays: 0,
     totalDays: 0,
     paceStatus: "unknown",
+    maintenanceKcal: null,
+    targetKcal: null,
+    avgNetKcal: null,
+    balanceVsTargetKcal: null,
+    balanceVsMaintenanceKcal: null,
+    daysOverTarget: 0,
+    daysOverMaintenance: 0,
     avgDeficitPct: null,
     plannedDeficitPct: null,
     calorieStance: "unknown",
