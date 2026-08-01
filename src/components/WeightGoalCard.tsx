@@ -62,6 +62,9 @@ export function WeightGoalCard() {
     loggedDays,
     totalDays,
     paceStatus,
+    avgDeficitPct,
+    plannedDeficitPct,
+    calorieStance,
   } = data;
 
   const totalSpan = Math.abs((startWeight ?? 0) - (targetWeight ?? 0));
@@ -84,6 +87,12 @@ export function WeightGoalCard() {
   } else if (paceStatus === "progressing" && projectedDate) {
     statusLabel = `Ціль ≈ ${shortDate(projectedDate)}`;
   }
+
+  const deficitNote = deficitPaceNote(
+    calorieStance,
+    avgDeficitPct,
+    plannedDeficitPct,
+  );
 
   return (
     <section className="mcard flex flex-col gap-3 p-[18px]">
@@ -135,12 +144,17 @@ export function WeightGoalCard() {
 
       <div>
         <p className="text-[15px] font-semibold text-[var(--color-text)]">
-          Прогноз ШІ на сьогодні: {fmtKg(expectedWeight)}
+          Прогноз за журналом: {fmtKg(expectedWeight)}
         </p>
         <p className="mt-0.5 text-[13px] text-[var(--color-muted3)]">
           за журналом — дані за {loggedDays} {pluralDays(loggedDays)} з{" "}
           {totalDays}
         </p>
+        {deficitNote ? (
+          <p className="mt-1 text-[13px] text-[var(--color-muted2)]">
+            {deficitNote}
+          </p>
+        ) : null}
       </div>
 
       <div className="flex items-center justify-between text-[13px] text-[var(--color-muted2)]">
@@ -253,6 +267,35 @@ function Tile({
 function fmtKg(v: number | null | undefined): string {
   if (v == null) return "—";
   return `${v.toFixed(1).replace(".", ",")} кг`;
+}
+
+/** Пояснення глибини дефіциту: план −15% vs факт −10% тощо. */
+function deficitPaceNote(
+  stance: string | undefined,
+  avgPct: number | null | undefined,
+  plannedPct: number | null | undefined,
+): string | null {
+  if (avgPct == null || plannedPct == null || plannedPct <= 0) return null;
+  const fact =
+    avgPct === 0
+      ? "біля підтримки"
+      : avgPct < 0
+        ? `дефіцит ≈ ${avgPct}%`
+        : `профіцит ≈ +${avgPct}%`;
+  switch (stance) {
+    case "on_plan":
+      return `${fact} від підтримки — у плані (−${plannedPct}%).`;
+    case "shallow":
+      return `${fact} від підтримки при плані −${plannedPct}%: дефіцит є, темп м’якший — можна щільніше до плану.`;
+    case "deep":
+      return `${fact} від підтримки — глибше за план (−${plannedPct}%).`;
+    case "maintenance":
+      return `${fact}: майже без дефіциту при плані −${plannedPct}% — темп до цілі слабкий.`;
+    case "surplus":
+      return `${fact} над підтримкою — журнал тягне вагу вгору, не до цілі.`;
+    default:
+      return null;
+  }
 }
 
 function pluralDays(n: number): string {

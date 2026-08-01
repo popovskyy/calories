@@ -21,7 +21,9 @@ interface WeeklyChartProps {
 
 function fillFor(status: string, isToday: boolean) {
   if (isToday) return "url(#bar-accent)";
-  return status === "red" ? "url(#bar-red)" : "url(#bar-green)";
+  if (status === "red") return "url(#bar-red)";
+  if (status === "amber") return "url(#bar-amber)";
+  return "url(#bar-green)";
 }
 
 type Tick = { x?: number; y?: number; payload?: { value?: string } };
@@ -68,6 +70,10 @@ export function WeeklyChart({ days, target }: WeeklyChartProps) {
             <linearGradient id="bar-red" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#e0808c" />
               <stop offset="1" stopColor="#c05f6c" />
+            </linearGradient>
+            <linearGradient id="bar-amber" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#e0b56b" />
+              <stop offset="1" stopColor="#c4943f" />
             </linearGradient>
             <linearGradient id="bar-accent" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#b5abfc" />

@@ -177,3 +177,82 @@ export function isSex(v: string): v is Sex {
 export function isGoal(v: string): v is Goal {
   return v === "maintain" || v === "deficit";
 }
+
+/**
+ * Градація факту відносно підтримки (TDEE) і денної цілі.
+ * Приклад: план −15%, факт −10% → `shallow` (дефіцит є, але м'якший за план).
+ */
+export type CalorieStance =
+  | "on_plan"
+  | "shallow"
+  | "maintenance"
+  | "surplus"
+  | "deep";
+
+export function plannedDeficitPct(goal: Goal): number {
+  return goal === "deficit" ? Math.round((1 - DEFICIT_FACTOR) * 100) : 0;
+}
+
+/** % відхилення net від maintenance: −10 = дефіцит 10%, +5 = профіцит 5%. */
+export function pctVsMaintenance(netKcal: number, maintenance: number): number {
+  if (maintenance <= 0) return 0;
+  return Math.round(((netKcal - maintenance) / maintenance) * 100);
+}
+
+/**
+ * Класифікує середній net відносно maintenance і target.
+ * `deep` — помітно глибше за план (нижче цілі на ≥8%); `on_plan` — біля/під ціллю.
+ */
+export function classifyCalorieStance(input: {
+  netKcal: number;
+  maintenance: number;
+  target: number;
+  goal: Goal;
+}): CalorieStance {
+  const { netKcal, maintenance, target, goal } = input;
+  if (maintenance <= 0) return "maintenance";
+
+  const vsMaint = pctVsMaintenance(netKcal, maintenance);
+  const band = Math.max(40, Math.round(target * 0.05));
+
+  if (goal === "maintain") {
+    if (Math.abs(netKcal - target) <= band) return "on_plan";
+    if (netKcal > target + band) return "surplus";
+    return "deep";
+  }
+
+  // deficit: профіцит лише над підтримкою; між ціллю і TDEE — м'який дефіцит
+  if (netKcal > maintenance * 1.03) return "surplus";
+  if (Math.abs(vsMaint) <= 3) return "maintenance";
+  if (netKcal > target + band && netKcal < maintenance * 0.97) return "shallow";
+  if (netKcal < target - Math.round(target * 0.08)) return "deep";
+  return "on_plan";
+}
+
+/** Короткий український ярлик для промптів і UI. */
+export function stanceLabelUk(stance: CalorieStance, goal: Goal): string {
+  if (goal === "maintain") {
+    switch (stance) {
+      case "on_plan":
+        return "біля норми підтримки";
+      case "surplus":
+        return "профіцит над підтримкою";
+      case "deep":
+        return "помітний недобір відносно підтримки";
+      default:
+        return "біля підтримки";
+    }
+  }
+  switch (stance) {
+    case "on_plan":
+      return "дефіцит у плані (−15% від підтримки)";
+    case "shallow":
+      return "м'який дефіцит (є, але слабший за план)";
+    case "deep":
+      return "глибший дефіцит за план";
+    case "maintenance":
+      return "близько до підтримки (майже без дефіциту)";
+    case "surplus":
+      return "профіцит над підтримкою";
+  }
+}
