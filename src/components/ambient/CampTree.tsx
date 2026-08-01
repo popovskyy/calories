@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { haptic } from "@/lib/haptics";
 import { playWoodChop } from "@/lib/sfx";
+import { CampLogVisual } from "@/components/ambient/CampLogVisual";
 
 const CHOPS_NEEDED = 10;
 const FALL_MS = 480;
@@ -170,7 +171,7 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
       ) : null}
 
       {phase === "logs" ? (
-        <div className="relative mx-auto flex h-12 w-[100px] items-end justify-center gap-2 pb-1">
+        <div className="relative mx-auto flex h-12 w-[100px] items-end justify-center gap-1.5 pb-1">
           <div
             className="pointer-events-none absolute bottom-1 left-1/2 h-3.5 w-4 -translate-x-1/2 rounded-sm"
             style={{
@@ -182,11 +183,9 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
             <button
               key={id}
               type="button"
-              className="relative z-[1] h-7 w-11 cursor-pointer rounded-[8px] border-0 p-0"
+              className="relative z-[1] h-[15px] w-[42px] cursor-pointer border-0 bg-transparent p-0"
               style={{
-                background: "linear-gradient(#b5844f,#6b4626)",
-                boxShadow: "inset 0 -3px 0 rgba(0,0,0,.28)",
-                transform: `rotate(${i === 0 ? -12 : 14}deg)`,
+                transform: `rotate(${i === 0 ? -14 : 12}deg)`,
                 WebkitTapHighlightColor: "transparent",
               }}
               onPointerDown={(e) => {
@@ -195,7 +194,9 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
                 haptic("click");
                 onTossLog(id);
               }}
-            />
+            >
+              <CampLogVisual className="h-full w-full" />
+            </button>
           ))}
         </div>
       ) : null}

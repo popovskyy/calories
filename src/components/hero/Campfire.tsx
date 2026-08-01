@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { CampDeer } from "@/components/ambient/CampDeer";
+import { CampLogVisual } from "@/components/ambient/CampLogVisual";
 import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
@@ -349,74 +350,74 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         </div>
       </div>
 
-      {/* meal-ритуал: дровина летить справа згори */}
+      {/* meal-ритуал: коротка колода летить у жар */}
       {active ? (
         <div key={`toss-${ritualKey}`}>
           <div
-            className="toss-log absolute bottom-[34px] left-1/2 z-[2] -ml-[37px] h-[18px] w-[74px] rounded-[9px]"
+            className="toss-log absolute bottom-[28px] left-1/2 z-[2] -ml-[24px] h-[16px] w-[48px]"
             style={{
-              background: "linear-gradient(#b5844f,#6b4626)",
-              boxShadow: "inset 0 -4px 0 rgba(0,0,0,.3)",
-              animation: "logToss .85s cubic-bezier(.3,.1,.5,1) forwards",
+              animation: "logToss .75s cubic-bezier(.3,.1,.5,1) forwards",
             }}
-          />
+          >
+            <CampLogVisual className="h-full w-full" />
+          </div>
           <div
-            className="fire-spark absolute bottom-20 left-1/2 z-[2] h-1.5 w-1.5 rounded-full"
+            className="fire-spark absolute bottom-16 left-1/2 z-[2] h-1.5 w-1.5 rounded-full"
             style={{
               background: fire.spark[0],
               boxShadow: `0 0 10px ${fire.spark[0]}`,
-              animation: "sparkBurst 1.1s ease-out .5s forwards",
+              animation: "sparkBurst 1.1s ease-out .42s forwards",
             }}
           />
           <div
-            className="fire-spark absolute bottom-20 left-[46%] z-[2] h-[5px] w-[5px] rounded-full"
+            className="fire-spark absolute bottom-16 left-[46%] z-[2] h-[5px] w-[5px] rounded-full"
             style={{
               background: fire.spark[2],
               boxShadow: `0 0 10px ${fire.spark[2]}`,
-              ["--dx" as string]: "-18px",
-              animation: "sparkBurst 1.3s ease-out .55s forwards",
+              ["--dx" as string]: "-14px",
+              animation: "sparkBurst 1.2s ease-out .48s forwards",
             }}
           />
           <div
-            className="fire-spark absolute bottom-[78px] left-[55%] z-[2] h-1 w-1 rounded-full"
+            className="fire-spark absolute bottom-[70px] left-[54%] z-[2] h-1 w-1 rounded-full"
             style={{
               background: fire.spark[1],
               boxShadow: `0 0 10px ${fire.spark[1]}`,
-              ["--dx" as string]: "16px",
-              animation: "sparkBurst 1.2s ease-out .65s forwards",
+              ["--dx" as string]: "12px",
+              animation: "sparkBurst 1.1s ease-out .55s forwards",
             }}
           />
         </div>
       ) : null}
 
-      {/* колода з дерева — дуга зліва або справа */}
+      {/* колода з дерева — коротка дуга зліва/справа */}
       {treeTossing && !reduce ? (
         <div key={`tree-toss-${treeTossKey}`}>
           <div
-            className="toss-log absolute bottom-[34px] left-1/2 z-[2] -ml-[32px] h-4 w-16 rounded-[8px]"
+            className="toss-log absolute bottom-[28px] left-1/2 z-[2] -ml-[22px] h-[15px] w-[44px]"
             style={{
-              background: "linear-gradient(#b5844f,#6b4626)",
-              boxShadow: "inset 0 -3px 0 rgba(0,0,0,.3)",
               animation: `${
                 treeTossSide === "left" ? "treeLogTossLeft" : "treeLogToss"
-              } .7s cubic-bezier(.3,.1,.5,1) forwards`,
+              } .65s cubic-bezier(.3,.1,.5,1) forwards`,
             }}
-          />
+          >
+            <CampLogVisual className="h-full w-full" />
+          </div>
           <div
-            className="fire-spark absolute bottom-20 left-1/2 z-[2] h-1.5 w-1.5 rounded-full"
+            className="fire-spark absolute bottom-16 left-1/2 z-[2] h-1.5 w-1.5 rounded-full"
             style={{
               background: fire.spark[0],
               boxShadow: `0 0 10px ${fire.spark[0]}`,
-              animation: "sparkBurst 1s ease-out .35s forwards",
+              animation: "sparkBurst 1s ease-out .32s forwards",
             }}
           />
           <div
-            className="fire-spark absolute bottom-[78px] left-[54%] z-[2] h-1 w-1 rounded-full"
+            className="fire-spark absolute bottom-[68px] left-[54%] z-[2] h-1 w-1 rounded-full"
             style={{
               background: fire.spark[1],
               boxShadow: `0 0 10px ${fire.spark[1]}`,
-              ["--dx" as string]: "14px",
-              animation: "sparkBurst 1.1s ease-out .42s forwards",
+              ["--dx" as string]: "12px",
+              animation: "sparkBurst 1s ease-out .38s forwards",
             }}
           />
         </div>
