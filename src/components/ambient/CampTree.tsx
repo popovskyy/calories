@@ -9,6 +9,7 @@ import { CampLogVisual } from "@/components/ambient/CampLogVisual";
 const CHOPS_NEEDED = 10;
 const FALL_MS = 560;
 const RESPAWN_MS = 3500;
+const AXE_SWING_MS = 420;
 
 type Phase = "ready" | "chopping" | "falling" | "logs";
 
@@ -28,13 +29,22 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
   const [phase, setPhase] = useState<Phase>("ready");
   const [chops, setChops] = useState(0);
   const [shakeKey, setShakeKey] = useState(0);
+  /** Сокира лише на час свінгу — інакше після респавну «сама» з’являється. */
+  const [axeKey, setAxeKey] = useState(0);
   const [logs, setLogs] = useState<number[]>([]);
   const chopsRef = useRef(0);
   const logSeq = useRef(0);
   const phaseRef = useRef<Phase>("ready");
+  const axeClearRef = useRef<number | null>(null);
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+
+  useEffect(() => {
+    return () => {
+      if (axeClearRef.current != null) window.clearTimeout(axeClearRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (phase !== "falling") return;
@@ -53,6 +63,8 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
     const t = window.setTimeout(() => {
       chopsRef.current = 0;
       setChops(0);
+      setShakeKey(0);
+      setAxeKey(0);
       setPhase("ready");
     }, RESPAWN_MS);
     return () => window.clearTimeout(t);
@@ -74,8 +86,23 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
     chopsRef.current = next;
     setChops(next);
     setShakeKey((k) => k + 1);
+    if (!reduce) {
+      setAxeKey((k) => k + 1);
+      if (axeClearRef.current != null) window.clearTimeout(axeClearRef.current);
+      axeClearRef.current = window.setTimeout(() => {
+        setAxeKey(0);
+        axeClearRef.current = null;
+      }, AXE_SWING_MS);
+    }
     if (p === "ready") setPhase("chopping");
-    if (next >= CHOPS_NEEDED) setPhase("falling");
+    if (next >= CHOPS_NEEDED) {
+      if (axeClearRef.current != null) {
+        window.clearTimeout(axeClearRef.current);
+        axeClearRef.current = null;
+      }
+      setAxeKey(0);
+      setPhase("falling");
+    }
   };
 
   const onTossLog = (id: number) => {
@@ -114,10 +141,10 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
         >
           <span className="absolute inset-0 z-[2]" />
 
-          {/* Сокира з’являється й б’є в стовбур */}
-          {canChop && shakeKey > 0 && !reduce ? (
+          {/* Сокира лише під час свінгу після тапу */}
+          {canChop && axeKey > 0 && !reduce ? (
             <div
-              key={`axe-${shakeKey}`}
+              key={`axe-${axeKey}`}
               className="camp-axe"
               style={{
                 animation: `${
