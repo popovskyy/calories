@@ -14,13 +14,15 @@ type Phase = "ready" | "chopping" | "falling" | "logs";
 interface CampTreeProps {
   /** Колоду кинули у вогонь — Campfire збільшує полум'я й грає toss. */
   onLogToss: () => void;
+  /** Бік вогнища: ліве дерево падає вліво, праве — вправо. */
+  side?: "left" | "right";
 }
 
 /**
  * Сосна біля вогнища: одразу готова → рубається тапами → колоди → респавн.
  * Локальний ambient-стейт, без armRecalc / meal-ритуалу.
  */
-export function CampTree({ onLogToss }: CampTreeProps) {
+export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
   const reduce = useReducedMotion();
   const [phase, setPhase] = useState<Phase>("ready");
   const [chops, setChops] = useState(0);
@@ -57,7 +59,8 @@ export function CampTree({ onLogToss }: CampTreeProps) {
     return () => window.clearTimeout(t);
   }, [phase, logs.length]);
 
-  const leanDeg = chops * 1.2;
+  const leanSign = side === "left" ? -1 : 1;
+  const leanDeg = chops * 1.2 * leanSign;
   const canChop = phase === "ready" || phase === "chopping";
   const progress = chops / CHOPS_NEEDED;
 
@@ -87,7 +90,9 @@ export function CampTree({ onLogToss }: CampTreeProps) {
 
   return (
     <div
-      className="absolute bottom-[14px] right-0 z-[3] w-[110px] touch-manipulation select-none"
+      className={`absolute bottom-[14px] z-[3] w-[110px] touch-manipulation select-none ${
+        side === "left" ? "left-0" : "right-0"
+      }`}
       aria-hidden
     >
       {showTree ? (

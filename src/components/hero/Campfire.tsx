@@ -78,6 +78,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
 
   const [logsFed, setLogsFed] = useState(0);
   const [treeTossKey, setTreeTossKey] = useState<number | null>(null);
+  const [treeTossSide, setTreeTossSide] = useState<"left" | "right">("right");
   const treeTossing = treeTossKey !== null;
   const fireScale = Math.min(1 + logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_MAX);
   const flaring = active || treeTossing;
@@ -113,10 +114,11 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
     return () => window.clearTimeout(t);
   }, [treeTossKey]);
 
-  const onTreeLogToss = useCallback(() => {
+  const onTreeLogToss = useCallback((side: "left" | "right") => {
     playLogToss(packRef.current);
     window.setTimeout(() => playFireBurst(), 380);
     setLogsFed((n) => n + 1);
+    setTreeTossSide(side);
     setTreeTossKey(Date.now());
   }, []);
 
@@ -164,8 +166,9 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
       {/* олень біля вогнища — тікає і від meal-ритуалу, і від колоди з дерева */}
       <CampDeer ritualActive={active || treeTossing} />
 
-      {/* сосна праворуч: ріст → рубання → дрова */}
-      <CampTree onLogToss={onTreeLogToss} />
+      {/* сосни з обох боків вогнища */}
+      <CampTree side="left" onLogToss={() => onTreeLogToss("left")} />
+      <CampTree side="right" onLogToss={() => onTreeLogToss("right")} />
 
       {/* вогонь + дрова + каміння: scale лише на полум'ї, дрова/каміння стоять */}
       <div
@@ -344,7 +347,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         </div>
       ) : null}
 
-      {/* колода з дерева — коротша дуга з правого боку */}
+      {/* колода з дерева — дуга зліва або справа */}
       {treeTossing && !reduce ? (
         <div key={`tree-toss-${treeTossKey}`}>
           <div
@@ -352,7 +355,9 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
             style={{
               background: "linear-gradient(#b5844f,#6b4626)",
               boxShadow: "inset 0 -3px 0 rgba(0,0,0,.3)",
-              animation: "treeLogToss .7s cubic-bezier(.3,.1,.5,1) forwards",
+              animation: `${
+                treeTossSide === "left" ? "treeLogTossLeft" : "treeLogToss"
+              } .7s cubic-bezier(.3,.1,.5,1) forwards`,
             }}
           />
           <div
