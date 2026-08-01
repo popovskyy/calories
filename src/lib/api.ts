@@ -62,11 +62,9 @@ export interface RegisterInput {
   height: number;
   targetWeight?: number | null;
   avatarUrl?: string | null;
-  imageBase64?: string;
-  imageMimeType?: string;
 }
 export const register = (input: RegisterInput) =>
-  req<UserDTO & { avatarWarning?: string | null }>("/api/auth/register", {
+  req<UserDTO>("/api/auth/register", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -101,17 +99,6 @@ export interface UserInput {
 }
 export const saveUser = (input: UserInput) =>
   req<UserDTO>("/api/users", { method: "POST", body: JSON.stringify(input) });
-
-export interface GenerateAvatarInput {
-  imageBase64: string;
-  imageMimeType?: string;
-  apiKey?: string;
-}
-export const generateAvatar = (input: GenerateAvatarInput) =>
-  req<{ avatarUrl: string }>("/api/avatar/generate", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
 
 // --- Meals ---
 export const getMeals = (date: string) =>

@@ -11,7 +11,7 @@ export { AiError, GeminiError };
 
 /** Модель можна перевизначити через env; дефолт — актуальний flash */
 /** Дешевий GA lite: ~$0.25/$1.50 vs flash-latest (3.6) ~$1.50/$7.50 */
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 const SYSTEM_PROMPT = `Ти — нутриціолог-аналітик. За текстовим описом та/або фото страви оціни харчову цінність.
 Відповідай СУВОРО у JSON за схемою. Правила:

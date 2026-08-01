@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Camera, Sparkles, Upload } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { Field, inputClass } from "@/components/ui/Field";
@@ -29,23 +29,6 @@ const segmentBtn = (active: boolean) =>
       : "bg-[var(--color-tile)] text-[var(--color-muted2)] hover:text-[var(--color-text)]",
   );
 
-async function readImageAsJpegBase64(file: File): Promise<{ base64: string; mime: string }> {
-  const bitmap = await createImageBitmap(file);
-  const max = 1024;
-  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas недоступний");
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
-  return { base64: dataUrl.split(",")[1] ?? "", mime: "image/jpeg" };
-}
-
 export function AuthForm() {
   const router = useRouter();
   const search = useSearchParams();
@@ -65,11 +48,7 @@ export function AuthForm() {
   const [weight, setWeight] = useState("70");
   const [height, setHeight] = useState("175");
   const [targetWeight, setTargetWeight] = useState("");
-  const [photo, setPhoto] = useState<{ base64: string; mime: string } | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [avatarPreset, setAvatarPreset] = useState<string>(toPresetUrl("kiwi"));
-  const [showPhoto, setShowPhoto] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const preview = useMemo(() => {
     if (mode !== "register") return null;
@@ -90,19 +69,6 @@ export function AuthForm() {
 
   const busy = loginMut.isPending || registerMut.isPending;
 
-  const onPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !file.type.startsWith("image/")) return;
-    try {
-      const { base64, mime } = await readImageAsJpegBase64(file);
-      setPhoto({ base64, mime });
-      setPhotoPreview(`data:${mime};base64,${base64}`);
-    } catch {
-      toast.error("Не вдалося прочитати фото");
-    }
-  };
-
   const submitLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -122,7 +88,7 @@ export function AuthForm() {
     e.preventDefault();
     if (!preview) return toast.error("Заповніть дані профілю");
     try {
-      const saved = await registerMut.mutateAsync({
+      await registerMut.mutateAsync({
         username: username.trim(),
         password,
         name: name.trim(),
@@ -134,17 +100,8 @@ export function AuthForm() {
         height: parseFloat(height),
         targetWeight: targetWeight ? parseFloat(targetWeight) : null,
         avatarUrl: avatarPreset,
-        imageBase64: photo?.base64,
-        imageMimeType: photo?.mime,
       });
-      if (saved.avatarWarning) {
-        toast.warning(
-          `Акаунт створено, але аватар з фото не намалювався. Обрано персонажа з бібліотеки.`,
-          { duration: 6000 },
-        );
-      } else {
-        toast.success("Акаунт створено");
-      }
+      toast.success("Акаунт створено");
       router.replace("/");
       router.refresh();
     } catch (err) {
@@ -232,59 +189,10 @@ export function AuthForm() {
           </Field>
 
           <AvatarPicker
-            value={photo ? null : avatarPreset}
-            onChange={(url) => {
-              setAvatarPreset(url);
-              setPhoto(null);
-              setPhotoPreview(null);
-            }}
+            value={avatarPreset}
+            onChange={setAvatarPreset}
             freeOnly
           />
-
-          <div className="rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-3 py-3">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between text-left text-[14px] font-medium text-[var(--color-muted2)]"
-              onClick={() => setShowPhoto((v) => !v)}
-            >
-              <span>Або аватар з селфі (ШІ)</span>
-              <span className="text-[var(--color-muted3)]">{showPhoto ? "▴" : "▾"}</span>
-            </button>
-            {showPhoto ? (
-              <div className="mt-3 flex flex-col items-center gap-2">
-                {photoPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={photoPreview}
-                    alt="Фото"
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-surface)] text-[var(--color-muted3)]">
-                    <Camera size={22} />
-                  </div>
-                )}
-                <p className="text-center text-[13px] text-[var(--color-muted3)]">
-                  Селфі → Gemini / GPT намалює маскота
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => fileRef.current?.click()}
-                >
-                  <Upload size={16} /> {photoPreview ? "Інше фото" : "Додати фото"}
-                </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  capture="user"
-                  hidden
-                  onChange={onPhoto}
-                />
-              </div>
-            ) : null}
-          </div>
 
           <div className="flex flex-col gap-1.5">
             <span className="lbl">Стать</span>

@@ -36,7 +36,7 @@ const updateSchema = z.object({
   height: z.number().positive("Зріст має бути більшим за 0"),
   avatarUrl: z
     .string()
-    .max(2_500_000, "Аватар занадто великий")
+    .max(128, "Невірний аватар")
     .nullable()
     .optional(),
   targetWeight: z.number().positive().nullable().optional(),

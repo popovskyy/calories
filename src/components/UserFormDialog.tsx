@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Sparkles, Trash2, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/Avatar";
 import { AvatarPicker } from "@/components/AvatarPicker";
-import { AvatarConjuring } from "@/components/loaders/AvatarConjuring";
 import { Modal } from "@/components/ui/Dialog";
 import { Field, inputClass } from "@/components/ui/Field";
-import { useGenerateAvatar, useSaveUser } from "@/hooks/useQueries";
+import { useSaveUser } from "@/hooks/useQueries";
 import {
   GOAL_LABELS,
   MONTH_LABELS_UK,
@@ -58,33 +56,11 @@ const segmentBtn = (active: boolean) =>
       : "bg-[var(--color-tile)] text-[var(--color-muted2)] hover:text-[var(--color-text)]",
   );
 
-/** Стискає фото на клієнті перед відправкою в Gemini (макс. 1024px JPEG). */
-async function readImageAsJpegBase64(file: File): Promise<{ base64: string; mime: string }> {
-  const bitmap = await createImageBitmap(file);
-  const max = 1024;
-  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas недоступний");
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
-  const base64 = dataUrl.split(",")[1] ?? "";
-  return { base64, mime: "image/jpeg" };
-}
-
 export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps) {
   const saveUser = useSaveUser();
-  const generateAvatar = useGenerateAvatar();
   const [form, setForm] = useState<FormState>(empty);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarDirty, setAvatarDirty] = useState(false);
-  const [showPhoto, setShowPhoto] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   const punishmentActive =
     user?.punishmentActive === true || user?.avatarUrl === toPresetUrl("pepa_pig");
 
@@ -136,30 +112,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     });
   }, [form]);
 
-  const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    if (punishmentActive) return;
-    if (!file.type.startsWith("image/")) {
-      return toast.error("Оберіть зображення");
-    }
-
-    try {
-      const { base64, mime } = await readImageAsJpegBase64(file);
-      toast.message("Gemini малює аватар…", { duration: 4000 });
-      const res = await generateAvatar.mutateAsync({
-        imageBase64: base64,
-        imageMimeType: mime,
-      });
-      setAvatarUrl(res.avatarUrl);
-      setAvatarDirty(true);
-      toast.success("Аватар готовий");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Не вдалося згенерувати аватар");
-    }
-  };
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = form.name.trim();
@@ -195,8 +147,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     }
   };
 
-  const generating = generateAvatar.isPending;
-
   return (
     <Modal
       open={open}
@@ -206,9 +156,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     >
       <form onSubmit={submit} className="flex flex-col gap-3.5">
         <div className="flex flex-col items-center gap-3">
-          <AvatarConjuring active={generating} size={88}>
-            <Avatar name={form.name || "?"} avatarUrl={avatarUrl} size={88} />
-          </AvatarConjuring>
+          <Avatar name={form.name || "?"} avatarUrl={avatarUrl} size={88} />
           <AvatarPicker
             value={isPresetAvatar(avatarUrl) ? avatarUrl : null}
             onChange={(url) => {
@@ -218,78 +166,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
             ownedIds={user?.ownedSkinIds ?? []}
             disabled={punishmentActive}
           />
-          <div className="w-full rounded-[var(--radius-lg)] bg-[var(--color-tile)] px-3 py-3">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between text-left text-[14px] font-medium text-[var(--color-muted2)]"
-              disabled={punishmentActive}
-              onClick={() => {
-                if (punishmentActive) return;
-                setShowPhoto((v) => !v);
-              }}
-            >
-              <span>Або з селфі (ШІ)</span>
-              <span className="text-[var(--color-muted3)]">{showPhoto ? "▴" : "▾"}</span>
-            </button>
-            {showPhoto ? (
-              <div className="mt-3 flex flex-col items-center gap-2">
-                <div className="flex w-full gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-ghost flex-1"
-                    disabled={punishmentActive || generating}
-                    onClick={() => {
-                      if (punishmentActive) return;
-                      fileRef.current?.click();
-                    }}
-                  >
-                    {generating ? (
-                      <>
-                        <Sparkles size={16} className="spark-pulse" /> Малюємо…
-                      </>
-                    ) : (
-                      <>
-                        <Camera size={16} /> Фото
-                      </>
-                    )}
-                  </button>
-                  {avatarUrl && !isPresetAvatar(avatarUrl) ? (
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      disabled={generating}
-                      aria-label="Прибрати аватар"
-                      onClick={() => {
-                        setAvatarUrl(null);
-                        setAvatarDirty(true);
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  ) : null}
-                </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  capture="user"
-                  hidden
-                  onChange={onPickPhoto}
-                />
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[var(--color-muted2)] px-3 py-2.5 text-[14px] text-[var(--color-muted2)]"
-                  disabled={punishmentActive || generating}
-                  onClick={() => {
-                    if (punishmentActive) return;
-                    fileRef.current?.click();
-                  }}
-                >
-                  <Upload size={16} /> Завантажити селфі
-                </button>
-              </div>
-            ) : null}
-          </div>
         </div>
 
         <Field label="Ім'я">
@@ -420,7 +296,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         <button
           type="submit"
           className="btn btn-primary btn-block mt-1"
-          disabled={saveUser.isPending || generating || !preview}
+          disabled={saveUser.isPending || !preview}
         >
           {saveUser.isPending ? "Збереження…" : "Зберегти зміни"}
         </button>

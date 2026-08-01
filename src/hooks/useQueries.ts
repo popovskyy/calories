@@ -19,7 +19,6 @@ import {
   equipCosmetic,
   equipSkin,
   equipTheme,
-  generateAvatar,
   getActivities,
   getAdvice,
   getArena,
@@ -53,7 +52,6 @@ import {
   type AnalyzeInput,
   type ChangePasswordInput,
   type CosmeticKind,
-  type GenerateAvatarInput,
   type LoginInput,
   type RegisterInput,
   type SaveActivityInput,
@@ -143,12 +141,6 @@ export function useSaveUser() {
       qc.invalidateQueries({ queryKey: ["arena"] });
       qc.invalidateQueries({ queryKey: ["forecast"] });
     },
-  });
-}
-
-export function useGenerateAvatar() {
-  return useMutation({
-    mutationFn: (input: GenerateAvatarInput) => generateAvatar(input),
   });
 }
 

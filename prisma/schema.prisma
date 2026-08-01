@@ -25,7 +25,7 @@ model User {
   goal             String             @default("maintain") // maintain | deficit
   weight           Float              @default(70)
   height           Float              @default(175)
-  avatarUrl        String? // data:image/png;base64,… (мультяшний аватар від Gemini)
+  avatarUrl        String? // preset:skinId або legacy data-URL
   /** Backup аватара перед тимчасовим покаранням “pepa_pig”.
    *  Якщо поле не null — покарання активне, і ручні зміни мають блокуватися.
    *  Очищається під час відкату (коли наступний день закрито “в нормі”).

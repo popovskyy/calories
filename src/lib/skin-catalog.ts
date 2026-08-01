@@ -76,14 +76,16 @@ export async function getSkinDef(id: string): Promise<AvatarPreset | null> {
 
 /**
  * Чи може юзер ставити цей avatarUrl.
- * AI/data-URL — ок; preset:premium — лише якщо є UserSkin (або free).
+ * Дозволені лише preset-аватари (або порожньо).
  */
 export async function assertAvatarAllowed(
   userId: string | null,
   avatarUrl: string | null | undefined,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (avatarUrl == null || avatarUrl === "") return { ok: true };
-  if (!avatarUrl.startsWith("preset:")) return { ok: true };
+  if (!avatarUrl.startsWith("preset:")) {
+    return { ok: false, error: "Оберіть аватар з бібліотеки" };
+  }
 
   const id = avatarUrl.slice("preset:".length);
   const skin = await getSkinDef(id);

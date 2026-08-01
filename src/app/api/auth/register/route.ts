@@ -14,7 +14,6 @@ import { toUserDTO } from "@/lib/user-dto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 const currentYear = new Date().getFullYear();
 
@@ -38,10 +37,7 @@ const registerSchema = z.object({
   weight: z.number().positive(),
   height: z.number().positive(),
   targetWeight: z.number().positive().nullable().optional(),
-  avatarUrl: z.string().max(2_500_000).nullable().optional(),
-  // фото лишаємо в API для сумісності клієнта — AI-аватар лише після апруву
-  imageBase64: z.string().optional(),
-  imageMimeType: z.string().optional(),
+  avatarUrl: z.string().max(128).nullable().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -58,8 +54,6 @@ export async function POST(req: NextRequest) {
     username,
     password,
     avatarUrl,
-    imageBase64: _photo,
-    imageMimeType: _mime,
     targetWeight,
     ...profile
   } = parsed.data;
@@ -73,11 +67,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Без Gemini на реєстрації: інакше спам спалює білінг до апруву.
   const finalAvatar = avatarUrl ?? null;
-  const avatarWarning = _photo
-    ? "Аватар з фото згенерується після підтвердження адміном"
-    : null;
 
   const gate = await assertAvatarAllowed(null, finalAvatar);
   if (!gate.ok) {
@@ -127,8 +117,5 @@ export async function POST(req: NextRequest) {
   await setSessionCookie(token);
   await setThemeCookie(user.theme ?? "nocturne");
 
-  return NextResponse.json(
-    { ...toUserDTO(user), avatarWarning },
-    { status: 201 },
-  );
+  return NextResponse.json(toUserDTO(user), { status: 201 });
 }

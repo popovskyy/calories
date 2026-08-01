@@ -19,7 +19,7 @@ export interface UserDTO {
   height: number;
   /** Похідний вік з року+місяця народження */
   age: number;
-  /** data-URL мультяшного аватара (Gemini) */
+  /** preset:… або legacy data-URL */
   avatarUrl: string | null;
   /** Внутрішня валюта за звички */
   coins: number;
