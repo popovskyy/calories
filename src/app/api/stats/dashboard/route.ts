@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { lastNDays, todayYMD } from "@/lib/date";
-import type { DashboardDay, DashboardResponse } from "@/lib/types";
+import {
+  calcMaintenanceCalories,
+  isGoal,
+  isSex,
+} from "@/lib/calories";
+import type { DashboardDay, DashboardResponse, DayStatus } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +57,15 @@ export async function GET(req: NextRequest) {
   }
 
   const target = user.targetCalories;
+  const goal = isGoal(user.goal) ? user.goal : "maintain";
+  const maintenance = calcMaintenanceCalories({
+    birthYear: user.birthYear,
+    birthMonth: user.birthMonth,
+    sex: isSex(user.sex) ? user.sex : "male",
+    weightKg: user.weight,
+    heightCm: user.height,
+  });
+
   const days: DashboardDay[] = dates.map((date) => {
     const a = byDate.get(date)!;
     const net = a.c - a.burned;
@@ -64,7 +78,7 @@ export async function GET(req: NextRequest) {
       protein: a.p,
       fats: a.f,
       carbs: a.cb,
-      status: net <= target ? "green" : "red",
+      status: dayBarStatus(net, target, maintenance, goal),
       difference: target - net,
     };
   });
@@ -75,4 +89,20 @@ export async function GET(req: NextRequest) {
     today: days[days.length - 1],
   };
   return NextResponse.json(payload);
+}
+
+/**
+ * green — у цілі або під нею;
+ * amber — на дефіциті над ціллю, але ще під підтримкою (м'який дефіцит);
+ * red — профіцит над підтримкою (або над ціллю на maintain).
+ */
+function dayBarStatus(
+  net: number,
+  target: number,
+  maintenance: number,
+  goal: "maintain" | "deficit",
+): DayStatus {
+  if (net <= target) return "green";
+  if (goal === "deficit" && net <= maintenance) return "amber";
+  return "red";
 }

@@ -3,7 +3,7 @@
 import type { ActivityLevel, Goal, Sex } from "@/lib/calories";
 import type { Rarity, SkinTier } from "@/lib/avatar-presets";
 
-export type DayStatus = "green" | "red";
+export type DayStatus = "green" | "amber" | "red";
 
 export interface UserDTO {
   id: string;
@@ -255,6 +255,24 @@ export interface ForecastResponse {
   loggedDays: number;
   totalDays: number;
   paceStatus: "progressing" | "stalled" | "unknown";
+  /**
+   * Середній % net vs підтримка за дні з їжею (від’ємне = дефіцит).
+   * null якщо немає логів або не дефіцитна ціль без даних.
+   */
+  avgDeficitPct: number | null;
+  /** Плановий % дефіциту від підтримки (15 на цілі deficit, 0 на maintain). */
+  plannedDeficitPct: number | null;
+  /**
+   * Темп журналу відносно плану калорій:
+   * on_plan | shallow | deep | maintenance | surplus | unknown
+   */
+  calorieStance:
+    | "on_plan"
+    | "shallow"
+    | "deep"
+    | "maintenance"
+    | "surplus"
+    | "unknown";
 }
 
 export interface ArenaEntry {

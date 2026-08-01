@@ -5,6 +5,7 @@ import {
   fromYMD,
   humanDate,
   kyivHourNow,
+  shiftYMD,
   shortDate,
   todayYMD,
   weekDays,
@@ -17,10 +18,15 @@ import {
   type WeekJourneyContext,
 } from "@/lib/gemini-advice";
 import { AiError } from "@/lib/ai-error";
-import { GOAL_LABELS, calcMacroTargets, isGoal } from "@/lib/calories";
+import {
+  GOAL_LABELS,
+  calcMacroTargets,
+  calcMaintenanceCalories,
+  isGoal,
+  isSex,
+} from "@/lib/calories";
 import { computeStreak } from "@/lib/streak";
 import type { AdviceResponse } from "@/lib/types";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -95,6 +101,10 @@ async function handleDaily(
       name: true,
       goal: true,
       weight: true,
+      height: true,
+      birthYear: true,
+      birthMonth: true,
+      sex: true,
       targetCalories: true,
       meals: {
         where: { date, status: { not: "cancelled" } },
@@ -143,12 +153,21 @@ async function handleDaily(
   const burned = user.activities.reduce((s, a) => s + a.caloriesBurned, 0);
   const goal = isGoal(user.goal) ? user.goal : "maintain";
   const macros = calcMacroTargets(user.targetCalories, user.weight);
+  const maintenance = calcMaintenanceCalories({
+    birthYear: user.birthYear,
+    birthMonth: user.birthMonth,
+    sex: isSex(user.sex) ? user.sex : "male",
+    weightKg: user.weight,
+    heightCm: user.height,
+  });
 
   try {
     const advice = await generateDayAdvice({
       meals: user.meals,
       activities: user.activities,
       targetCalories: user.targetCalories,
+      maintenanceCalories: maintenance,
+      goal,
       totals: { ...totals, calories: totals.calories - burned },
       proteinTarget: macros.protein,
       goalLabel: GOAL_LABELS[goal],
@@ -221,6 +240,10 @@ async function handleWeekly(
       name: true,
       goal: true,
       weight: true,
+      height: true,
+      birthYear: true,
+      birthMonth: true,
+      sex: true,
       targetCalories: true,
       startWeight: true,
       targetWeight: true,
@@ -263,31 +286,70 @@ async function handleWeekly(
     } satisfies AdviceResponse);
   }
 
-  const [{ streak }, loggedDayGroups, recentWeights, priorRows] =
-    await Promise.all([
-      computeStreak(userId),
-      prisma.mealLog.groupBy({
-        by: ["date"],
-        where: { userId, status: { not: "cancelled" } },
-      }),
-      prisma.weightLog.findMany({
-        where: { userId },
-        orderBy: { date: "desc" },
-        take: 6,
-        select: { date: true, weight: true },
-      }),
-      prisma.weeklyAdvice.findMany({
-        where: { userId, weekStart: { lt: weekStart } },
-        orderBy: { weekStart: "desc" },
-        take: 3,
-        select: {
-          weekStart: true,
-          headline: true,
-          mood: true,
-          tip: true,
-        },
-      }),
-    ]);
+  const priorWeekStart = shiftYMD(weekStart, -7);
+  const priorWeekDays = weekDays(priorWeekStart);
+
+  const [
+    { streak },
+    loggedDayGroups,
+    recentWeights,
+    priorRows,
+    priorMeals,
+    priorActs,
+  ] = await Promise.all([
+    computeStreak(userId),
+    prisma.mealLog.groupBy({
+      by: ["date"],
+      where: { userId, status: { not: "cancelled" } },
+    }),
+    prisma.weightLog.findMany({
+      where: { userId },
+      orderBy: { date: "desc" },
+      take: 6,
+      select: { date: true, weight: true },
+    }),
+    prisma.weeklyAdvice.findMany({
+      where: { userId, weekStart: { lt: weekStart } },
+      orderBy: { weekStart: "desc" },
+      take: 3,
+      select: {
+        weekStart: true,
+        headline: true,
+        mood: true,
+        tip: true,
+      },
+    }),
+    prisma.mealLog.groupBy({
+      by: ["date"],
+      where: {
+        userId,
+        status: { not: "cancelled" },
+        date: { in: priorWeekDays },
+      },
+      _sum: { calories: true },
+    }),
+    prisma.activityLog.groupBy({
+      by: ["date"],
+      where: {
+        userId,
+        status: { not: "cancelled" },
+        date: { in: priorWeekDays },
+      },
+      _sum: { caloriesBurned: true },
+    }),
+  ]);
+
+  let priorWeekAvgNet: number | null = null;
+  if (priorMeals.length > 0) {
+    const burnedByDate = new Map(
+      priorActs.map((g) => [g.date, g._sum.caloriesBurned ?? 0]),
+    );
+    const sum = priorMeals.reduce((s, g) => {
+      const net = (g._sum.calories ?? 0) - (burnedByDate.get(g.date) ?? 0);
+      return s + net;
+    }, 0);
+    priorWeekAvgNet = Math.round(sum / priorMeals.length);
+  }
 
   const journey: WeekJourneyContext = {
     currentWeight: user.weight,
@@ -305,6 +367,7 @@ async function handleWeekly(
       mood: toMood(p.mood),
       tip: p.tip,
     })),
+    priorWeekAvgNet,
   };
 
   const byDay = new Map<
@@ -348,6 +411,13 @@ async function handleWeekly(
 
   const goal = isGoal(user.goal) ? user.goal : "maintain";
   const macros = calcMacroTargets(user.targetCalories, user.weight);
+  const maintenance = calcMaintenanceCalories({
+    birthYear: user.birthYear,
+    birthMonth: user.birthMonth,
+    sex: isSex(user.sex) ? user.sex : "male",
+    weightKg: user.weight,
+    heightCm: user.height,
+  });
   const weekEnd = days[days.length - 1] ?? today;
   const weekLabel = `${shortDate(weekStart)} – ${shortDate(weekEnd)}`;
 
@@ -368,6 +438,8 @@ async function handleWeekly(
         };
       }),
       targetCalories: user.targetCalories,
+      maintenanceCalories: maintenance,
+      goal,
       proteinTarget: macros.protein,
       goalLabel: GOAL_LABELS[goal],
       name: user.name,

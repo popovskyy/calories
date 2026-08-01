@@ -1,13 +1,20 @@
 /**
  * Прогноз ваги з журналу: maintenance − net за дні з їжею (без сьогодні),
  * плюс ETA до цілі за фактичним темпом зважувань (без декларованого плану).
+ * Також класифікує глибину дефіциту (план −15% vs факт −10% тощо).
  */
 
 import { prisma } from "@/lib/prisma";
 import {
   calcMaintenanceCalories,
+  calcTargetCalories,
+  classifyCalorieStance,
+  isGoal,
   isSex,
+  pctVsMaintenance,
+  plannedDeficitPct,
   KCAL_PER_KG,
+  type CalorieStance,
 } from "@/lib/calories";
 import { shiftYMD, todayYMD } from "@/lib/date";
 import type { ForecastResponse } from "@/lib/types";
@@ -25,6 +32,8 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
       birthYear: true,
       birthMonth: true,
       sex: true,
+      goal: true,
+      targetCalories: true,
       targetWeight: true,
       startWeight: true,
       startWeightDate: true,
@@ -56,14 +65,28 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
   const targetWeight = user.targetWeight!;
   const currentWeight = user.weight;
   const today = todayYMD();
+  const sex = isSex(user.sex) ? user.sex : "male";
+  const goal = isGoal(user.goal) ? user.goal : "maintain";
 
   const maintenance = calcMaintenanceCalories({
     birthYear: user.birthYear,
     birthMonth: user.birthMonth,
-    sex: isSex(user.sex) ? user.sex : "male",
+    sex,
     weightKg: user.weight,
     heightCm: user.height,
   });
+
+  const target =
+    user.targetCalories > 0
+      ? user.targetCalories
+      : calcTargetCalories({
+          birthYear: user.birthYear,
+          birthMonth: user.birthMonth,
+          sex,
+          weightKg: user.weight,
+          heightCm: user.height,
+          goal,
+        }).targetCalories;
 
   const [mealGroups, activityGroups] = await Promise.all([
     prisma.mealLog.groupBy({
@@ -91,11 +114,13 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
   );
 
   let deficitSum = 0;
+  let netSum = 0;
   for (const g of mealGroups) {
     const consumed = g._sum.calories ?? 0;
     const burned = burnedByDate.get(g.date) ?? 0;
     const net = consumed - burned;
     deficitSum += maintenance - net;
+    netSum += net;
   }
 
   const loggedDays = mealGroups.length;
@@ -104,6 +129,21 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
     Math.round((startWeight - deficitSum / KCAL_PER_KG) * 10) / 10;
   /** Фактична зміна ваги від старту: <0 — схудли, >0 — набрали. */
   const deltaActual = Math.round((currentWeight - startWeight) * 10) / 10;
+
+  let avgDeficitPct: number | null = null;
+  let calorieStance: ForecastResponse["calorieStance"] = "unknown";
+  const planned = plannedDeficitPct(goal);
+
+  if (loggedDays > 0) {
+    const avgNet = Math.round(netSum / loggedDays);
+    avgDeficitPct = pctVsMaintenance(avgNet, maintenance);
+    calorieStance = classifyCalorieStance({
+      netKcal: avgNet,
+      maintenance,
+      target,
+      goal,
+    }) satisfies CalorieStance;
+  }
 
   // ETA до цілі за фактичним темпом зважувань (не за декларованим планом):
   // якщо напрямок зважувань веде до targetWeight, екстраполюємо дату.
@@ -143,6 +183,9 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
     loggedDays,
     totalDays,
     paceStatus,
+    avgDeficitPct,
+    plannedDeficitPct: planned,
+    calorieStance,
   };
 }
 
@@ -160,6 +203,9 @@ function emptyForecast(): ForecastResponse {
     loggedDays: 0,
     totalDays: 0,
     paceStatus: "unknown",
+    avgDeficitPct: null,
+    plannedDeficitPct: null,
+    calorieStance: "unknown",
   };
 }
 
