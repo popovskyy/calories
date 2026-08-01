@@ -17,6 +17,29 @@ function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
+function pick<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]!;
+}
+
+/** Страшні / тролінгові репліки оленя при переборі. */
+const SCARE_LINES = [
+  "Бууу!",
+  "Я тебе з'їм",
+  "Мій… ти сьогодні піднабрав",
+  "Треба смакусить тобою",
+  "Ой хто тут жирний",
+  "Вечеря сама прийшла",
+  "Ще один шматочок — і ти мій",
+  "Не тікай. Я голодний",
+  "Кал… калорії пахнуть смачно",
+  "Буууууу",
+  "Зараз укушу",
+  "Ти виглядаєш… смачно",
+  "Перебір? Для мене — банкет",
+  "Хрум-хрум… це ти",
+  "Я вже близько",
+] as const;
+
 const P = {
   head: "#2a1a0f",
   ear: "#b5717d",
@@ -77,9 +100,43 @@ function DeerHeadSvg({ className }: { className?: string }) {
   );
 }
 
+/** Комікс-хмарці біля голови — текст не дзеркалиться. */
+function ScareBubble({
+  text,
+  fromLeft,
+}: {
+  text: string;
+  fromLeft: boolean;
+}) {
+  return (
+    <div
+      className="absolute top-[18%] z-[1] max-w-[9.5rem]"
+      style={{
+        [fromLeft ? "left" : "right"]: "58%",
+        animation: "scareBubbleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both",
+      }}
+    >
+      <div
+        className="relative rounded-[18px] border-[2.5px] border-[#1a120c] bg-[#fff6e8] px-3 py-2 text-center text-[13px] font-black leading-snug text-[#1a120c] shadow-[3px_4px_0_#1a120c]"
+        style={{ fontFamily: "var(--font-display), system-ui, sans-serif" }}
+      >
+        {text}
+        {/* хвостик хмарки до морди */}
+        <span
+          className="absolute top-[72%] h-3 w-3 rotate-45 border-b-[2.5px] border-r-[2.5px] border-[#1a120c] bg-[#fff6e8]"
+          style={{
+            [fromLeft ? "left" : "right"]: -6,
+            boxShadow: fromLeft ? "2px 2px 0 #1a120c" : "-1px 2px 0 #1a120c",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 /**
  * При переборі: голова оленя виглядає З‑ЗА КРАЮ ЕКРАНА ТЕЛЕФОНА
- * (fixed portal на весь viewport) — не в рамці вогнища додатку.
+ * + комікс-хмара з рандомною страшною фразою.
  */
 export function CampOverageGiantDeer({ active }: { active: boolean }) {
   const reduce = useReducedMotion();
@@ -87,6 +144,8 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
   const opacity = useMotionValue(0);
   const scaleX = useMotionValue(1);
   const [show, setShow] = useState(false);
+  const [fromLeft, setFromLeft] = useState(true);
+  const [line, setLine] = useState<string>(SCARE_LINES[0]);
   const [portalReady, setPortalReady] = useState(false);
   const ctrls = useRef<AnimationPlaybackControls[]>([]);
   const gen = useRef(0);
@@ -129,15 +188,15 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
       while (alive()) {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        // Голова ~пів екрана по висоті, ширина пропорційна
         const headW = Math.min(vw * 0.55, vh * 0.42);
-        const fromLeft = Math.random() < 0.5;
+        const left = Math.random() < 0.5;
 
-        // Повністю за «рамкою» айфона → виглядає ~55% голови
-        const off = fromLeft ? -(headW + 16) : vw + 8;
-        const peek = fromLeft ? -(headW * 0.35) : vw - headW * 0.65;
+        const off = left ? -(headW + 16) : vw + 8;
+        const peek = left ? -(headW * 0.35) : vw - headW * 0.65;
 
-        scaleX.set(fromLeft ? 1 : -1);
+        setFromLeft(left);
+        setLine(pick(SCARE_LINES));
+        scaleX.set(left ? 1 : -1);
         x.set(off);
         opacity.set(0);
         setShow(true);
@@ -152,11 +211,11 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
         );
         if (!alive()) break;
 
-        await sleep(rand(1600, 2800));
+        await sleep(rand(1800, 3000));
         if (!alive()) break;
 
         if (Math.random() < 0.55) {
-          const deeper = fromLeft ? -(headW * 0.18) : vw - headW * 0.82;
+          const deeper = left ? -(headW * 0.18) : vw - headW * 0.82;
           await track(
             animate(x, deeper, {
               duration: rand(0.4, 0.65),
@@ -202,12 +261,17 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
           style={{
             x,
             opacity,
-            scaleX,
             width: "min(55vw, 42vh)",
             filter: "drop-shadow(0 16px 32px rgba(0,0,0,.6))",
           }}
         >
-          <DeerHeadSvg className="h-[50vh] w-full max-h-[420px]" />
+          <div className="relative">
+            {/* голова дзеркалиться; хмарка — ні */}
+            <motion.div style={{ scaleX }}>
+              <DeerHeadSvg className="h-[50vh] w-full max-h-[420px]" />
+            </motion.div>
+            <ScareBubble text={line} fromLeft={fromLeft} />
+          </div>
         </motion.div>
       ) : null}
     </div>,
