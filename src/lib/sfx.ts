@@ -551,51 +551,73 @@ export function playDeerStartle() {
 }
 
 /**
- * Удар сокири по дереву біля вогнища — короткий тріск + щільний «стук».
- * Без whoosh (той лишається для польоту дровини), гучніший за deer startle.
+ * Удар сокири по дереву біля вогнища.
+ * Низький стук + тріск кори + короткий «клинок» — щоб кожен тап було чути.
  */
 export function playWoodChop() {
   if (!soundAllowed()) return;
   const ac = getContext();
   if (!ac) return;
 
-  try {
-    const now = ac.currentTime;
+  const run = () => {
+    try {
+      const now = ac.currentTime;
 
-    // Короткий шумовий «хрусь» кори
-    const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.08), ac.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
-      const env = 1 - i / data.length;
-      data[i] = (Math.random() * 2 - 1) * 0.55 * env;
+      // 1) Низький стук по стовбуру
+      const thud = ac.createOscillator();
+      const thudGain = ac.createGain();
+      thud.type = "sine";
+      thud.frequency.setValueAtTime(95, now);
+      thud.frequency.exponentialRampToValueAtTime(48, now + 0.09);
+      thudGain.gain.setValueAtTime(0.28, now);
+      thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+      thud.connect(thudGain).connect(ac.destination);
+      thud.start(now);
+      thud.stop(now + 0.11);
+
+      // 2) Тріск деревини (шум)
+      const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.1), ac.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const env = Math.pow(1 - i / data.length, 1.6);
+        data[i] = (Math.random() * 2 - 1) * env;
+      }
+      const crack = ac.createBufferSource();
+      crack.buffer = buffer;
+      const hip = ac.createBiquadFilter();
+      hip.type = "bandpass";
+      hip.frequency.setValueAtTime(1400, now);
+      hip.Q.setValueAtTime(1.2, now);
+      const crackGain = ac.createGain();
+      crackGain.gain.setValueAtTime(0.22, now);
+      crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+      crack.connect(hip).connect(crackGain).connect(ac.destination);
+      crack.start(now);
+      crack.stop(now + 0.1);
+
+      // 3) Короткий «клинок» / друге дерево
+      const blade = ac.createOscillator();
+      const bladeGain = ac.createGain();
+      blade.type = "triangle";
+      blade.frequency.setValueAtTime(320, now + 0.012);
+      blade.frequency.exponentialRampToValueAtTime(140, now + 0.07);
+      bladeGain.gain.setValueAtTime(0.0001, now);
+      bladeGain.gain.linearRampToValueAtTime(0.12, now + 0.014);
+      bladeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+      blade.connect(bladeGain).connect(ac.destination);
+      blade.start(now);
+      blade.stop(now + 0.09);
+    } catch {
+      /* звук ніколи не має ламати навігацію */
     }
-    const noise = ac.createBufferSource();
-    noise.buffer = buffer;
-    const band = ac.createBiquadFilter();
-    band.type = "bandpass";
-    band.frequency.setValueAtTime(900, now);
-    band.Q.setValueAtTime(0.8, now);
-    const noiseGain = ac.createGain();
-    noiseGain.gain.setValueAtTime(0.16, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
-    noise.connect(band).connect(noiseGain).connect(ac.destination);
-    noise.start(now);
-    noise.stop(now + 0.08);
+  };
 
-    // Удар по стовбуру
-    const osc = ac.createOscillator();
-    const oscGain = ac.createGain();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(240, now);
-    osc.frequency.exponentialRampToValueAtTime(110, now + 0.055);
-    oscGain.gain.setValueAtTime(0.14, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.065);
-    osc.connect(oscGain).connect(ac.destination);
-    osc.start(now);
-    osc.stop(now + 0.07);
-  } catch {
-    /* звук ніколи не має ламати навігацію */
+  // Якщо контекст ще suspended — граємо після resume, інакше перший тап німий
+  if (ac.state === "suspended") {
+    void ac.resume().then(run).catch(() => {});
+    return;
   }
+  run();
 }
 
 /**

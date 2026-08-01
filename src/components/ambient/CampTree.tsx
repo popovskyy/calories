@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { haptic } from "@/lib/haptics";
 import { playWoodChop } from "@/lib/sfx";
 
-const CHOPS_NEEDED = 5;
-const GROW_MS = 21000;
+const CHOPS_NEEDED = 10;
 const FALL_MS = 480;
-const RESPAWN_MS = 4000;
+const RESPAWN_MS = 3500;
 
-type Phase = "growing" | "ready" | "chopping" | "falling" | "logs";
+type Phase = "ready" | "chopping" | "falling" | "logs";
 
 interface CampTreeProps {
   /** Колоду кинули у вогонь — Campfire збільшує полум'я й грає toss. */
@@ -18,25 +17,19 @@ interface CampTreeProps {
 }
 
 /**
- * Сосна біля вогнища: росте → рубається тапами → стає колодами → респавн.
+ * Сосна біля вогнища: одразу готова → рубається тапами → колоди → респавн.
  * Локальний ambient-стейт, без armRecalc / meal-ритуалу.
  */
 export function CampTree({ onLogToss }: CampTreeProps) {
   const reduce = useReducedMotion();
-  const uid = useId();
-  const [phase, setPhase] = useState<Phase>(reduce ? "ready" : "growing");
+  const [phase, setPhase] = useState<Phase>("ready");
   const [chops, setChops] = useState(0);
   const [shakeKey, setShakeKey] = useState(0);
   const [logs, setLogs] = useState<number[]>([]);
+  const chopsRef = useRef(0);
   const logSeq = useRef(0);
-
-  // Ріст → ready
-  useEffect(() => {
-    if (phase !== "growing") return;
-    const delay = reduce ? 0 : GROW_MS;
-    const t = window.setTimeout(() => setPhase("ready"), delay);
-    return () => window.clearTimeout(t);
-  }, [phase, reduce]);
+  const phaseRef = useRef<Phase>("ready");
+  phaseRef.current = phase;
 
   // Падіння → дві колоди
   useEffect(() => {
@@ -51,27 +44,34 @@ export function CampTree({ onLogToss }: CampTreeProps) {
     return () => window.clearTimeout(t);
   }, [phase, reduce]);
 
-  // Усі колоди згоріли → пауза → знову росте
+  // Усі колоди згоріли → пауза → знову готове дерево (без росту)
   useEffect(() => {
     if (phase !== "logs" || logs.length > 0) return;
     const t = window.setTimeout(() => {
+      chopsRef.current = 0;
       setChops(0);
-      setPhase(reduce ? "ready" : "growing");
+      setPhase("ready");
     }, RESPAWN_MS);
     return () => window.clearTimeout(t);
-  }, [phase, logs.length, reduce]);
+  }, [phase, logs.length]);
 
-  const leanDeg = chops * 2.4;
+  const leanDeg = chops * 1.2;
   const canChop = phase === "ready" || phase === "chopping";
+  const progress = chops / CHOPS_NEEDED;
 
   const onChop = () => {
-    if (!canChop) return;
+    const p = phaseRef.current;
+    if (p !== "ready" && p !== "chopping") return;
+
+    // Звук/хаптик одразу — навіть якщо стейт ще не встиг оновитись
     playWoodChop();
     haptic("click");
-    setShakeKey((k) => k + 1);
-    const next = chops + 1;
+
+    const next = chopsRef.current + 1;
+    chopsRef.current = next;
     setChops(next);
-    if (phase === "ready") setPhase("chopping");
+    setShakeKey((k) => k + 1);
+    if (p === "ready") setPhase("chopping");
     if (next >= CHOPS_NEEDED) setPhase("falling");
   };
 
@@ -81,69 +81,65 @@ export function CampTree({ onLogToss }: CampTreeProps) {
   };
 
   const showTree =
-    phase === "growing" ||
-    phase === "ready" ||
-    phase === "chopping" ||
-    phase === "falling";
+    phase === "ready" || phase === "chopping" || phase === "falling";
 
   return (
     <div
-      className="absolute bottom-[22px] right-1 z-[1] w-[72px] touch-manipulation"
+      className="absolute bottom-[14px] right-0 z-[3] w-[110px] touch-manipulation select-none"
       aria-hidden
     >
       {showTree ? (
         <button
           type="button"
-          className={`relative mx-auto block h-[118px] w-[64px] border-0 bg-transparent p-0 ${
+          className={`relative mx-auto block h-[150px] w-[100px] border-0 bg-transparent p-0 ${
             canChop ? "cursor-pointer" : "cursor-default"
           }`}
           style={{
             transformOrigin: "50% 100%",
             ["--lean" as string]: `${leanDeg}deg`,
+            // Розтягує хіт-зону під палець; без візуального фону
+            WebkitTapHighlightColor: "transparent",
           }}
           disabled={!canChop}
           onPointerDown={(e) => {
+            // pointerdown надійніший за click на мобілці; stop щоб не
+            // з’їдав GlobalClickFx / інші шари
             e.preventDefault();
+            e.stopPropagation();
             onChop();
           }}
         >
+          {/* Невидима хіт-площа на весь прямокутник кнопки */}
+          <span className="absolute inset-0 z-[2]" />
+
           <div
-            key={phase === "growing" ? `${uid}-grow` : "grown"}
-            className={
-              phase === "growing"
-                ? "camp-tree-grow absolute inset-0"
-                : "absolute inset-0"
-            }
+            className="pointer-events-none absolute inset-x-2 bottom-2 top-1"
             style={
-              phase === "growing" && !reduce
+              phase === "falling" && !reduce
                 ? {
                     transformOrigin: "50% 100%",
-                    animation: `treeGrow ${GROW_MS}ms cubic-bezier(0.22, 1, 0.36, 1) forwards`,
+                    animation: `treeFall ${FALL_MS}ms cubic-bezier(0.4, 0, 1, 1) forwards`,
                   }
-                : phase === "falling" && !reduce
-                  ? {
-                      transformOrigin: "50% 100%",
-                      animation: `treeFall ${FALL_MS}ms cubic-bezier(0.4, 0, 1, 1) forwards`,
-                    }
-                  : {
-                      transformOrigin: "50% 100%",
-                      transform:
-                        phase === "chopping" || phase === "ready"
-                          ? `rotate(${leanDeg}deg)`
-                          : undefined,
-                    }
+                : {
+                    transformOrigin: "50% 100%",
+                    transform: `rotate(${leanDeg}deg)`,
+                  }
             }
           >
             <div
               key={shakeKey}
               className={
-                phase === "chopping" && shakeKey > 0 && !reduce
+                (phase === "chopping" || phase === "ready") &&
+                shakeKey > 0 &&
+                !reduce
                   ? "camp-tree-shake absolute inset-0"
                   : "absolute inset-0"
               }
               style={
-                phase === "chopping" && shakeKey > 0 && !reduce
-                  ? { animation: "treeChopShake 0.22s ease-out" }
+                (phase === "chopping" || phase === "ready") &&
+                shakeKey > 0 &&
+                !reduce
+                  ? { animation: "treeChopShake 0.2s ease-out" }
                   : undefined
               }
             >
@@ -151,13 +147,14 @@ export function CampTree({ onLogToss }: CampTreeProps) {
             </div>
           </div>
 
-          {phase === "chopping" ? (
-            <div className="pointer-events-none absolute -bottom-1 left-1/2 h-1 w-10 -translate-x-1/2 overflow-hidden rounded-full bg-black/35">
+          {/* Прогрес завжди видно, коли можна рубати */}
+          {canChop ? (
+            <div className="pointer-events-none absolute bottom-0 left-1/2 h-1.5 w-14 -translate-x-1/2 overflow-hidden rounded-full bg-black/40">
               <div
-                className="h-full rounded-full bg-[#c4a574]"
+                className="h-full rounded-full bg-[#d4b07a]"
                 style={{
-                  width: `${(chops / CHOPS_NEEDED) * 100}%`,
-                  transition: reduce ? undefined : "width 120ms ease-out",
+                  width: `${Math.max(progress * 100, chops > 0 ? 6 : 0)}%`,
+                  transition: reduce ? undefined : "width 100ms ease-out",
                 }}
               />
             </div>
@@ -166,10 +163,9 @@ export function CampTree({ onLogToss }: CampTreeProps) {
       ) : null}
 
       {phase === "logs" ? (
-        <div className="relative mx-auto mt-1 flex h-8 w-[68px] items-end justify-center gap-1.5">
-          {/* пень */}
+        <div className="relative mx-auto flex h-12 w-[100px] items-end justify-center gap-2 pb-1">
           <div
-            className="pointer-events-none absolute bottom-0 left-1/2 h-3 w-3.5 -translate-x-1/2 rounded-sm"
+            className="pointer-events-none absolute bottom-1 left-1/2 h-3.5 w-4 -translate-x-1/2 rounded-sm"
             style={{
               background: "linear-gradient(#6b4626,#3d2814)",
               boxShadow: "inset 0 1px 0 #a97a4c",
@@ -179,14 +175,16 @@ export function CampTree({ onLogToss }: CampTreeProps) {
             <button
               key={id}
               type="button"
-              className="relative z-[1] h-[14px] w-[30px] cursor-pointer rounded-[7px] border-0 p-0"
+              className="relative z-[1] h-7 w-11 cursor-pointer rounded-[8px] border-0 p-0"
               style={{
                 background: "linear-gradient(#b5844f,#6b4626)",
                 boxShadow: "inset 0 -3px 0 rgba(0,0,0,.28)",
                 transform: `rotate(${i === 0 ? -12 : 14}deg)`,
+                WebkitTapHighlightColor: "transparent",
               }}
               onPointerDown={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 haptic("click");
                 onTossLog(id);
               }}
@@ -201,54 +199,51 @@ export function CampTree({ onLogToss }: CampTreeProps) {
 function PineVisual({ chops }: { chops: number }) {
   return (
     <div className="absolute inset-0">
-      {/* крона — 3 яруси */}
       <div
-        className="absolute left-1/2 top-[6px] h-0 w-0 -translate-x-1/2"
+        className="absolute left-1/2 top-[4px] h-0 w-0 -translate-x-1/2"
         style={{
-          borderLeft: "18px solid transparent",
-          borderRight: "18px solid transparent",
-          borderBottom: "28px solid #1a2e1a",
+          borderLeft: "20px solid transparent",
+          borderRight: "20px solid transparent",
+          borderBottom: "32px solid #1a2e1a",
         }}
       />
       <div
-        className="absolute left-1/2 top-[26px] h-0 w-0 -translate-x-1/2"
-        style={{
-          borderLeft: "24px solid transparent",
-          borderRight: "24px solid transparent",
-          borderBottom: "34px solid #243d24",
-        }}
-      />
-      <div
-        className="absolute left-1/2 top-[48px] h-0 w-0 -translate-x-1/2"
+        className="absolute left-1/2 top-[28px] h-0 w-0 -translate-x-1/2"
         style={{
           borderLeft: "28px solid transparent",
           borderRight: "28px solid transparent",
-          borderBottom: "38px solid #2d4a28",
+          borderBottom: "38px solid #243d24",
         }}
       />
-      {/* стовбур */}
       <div
-        className="absolute bottom-0 left-1/2 h-[34px] w-[11px] -translate-x-1/2 rounded-sm"
+        className="absolute left-1/2 top-[52px] h-0 w-0 -translate-x-1/2"
+        style={{
+          borderLeft: "32px solid transparent",
+          borderRight: "32px solid transparent",
+          borderBottom: "42px solid #2d4a28",
+        }}
+      />
+      <div
+        className="absolute bottom-0 left-1/2 h-[40px] w-[14px] -translate-x-1/2 rounded-sm"
         style={{
           background: "linear-gradient(90deg,#5c3a1e,#3d2612 55%,#2a1a0c)",
         }}
       />
-      {/* зарубки */}
-      {chops >= 1 ? (
+      {chops >= 2 ? (
         <div
-          className="absolute bottom-[18px] left-[18px] h-[2px] w-[14px] rounded-full bg-[#1a1008]/80"
+          className="absolute bottom-[22px] left-[28px] h-[2px] w-[16px] rounded-full bg-[#1a1008]/85"
           style={{ transform: "rotate(-18deg)" }}
         />
       ) : null}
-      {chops >= 3 ? (
+      {chops >= 5 ? (
         <div
-          className="absolute bottom-[12px] left-[16px] h-[2px] w-[16px] rounded-full bg-[#1a1008]/90"
+          className="absolute bottom-[16px] left-[26px] h-[2.5px] w-[18px] rounded-full bg-[#1a1008]/90"
           style={{ transform: "rotate(-12deg)" }}
         />
       ) : null}
-      {chops >= 4 ? (
+      {chops >= 8 ? (
         <div
-          className="absolute bottom-[22px] right-[16px] h-[2px] w-3 rounded-full bg-[#1a1008]/70"
+          className="absolute bottom-[26px] right-[26px] h-[2px] w-3.5 rounded-full bg-[#1a1008]/75"
           style={{ transform: "rotate(22deg)" }}
         />
       ) : null}
