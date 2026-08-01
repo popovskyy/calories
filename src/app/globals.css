@@ -2078,6 +2078,11 @@ html[data-theme="minecraft"] .rounded-full {
   18% { opacity: 1; }
   100% { transform: scaleY(1) scaleX(1); opacity: 1; }
 }
+/* Декоративна ялинка тихо зникає перед респавном */
+@keyframes firFadeOut {
+  0% { transform: scaleY(1) scaleX(1); opacity: 1; }
+  100% { transform: scaleY(0.72) scaleX(0.88); opacity: 0; }
+}
 @keyframes treeChopShake {
   0%,
   100% { transform: translateX(0); }
@@ -2403,6 +2408,7 @@ html[data-theme="minecraft"] .rounded-full {
     display: none !important;
   }
   .camp-tree-grow,
+  .camp-fir-fade,
   .camp-tree-shake,
   .camp-tree-fall,
   .camp-axe,
@@ -2412,7 +2418,8 @@ html[data-theme="minecraft"] .rounded-full {
   .camp-axe {
     display: none !important;
   }
-  .camp-tree-grow {
+  .camp-tree-grow,
+  .camp-fir-fade {
     transform: none !important;
     opacity: 1 !important;
   }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { CampDeer } from "@/components/ambient/CampDeer";
+import { CampFirGrove } from "@/components/ambient/CampFirGrove";
 import { CampLogVisual } from "@/components/ambient/CampLogVisual";
 import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
@@ -165,6 +166,9 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
           transformOrigin: "50% 100%",
         }}
       />
+
+      {/* ялинки біля оленя — ростуть у лівому коридорі, не затуляють вогонь */}
+      <CampFirGrove />
 
       {/* олень біля вогнища — тікає і від meal-ритуалу, і від колоди з дерева */}
       <CampDeer ritualActive={active || treeTossing} />
