@@ -8,7 +8,7 @@ import { CampLogVisual } from "@/components/ambient/CampLogVisual";
 import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
-import { HERO_HEAT_SIZE_SCALE, heroHeatFromCalories } from "@/lib/hero-heat";
+import { heroHeatFromCalories } from "@/lib/hero-heat";
 import { claimRitualSound, playFireBurst, playFireSizzle, playLogToss } from "@/lib/sfx";
 import { haptic } from "@/lib/haptics";
 import { useAppStore } from "@/store/useAppStore";
@@ -88,19 +88,17 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const [pokeKey, setPokeKey] = useState(0);
   const treeTossing = treeTossKey !== null;
 
-  // База від size; колоди — дрібний бонус, поки не dying/out
+  // Scale з heroHeat (перебір = half mega). Колоди — лише до перебору.
   const logBoost =
-    heat.extinguished || heat.dying
+    heat.extinguished || heat.warn
       ? 0
       : Math.min(logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_LOG_CAP);
-  const baseScale =
-    heat.size === "out" ? 0 : HERO_HEAT_SIZE_SCALE[heat.size];
-  const fireScale = heat.extinguished ? 0 : baseScale + logBoost;
-  const fireOpacity = heat.extinguished ? 0 : 0.4 + heat.intensity * 0.6;
-  // Поки не out — полум'я завжди з CSS flicker. Іскри — не на small.
+  const fireScale = heat.extinguished ? 0 : heat.fireScale + logBoost;
+  const fireOpacity = heat.extinguished ? 0 : 0.45 + heat.intensity * 0.55;
+  // Поки не out — ЗАВЖДИ горить (flicker). Іскри теж — навіть на half/small.
   const alive = !heat.extinguished;
-  const showSparks = alive && heat.size !== "small" && !reduce;
-  const flaring = alive && heat.size !== "small" && (active || treeTossing);
+  const showSparks = alive && !reduce;
+  const flaring = alive && !heat.warn && (active || treeTossing);
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -261,17 +259,22 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                 style={{
                   transformOrigin: "50% 100%",
                   animation:
-                    pokeKey > 0 && !flaring && !reduce && heat.size !== "small"
+                    pokeKey > 0 && !flaring && !reduce
                       ? "firePoke 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
                       : undefined,
                 }}
               >
+                {/*
+                  Inline animation + CSS-клас: перебір НІКОЛИ не може
+                  поставити animation: undefined (баг на main).
+                */}
                 <div
                   className="flame flame-big absolute bottom-[12px] left-1/2 -ml-[16px] h-[100px] w-[32px]"
                   style={{
                     borderRadius: FLAME_RADIUS,
                     background: fire.big,
                     filter: "blur(.35px)",
+                    animation: "flameBig 0.95s linear infinite",
                   }}
                 />
                 <div
@@ -279,6 +282,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.mid,
+                    animation: "flameMid 0.72s linear infinite",
                   }}
                 />
                 <div
@@ -286,6 +290,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                   style={{
                     background: fire.tip,
                     filter: "blur(1px)",
+                    animation: "flameTip 0.9s linear infinite",
                   }}
                 />
                 <div
@@ -294,6 +299,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.side,
                     transformOrigin: "50% 100%",
+                    animation: "flameSide 0.88s linear infinite",
                   }}
                 />
                 <div
@@ -302,6 +308,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.side,
                     transformOrigin: "50% 100%",
+                    animation: "flameSide 1.05s linear .28s infinite",
                   }}
                 />
                 <div
@@ -311,6 +318,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                     background: fire.mid,
                     opacity: 0.75,
                     transformOrigin: "50% 100%",
+                    animation: "flameMid 0.8s linear .15s infinite",
                   }}
                 />
 
