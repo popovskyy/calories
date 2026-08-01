@@ -2003,25 +2003,48 @@ html[data-theme="minecraft"] .rounded-full {
    ============================================================ */
 @keyframes fireGlow {
   0%,
-  100% { opacity: 0.45; }
-  50% { opacity: 0.85; }
+  100% { opacity: 0.4; }
+  40% { opacity: 0.82; }
+  70% { opacity: 0.55; }
 }
+/* Живе полум'я: нерівний flicker, не синусоїда */
 @keyframes flameBig {
-  0%,
-  100% { transform: scaleY(1) scaleX(1) translateY(0); opacity: 0.95; }
-  35% { transform: scaleY(1.16) scaleX(0.9) translateY(-5px); opacity: 1; }
-  65% { transform: scaleY(0.92) scaleX(1.08) translateY(2px); opacity: 0.9; }
+  0% { transform: scaleY(1) scaleX(1) skewX(0deg) translateY(0); opacity: 0.95; }
+  12% { transform: scaleY(1.14) scaleX(0.88) skewX(-3deg) translateY(-4px); opacity: 1; }
+  28% { transform: scaleY(0.94) scaleX(1.06) skewX(2deg) translateY(1px); opacity: 0.92; }
+  47% { transform: scaleY(1.2) scaleX(0.86) skewX(3deg) translateY(-7px); opacity: 1; }
+  63% { transform: scaleY(0.9) scaleX(1.1) skewX(-2deg) translateY(2px); opacity: 0.88; }
+  81% { transform: scaleY(1.1) scaleX(0.92) skewX(1deg) translateY(-3px); opacity: 0.98; }
+  100% { transform: scaleY(1) scaleX(1) skewX(0deg) translateY(0); opacity: 0.95; }
 }
 @keyframes flameMid {
-  0%,
-  100% { transform: scaleY(1) translateX(0); }
-  30% { transform: scaleY(1.2) translateX(-3px); }
-  70% { transform: scaleY(0.9) translateX(4px); }
+  0% { transform: scaleY(1) scaleX(1) translateX(0) skewX(0deg); opacity: 0.95; }
+  18% { transform: scaleY(1.22) scaleX(0.9) translateX(-2px) skewX(4deg); opacity: 1; }
+  40% { transform: scaleY(0.88) scaleX(1.08) translateX(3px) skewX(-3deg); opacity: 0.9; }
+  62% { transform: scaleY(1.16) scaleX(0.92) translateX(-3px) skewX(2deg); opacity: 1; }
+  84% { transform: scaleY(0.94) scaleX(1.04) translateX(2px) skewX(-1deg); opacity: 0.92; }
+  100% { transform: scaleY(1) scaleX(1) translateX(0) skewX(0deg); opacity: 0.95; }
+}
+@keyframes flameSide {
+  0% { transform: scaleY(1) scaleX(1) rotate(0deg) translateY(0); opacity: 0.85; }
+  22% { transform: scaleY(1.28) scaleX(0.82) rotate(-4deg) translateY(-3px); opacity: 1; }
+  48% { transform: scaleY(0.86) scaleX(1.12) rotate(3deg) translateY(1px); opacity: 0.8; }
+  73% { transform: scaleY(1.18) scaleX(0.9) rotate(-2deg) translateY(-5px); opacity: 0.95; }
+  100% { transform: scaleY(1) scaleX(1) rotate(0deg) translateY(0); opacity: 0.85; }
 }
 @keyframes flameTip {
-  0%,
-  100% { transform: translateY(0) scale(1); opacity: 0.9; }
-  50% { transform: translateY(-9px) scale(0.8); opacity: 0.45; }
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.85; }
+  20% { transform: translateY(-6px) translateX(2px) scale(0.85); opacity: 0.55; }
+  45% { transform: translateY(-12px) translateX(-2px) scale(0.65); opacity: 0.25; }
+  70% { transform: translateY(-4px) translateX(1px) scale(0.9); opacity: 0.7; }
+  100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.85; }
+}
+/* Дрібні іскри, що постійно летять угору */
+@keyframes emberRise {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  12% { opacity: 0.9; }
+  55% { opacity: 0.7; }
+  100% { transform: translate(var(--ex, 0px), -56px) scale(0.25); opacity: 0; }
 }
 @keyframes logToss {
   0% { transform: translate(90px, -160px) rotate(-25deg); opacity: 0; }
