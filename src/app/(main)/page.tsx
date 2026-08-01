@@ -19,6 +19,7 @@ import { useCurrentUser, useDashboard, useEpics } from "@/hooks/useQueries";
 import { calcMacroTargets } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
+import type { DashboardDay } from "@/lib/types";
 
 const WeeklyChart = dynamic(
   () => import("@/components/WeeklyChart").then((m) => m.WeeklyChart),
@@ -169,9 +170,17 @@ export function OverviewTab() {
               </div>
               <ActiveEpic />
               <section className="mcard p-[18px_18px_16px]">
-                <div className="mb-3.5 flex items-baseline justify-between">
-                  <span className="lbl">Цей тиждень</span>
-                  <span className="text-[14px] text-[var(--color-muted3)]">
+                <div className="mb-3.5 flex items-baseline justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="lbl">Цей тиждень</span>
+                    {dash.data ? (
+                      <WeekAvgLine
+                        days={dash.data.days}
+                        target={user.targetCalories}
+                      />
+                    ) : null}
+                  </div>
+                  <span className="shrink-0 text-[14px] text-[var(--color-muted3)]">
                     ціль {user.targetCalories.toLocaleString("uk-UA")}
                   </span>
                 </div>
@@ -191,6 +200,43 @@ export function OverviewTab() {
       </section>
     </>
   );
+}
+
+/** Середнє net за дні з записами їжі: сума ÷ кількість заповнених днів. */
+function WeekAvgLine({
+  days,
+  target,
+}: {
+  days: DashboardDay[];
+  target: number;
+}) {
+  const filled = days.filter((d) => (d.consumedCalories ?? 0) > 0 || d.totalCalories > 0);
+  if (filled.length === 0) return null;
+  const avg = Math.round(
+    filled.reduce((s, d) => s + d.totalCalories, 0) / filled.length,
+  );
+  const delta = avg - target;
+  const deltaLabel =
+    Math.abs(delta) < 30
+      ? "біля цілі"
+      : delta > 0
+        ? `+${delta.toLocaleString("uk-UA")} до цілі`
+        : `−${Math.abs(delta).toLocaleString("uk-UA")} від цілі`;
+
+  return (
+    <p className="mt-0.5 text-[13px] tabular-nums text-[var(--color-muted2)]">
+      середнє {avg.toLocaleString("uk-UA")} · {filled.length}{" "}
+      {pluralDaysUk(filled.length)} · {deltaLabel}
+    </p>
+  );
+}
+
+function pluralDaysUk(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "день";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "дні";
+  return "днів";
 }
 
 /**
