@@ -621,6 +621,91 @@ export function playWoodChop() {
 }
 
 /**
+ * Дровина вдарила в жар: тріск + низький «рокіт» полум'я.
+ * Окремо від whoosh польоту — кликати, коли колода долітає.
+ */
+export function playFireBurst() {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  const run = () => {
+    try {
+      const now = ac.currentTime;
+
+      // Шипіння / тріск жару
+      const crackBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.55), ac.sampleRate);
+      const crackData = crackBuf.getChannelData(0);
+      for (let i = 0; i < crackData.length; i++) {
+        const t = i / crackData.length;
+        const env = Math.sin(Math.PI * Math.min(1, t * 1.35)) * Math.pow(1 - t, 0.55);
+        // Рідкі «клацання» вугілля
+        const pop = Math.random() > 0.985 ? Math.random() * 0.9 : 0;
+        crackData[i] = ((Math.random() * 2 - 1) * 0.55 + pop) * env;
+      }
+      const crack = ac.createBufferSource();
+      crack.buffer = crackBuf;
+      const band = ac.createBiquadFilter();
+      band.type = "bandpass";
+      band.frequency.setValueAtTime(1800, now);
+      band.frequency.exponentialRampToValueAtTime(700, now + 0.45);
+      band.Q.setValueAtTime(0.7, now);
+      const crackGain = ac.createGain();
+      crackGain.gain.setValueAtTime(0.0001, now);
+      crackGain.gain.exponentialRampToValueAtTime(0.2, now + 0.04);
+      crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+      crack.connect(band).connect(crackGain).connect(ac.destination);
+      crack.start(now);
+      crack.stop(now + 0.55);
+
+      // Низький рокіт полум'я
+      const roarBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.7), ac.sampleRate);
+      const roarData = roarBuf.getChannelData(0);
+      for (let i = 0; i < roarData.length; i++) {
+        const t = i / roarData.length;
+        const env = Math.sin(Math.PI * Math.min(1, t * 1.2)) * (1 - t * 0.65);
+        roarData[i] = (Math.random() * 2 - 1) * env;
+      }
+      const roar = ac.createBufferSource();
+      roar.buffer = roarBuf;
+      const low = ac.createBiquadFilter();
+      low.type = "lowpass";
+      low.frequency.setValueAtTime(220, now);
+      low.frequency.exponentialRampToValueAtTime(380, now + 0.2);
+      low.frequency.exponentialRampToValueAtTime(160, now + 0.65);
+      const roarGain = ac.createGain();
+      roarGain.gain.setValueAtTime(0.0001, now);
+      roarGain.gain.exponentialRampToValueAtTime(0.24, now + 0.06);
+      roarGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+      roar.connect(low).connect(roarGain).connect(ac.destination);
+      roar.start(now);
+      roar.stop(now + 0.72);
+
+      // Два швидких «клаци» вугілля
+      [0.05, 0.14, 0.28].forEach((offset, i) => {
+        const osc = ac.createOscillator();
+        const g = ac.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(180 - i * 35, now + offset);
+        g.gain.setValueAtTime(0.07, now + offset);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.045);
+        osc.connect(g).connect(ac.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.05);
+      });
+    } catch {
+      /* звук ніколи не має ламати навігацію */
+    }
+  };
+
+  if (ac.state === "suspended") {
+    void ac.resume().then(run).catch(() => {});
+    return;
+  }
+  run();
+}
+
+/**
  * Тап по навігаційній посилці (таби внизу, лінки на інші сторінки).
  *
  * Навмисно тихіший і нижчий за базовий клік: перехід між сторінками не

@@ -6,7 +6,7 @@ import { CampDeer } from "@/components/ambient/CampDeer";
 import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
-import { claimRitualSound, playLogToss } from "@/lib/sfx";
+import { claimRitualSound, playFireBurst, playLogToss } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 
@@ -95,9 +95,16 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
 
   useEffect(() => {
     if (!recalc) return;
-    if (claimRitualSound(recalc.id)) playLogToss(packRef.current);
-    const t = window.setTimeout(consumeRecalc, 2600);
-    return () => window.clearTimeout(t);
+    const timers: number[] = [];
+    if (claimRitualSound(recalc.id)) {
+      playLogToss(packRef.current);
+      // Рокіт жару, коли дровина долітає (~0.5s у logToss)
+      timers.push(window.setTimeout(() => playFireBurst(), 480));
+    }
+    timers.push(window.setTimeout(consumeRecalc, 2600));
+    return () => {
+      for (const t of timers) window.clearTimeout(t);
+    };
   }, [recalc, consumeRecalc]);
 
   useEffect(() => {
@@ -108,6 +115,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
 
   const onTreeLogToss = useCallback(() => {
     playLogToss(packRef.current);
+    window.setTimeout(() => playFireBurst(), 380);
     setLogsFed((n) => n + 1);
     setTreeTossKey(Date.now());
   }, []);
@@ -159,134 +167,140 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
       {/* сосна праворуч: ріст → рубання → дрова */}
       <CampTree onLogToss={onTreeLogToss} />
 
-      {/* вогонь + дрова + каміння: батько тримає logsFed scale, дитина — flare */}
+      {/* вогонь + дрова + каміння: scale лише на полум'ї, дрова/каміння стоять */}
       <div
         className="absolute bottom-0 left-1/2 z-[2] h-[150px] w-[196px]"
-        style={{
-          transform: `translateX(-50%) scale(${fireScale})`,
-          transformOrigin: "50% 100%",
-        }}
+        style={{ transform: "translateX(-50%)" }}
       >
+        {/* полум'я — росте з logsFed; flare поверх базового scale */}
         <div
-          key={`fire-${ritualKey}-${treeTossKey ?? "idle"}`}
-          className="relative h-full w-full"
+          className="absolute inset-0"
           style={{
+            transform: `scale(${fireScale})`,
             transformOrigin: "50% 100%",
-            animation: flaring ? "fireFlare 2.6s forwards" : undefined,
           }}
         >
           <div
-            className="flame absolute bottom-[14px] left-1/2 -ml-[13px] h-[74px] w-[26px]"
+            key={`flames-${ritualKey}-${treeTossKey ?? "idle"}`}
+            className="absolute inset-0"
             style={{
-              borderRadius: FLAME_RADIUS,
-              background: fire.big,
-              filter: "blur(.4px)",
-              animation: "flameBig 1.5s ease-in-out infinite",
+              transformOrigin: "50% 100%",
+              animation: flaring ? "fireFlare 2.6s forwards" : undefined,
             }}
-          />
-          <div
-            className="flame absolute bottom-4 left-1/2 -ml-[7px] h-12 w-[15px]"
-            style={{
-              borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-              background: fire.mid,
-              animation: "flameMid 1.1s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="flame absolute bottom-[74px] left-1/2 -ml-[4px] h-4 w-2 rounded-full"
-            style={{
-              background: fire.tip,
-              filter: "blur(1px)",
-              animation: "flameTip 1.7s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="flame absolute bottom-3 left-[38%] h-[34px] w-[14px]"
-            style={{
-              borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-              background: fire.side,
-              animation: "flameMid 1.35s ease-in-out .3s infinite",
-            }}
-          />
-          <div
-            className="flame absolute bottom-3 left-[58%] h-[30px] w-3"
-            style={{
-              borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
-              background: fire.side,
-              animation: "flameMid 1.5s ease-in-out .6s infinite",
-            }}
-          />
-
-          {/* дрова */}
-          <div className="absolute bottom-0 left-1/2 -ml-[85px] h-11 w-[170px]">
+          >
             <div
-              className="absolute bottom-1.5 left-1.5 h-5 w-[118px] rounded-[10px]"
+              className="flame absolute bottom-[14px] left-1/2 -ml-[13px] h-[74px] w-[26px]"
               style={{
-                background: "linear-gradient(#a97a4c,#6b4626)",
-                transform: "rotate(-9deg)",
-                boxShadow: "inset 0 -4px 0 rgba(0,0,0,.28)",
+                borderRadius: FLAME_RADIUS,
+                background: fire.big,
+                filter: "blur(.4px)",
+                animation: "flameBig 1.5s ease-in-out infinite",
               }}
             />
             <div
-              className="absolute bottom-2.5 right-1 h-5 w-[112px] rounded-[10px]"
+              className="flame absolute bottom-4 left-1/2 -ml-[7px] h-12 w-[15px]"
               style={{
-                background: "linear-gradient(#9a6d42,#5d3c20)",
-                transform: "rotate(11deg)",
-                boxShadow: "inset 0 -4px 0 rgba(0,0,0,.28)",
+                borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                background: fire.mid,
+                animation: "flameMid 1.1s ease-in-out infinite",
               }}
             />
             <div
-              className="absolute bottom-0 left-[26px] h-[18px] w-[118px] rounded-[9px]"
+              className="flame absolute bottom-[74px] left-1/2 -ml-[4px] h-4 w-2 rounded-full"
               style={{
-                background: "linear-gradient(#8a6039,#4d3220)",
-                transform: "rotate(-3deg)",
+                background: fire.tip,
+                filter: "blur(1px)",
+                animation: "flameTip 1.7s ease-in-out infinite",
               }}
             />
             <div
-              className="absolute bottom-4 left-[52px] h-[22px] w-[22px] rounded-full"
+              className="flame absolute bottom-3 left-[38%] h-[34px] w-[14px]"
               style={{
-                background: "radial-gradient(circle at 40% 40%, #ffd0a0, #a97a4c)",
-                boxShadow: "inset 0 0 0 3px #6b4626",
+                borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                background: fire.side,
+                animation: "flameMid 1.35s ease-in-out .3s infinite",
               }}
             />
             <div
-              className="absolute bottom-5 right-11 h-[18px] w-[18px] rounded-full"
+              className="flame absolute bottom-3 left-[58%] h-[30px] w-3"
               style={{
-                background: "radial-gradient(circle at 40% 40%, #ffd0a0, #9a6d42)",
-                boxShadow: "inset 0 0 0 3px #5d3c20",
+                borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
+                background: fire.side,
+                animation: "flameMid 1.5s ease-in-out .6s infinite",
               }}
             />
           </div>
+        </div>
 
-          {/* каміння по дузі */}
-          <div className="absolute -bottom-2 left-1/2 -ml-[98px] h-[34px] w-[196px]">
-            <div
-              className="absolute bottom-0 left-0 h-[26px] w-9"
-              style={{
-                borderRadius: "14px 12px 8px 8px",
-                background: "linear-gradient(#5b6660,#39423e)",
-              }}
-            />
-            <div
-              className="absolute -bottom-0.5 left-[34px] h-[22px] w-[30px] rounded-xl"
-              style={{ background: "linear-gradient(#4e5853,#333a37)" }}
-            />
-            <div
-              className="absolute -bottom-1 left-[70px] h-6 w-11 rounded-[14px]"
-              style={{ background: "linear-gradient(#5b6660,#39423e)" }}
-            />
-            <div
-              className="absolute -bottom-0.5 right-8 h-[22px] w-8 rounded-xl"
-              style={{ background: "linear-gradient(#4e5853,#333a37)" }}
-            />
-            <div
-              className="absolute bottom-0 right-0 h-[26px] w-9"
-              style={{
-                borderRadius: "12px 14px 8px 8px",
-                background: "linear-gradient(#5b6660,#39423e)",
-              }}
-            />
-          </div>
+        {/* дрова — фіксований розмір */}
+        <div className="absolute bottom-0 left-1/2 -ml-[85px] h-11 w-[170px]">
+          <div
+            className="absolute bottom-1.5 left-1.5 h-5 w-[118px] rounded-[10px]"
+            style={{
+              background: "linear-gradient(#a97a4c,#6b4626)",
+              transform: "rotate(-9deg)",
+              boxShadow: "inset 0 -4px 0 rgba(0,0,0,.28)",
+            }}
+          />
+          <div
+            className="absolute bottom-2.5 right-1 h-5 w-[112px] rounded-[10px]"
+            style={{
+              background: "linear-gradient(#9a6d42,#5d3c20)",
+              transform: "rotate(11deg)",
+              boxShadow: "inset 0 -4px 0 rgba(0,0,0,.28)",
+            }}
+          />
+          <div
+            className="absolute bottom-0 left-[26px] h-[18px] w-[118px] rounded-[9px]"
+            style={{
+              background: "linear-gradient(#8a6039,#4d3220)",
+              transform: "rotate(-3deg)",
+            }}
+          />
+          <div
+            className="absolute bottom-4 left-[52px] h-[22px] w-[22px] rounded-full"
+            style={{
+              background: "radial-gradient(circle at 40% 40%, #ffd0a0, #a97a4c)",
+              boxShadow: "inset 0 0 0 3px #6b4626",
+            }}
+          />
+          <div
+            className="absolute bottom-5 right-11 h-[18px] w-[18px] rounded-full"
+            style={{
+              background: "radial-gradient(circle at 40% 40%, #ffd0a0, #9a6d42)",
+              boxShadow: "inset 0 0 0 3px #5d3c20",
+            }}
+          />
+        </div>
+
+        {/* каміння по дузі — фіксований розмір */}
+        <div className="absolute -bottom-2 left-1/2 -ml-[98px] h-[34px] w-[196px]">
+          <div
+            className="absolute bottom-0 left-0 h-[26px] w-9"
+            style={{
+              borderRadius: "14px 12px 8px 8px",
+              background: "linear-gradient(#5b6660,#39423e)",
+            }}
+          />
+          <div
+            className="absolute -bottom-0.5 left-[34px] h-[22px] w-[30px] rounded-xl"
+            style={{ background: "linear-gradient(#4e5853,#333a37)" }}
+          />
+          <div
+            className="absolute -bottom-1 left-[70px] h-6 w-11 rounded-[14px]"
+            style={{ background: "linear-gradient(#5b6660,#39423e)" }}
+          />
+          <div
+            className="absolute -bottom-0.5 right-8 h-[22px] w-8 rounded-xl"
+            style={{ background: "linear-gradient(#4e5853,#333a37)" }}
+          />
+          <div
+            className="absolute bottom-0 right-0 h-[26px] w-9"
+            style={{
+              borderRadius: "12px 14px 8px 8px",
+              background: "linear-gradient(#5b6660,#39423e)",
+            }}
+          />
         </div>
       </div>
 
