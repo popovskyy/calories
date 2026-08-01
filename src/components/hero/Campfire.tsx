@@ -5,6 +5,7 @@ import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 
 import { CampDeer } from "@/components/ambient/CampDeer";
 import { CampFirGrove } from "@/components/ambient/CampFirGrove";
 import { CampLogVisual } from "@/components/ambient/CampLogVisual";
+import { CampOverageGiantDeer } from "@/components/ambient/CampOverageGiantDeer";
 import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
@@ -214,6 +215,9 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         ritualActive={active || treeTossing}
         calorieChaos={heat.extinguished}
       />
+
+      {/* при переборі — інколи величезний олень виглядає з краю екрана */}
+      <CampOverageGiantDeer active={heat.warn || heat.extinguished} />
 
       {/* сосни з обох боків вогнища */}
       <CampTree side="left" onLogToss={() => onTreeLogToss("left")} />
