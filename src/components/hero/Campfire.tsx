@@ -221,9 +221,9 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
       <CampTree side="left" onLogToss={() => onTreeLogToss("left")} />
       <CampTree side="right" onLogToss={() => onTreeLogToss("right")} />
 
-      {/* вогонь + дрова + каміння — компактне кострище; тап — шкварчання + poke */}
+      {/* вогонь + дрова + каміння — вище кострище під tall flame; тап — шкварчання + poke */}
       <div
-        className="absolute bottom-0 left-1/2 z-[2] h-[130px] w-[140px] cursor-pointer touch-manipulation"
+        className="absolute bottom-0 left-1/2 z-[2] h-[150px] w-[150px] cursor-pointer touch-manipulation"
         style={{ transform: "translateX(-50%)", WebkitTapHighlightColor: "transparent" }}
         onPointerDown={(e) => {
           e.preventDefault();
@@ -267,7 +267,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                 }}
               >
                 <div
-                  className="flame flame-big absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
+                  className="flame flame-big absolute bottom-[12px] left-1/2 -ml-[16px] h-[100px] w-[32px]"
                   style={{
                     borderRadius: FLAME_RADIUS,
                     background: fire.big,
@@ -275,21 +275,21 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                   }}
                 />
                 <div
-                  className="flame flame-mid absolute bottom-[14px] left-1/2 -ml-[6px] h-11 w-[13px]"
+                  className="flame flame-mid absolute bottom-[14px] left-1/2 -ml-[9px] h-[68px] w-[18px]"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.mid,
                   }}
                 />
                 <div
-                  className="flame flame-tip absolute bottom-[62px] left-1/2 -ml-[3px] h-3.5 w-1.5 rounded-full"
+                  className="flame flame-tip absolute bottom-[88px] left-1/2 -ml-[4px] h-5 w-2 rounded-full"
                   style={{
                     background: fire.tip,
                     filter: "blur(1px)",
                   }}
                 />
                 <div
-                  className="flame flame-side absolute bottom-[11px] left-[36%] h-[28px] w-[11px]"
+                  className="flame flame-side absolute bottom-[11px] left-[32%] h-[44px] w-[15px]"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.side,
@@ -297,7 +297,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                   }}
                 />
                 <div
-                  className="flame flame-side-alt absolute bottom-[11px] left-[58%] h-[24px] w-2.5"
+                  className="flame flame-side-alt absolute bottom-[11px] left-[58%] h-[38px] w-[13px]"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.side,
@@ -305,7 +305,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                   }}
                 />
                 <div
-                  className="flame flame-mid-alt absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
+                  className="flame flame-mid-alt absolute bottom-[13px] left-[44%] h-[56px] w-[12px]"
                   style={{
                     borderRadius: "50% 50% 45% 45% / 68% 68% 32% 32%",
                     background: fire.mid,

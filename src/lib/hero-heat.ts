@@ -34,12 +34,12 @@ const SIZE_INTENSITY: Record<Exclude<HeroHeatSize, "out">, number> = {
   small: 0.32,
 };
 
-/** Scale множник для Campfire (origin знизу). */
+/** Scale множник для Campfire (origin знизу). small ніколи не «20px». */
 export const HERO_HEAT_SIZE_SCALE: Record<Exclude<HeroHeatSize, "out">, number> = {
-  mega: 1.35,
-  large: 1.12,
-  medium: 0.78,
-  small: 0.52,
+  mega: 1.28,
+  large: 1.08,
+  medium: 0.86,
+  small: 0.68,
 };
 
 export interface HeroHeat {

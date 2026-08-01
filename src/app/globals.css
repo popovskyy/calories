@@ -2040,40 +2040,29 @@ html[data-theme="minecraft"] .rounded-full {
   100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.85; }
 }
 /*
- * Живий flicker через класи — не через inline animation, щоб перебір
- * калорій ніколи не міг випадково поставити animation: none / undefined.
+ * Живий flicker через класи + !important: перебір і prefers-reduced-motion
+ * НЕ повинні залишати статичне полум'я (це ключовий сигнал героя).
  */
 .flame-big {
-  animation: flameBig 0.95s linear infinite;
+  animation: flameBig 0.95s linear infinite !important;
 }
 .flame-mid {
-  animation: flameMid 0.72s linear infinite;
+  animation: flameMid 0.72s linear infinite !important;
 }
 .flame-mid-alt {
-  animation: flameMid 0.8s linear 0.15s infinite;
+  animation: flameMid 0.8s linear 0.15s infinite !important;
 }
 .flame-side {
-  animation: flameSide 0.88s linear infinite;
+  animation: flameSide 0.88s linear infinite !important;
 }
 .flame-side-alt {
-  animation: flameSide 1.05s linear 0.28s infinite;
+  animation: flameSide 1.05s linear 0.28s infinite !important;
 }
 .flame-tip {
-  animation: flameTip 0.9s linear infinite;
+  animation: flameTip 0.9s linear infinite !important;
 }
 .fire-glow-live {
   animation: fireGlow 2.8s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .flame-big,
-  .flame-mid,
-  .flame-mid-alt,
-  .flame-side,
-  .flame-side-alt,
-  .flame-tip,
-  .fire-glow-live {
-    animation: none !important;
-  }
 }
 /* Дрібні іскри, що постійно летять угору */
 @keyframes emberRise {
@@ -2459,8 +2448,11 @@ html[data-theme="minecraft"] .rounded-full {
     transform: none !important;
     opacity: 1 !important;
   }
-  .fire-glow,
-  .flame,
+  /*
+   * Вогонь героя ЗАВЖДИ flicker (клас .flame-* з !important) — це не декор,
+   * а сигнал калорій. Тут гасимо лише ambient glow / старий pl-fire.
+   */
+  .fire-glow:not(.fire-glow-live),
   .pl-fire {
     animation: none !important;
     opacity: 0.75 !important;
