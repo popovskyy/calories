@@ -25,8 +25,6 @@ interface WeightChartProps {
   targetWeight: number;
   /** Прогнозована дата досягнення цілі за поточним темпом (YYYY-MM-DD). */
   targetDate: string;
-  /** Вага за калорійним треком від старту — маркер «журнал», не факт. */
-  ledgerWeight?: number | null;
 }
 
 interface FactPoint {
@@ -51,7 +49,6 @@ export function WeightChart({
   startWeightDate,
   targetWeight,
   targetDate,
-  ledgerWeight,
 }: WeightChartProps) {
   const t0 = ms(startWeightDate);
   const tToday = ms(todayYMD());
@@ -78,7 +75,6 @@ export function WeightChart({
   for (const f of fact) f.plan = planAt(f.t);
 
   const weights = fact.map((f) => f.weight);
-  if (ledgerWeight != null) weights.push(ledgerWeight);
   const lo = Math.min(targetWeight, startWeight, ...weights);
   const hi = Math.max(targetWeight, startWeight, ...weights);
   const padY = Math.max(0.5, (hi - lo) * 0.12);
@@ -96,9 +92,6 @@ export function WeightChart({
   // На старті шляху заливка стиснулась би в вузьку смужку і читалась як
   // стовпчик — тоді лишаємо тільки лінію.
   const showArea = (last.t - t0) / span > 0.12;
-  const showLedger =
-    ledgerWeight != null &&
-    Math.abs(ledgerWeight - last.weight) >= 0.15;
 
   return (
     <figure className="m-0 min-w-0">
@@ -232,28 +225,6 @@ export function WeightChart({
               />
             ) : null}
 
-            {/* Вага за калоріями — окремо від факту на вагах */}
-            {showLedger && ledgerWeight != null ? (
-              <ReferenceDot
-                ifOverflow="visible"
-                x={last.t}
-                y={ledgerWeight}
-                r={4.5}
-                fill="#f0c674"
-                stroke="#1a1b22"
-                strokeWidth={2}
-                label={markerLabel({
-                  text: "Журнал",
-                  dx: nowOnRight ? -10 : 10,
-                  dy: ledgerWeight > last.weight ? -10 : 14,
-                  anchor: nowOnRight ? "end" : "start",
-                  fill: "#f0c674",
-                  size: 11,
-                  bold: true,
-                })}
-              />
-            ) : null}
-
             {/* Ціль */}
             <ReferenceLine
               ifOverflow="visible"
@@ -287,7 +258,6 @@ export function WeightChart({
         <LegendKey color="#c4b5fd" label="Факт" />
         <LegendKey color="#9aa0b4" label="План до цілі" dashed />
         <LegendKey color="#6bbf8a" label="Ціль" dashed />
-        {showLedger ? <LegendKey color="#f0c674" label="За калоріями" /> : null}
       </figcaption>
     </figure>
   );

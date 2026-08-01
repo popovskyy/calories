@@ -56,12 +56,9 @@ export function WeightGoalCard() {
     startWeightDate,
     currentWeight,
     targetWeight,
-    expectedWeight,
     deltaActual,
     projectedDate,
     daysLeft,
-    loggedDays,
-    totalDays,
     paceStatus,
   } = data;
 
@@ -131,11 +128,10 @@ export function WeightGoalCard() {
           startWeightDate={startWeightDate}
           targetWeight={targetWeight}
           targetDate={projectedDate}
-          ledgerWeight={expectedWeight}
         />
       ) : null}
 
-      <JournalForecastBlock data={data} remainingKg={remainingKg} />
+      <SimpleBalanceBlock data={data} remainingKg={remainingKg} />
 
       <p className="text-[11px] text-[var(--color-muted3)]">
         Оцінка орієнтовна: 7700 ккал ≈ 1 кг
@@ -144,8 +140,11 @@ export function WeightGoalCard() {
   );
 }
 
-/** Блок «журнал vs ваги» — окремі рядки, без суцільного дрібного тексту. */
-function JournalForecastBlock({
+/**
+ * Простий баланс: сума net за дні з записами vs денна ціль × ті самі дні.
+ * Без «ваги за калоріями» і % від підтримки.
+ */
+function SimpleBalanceBlock({
   data,
   remainingKg,
 }: {
@@ -153,80 +152,26 @@ function JournalForecastBlock({
   remainingKg: number;
 }) {
   const {
-    startWeight,
-    currentWeight,
-    expectedWeight,
     loggedDays,
-    totalDays,
     daysLeft,
     paceStatus,
     projectedDate,
-    maintenanceKcal,
     targetKcal,
     avgNetKcal,
     balanceVsTargetKcal,
-    balanceVsMaintenanceKcal,
-    daysOverTarget,
-    calorieStance,
-    plannedDeficitPct,
   } = data;
 
-  const scaleVsLedger =
-    currentWeight != null && expectedWeight != null
-      ? Math.round((currentWeight - expectedWeight) * 10) / 10
-      : null;
-
-  const balanceLine = formatBalanceLine(
+  const balanceLine = formatTargetBalance(
     balanceVsTargetKcal,
-    balanceVsMaintenanceKcal,
     targetKcal,
-    daysOverTarget,
     loggedDays,
   );
-  const stanceLine = stanceSummary(
-    calorieStance,
-    plannedDeficitPct,
-    avgNetKcal,
-    maintenanceKcal,
-  );
-  const factVsLedgerLine = scaleGapLine(scaleVsLedger, calorieStance);
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-3">
+    <div className="flex flex-col gap-2 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-3">
       <div>
         <div className="text-[12px] font-medium uppercase tracking-wide text-[var(--color-muted3)]">
-          Вага за калоріями
-        </div>
-        <div className="mt-0.5 text-[18px] font-semibold tabular-nums text-[var(--color-text)]">
-          {fmtKg(expectedWeight)}
-        </div>
-        <p className="mt-0.5 text-[13px] text-[var(--color-muted2)]">
-          від старту {fmtKg(startWeight)} · журнал{" "}
-          {loggedDays}/{totalDays} {pluralDays(totalDays)}
-        </p>
-      </div>
-
-      {factVsLedgerLine ? (
-        <p
-          className="text-[13px] leading-snug"
-          style={{
-            color:
-              scaleVsLedger != null && scaleVsLedger < -0.15
-                ? "var(--color-green)"
-                : scaleVsLedger != null && scaleVsLedger > 0.15
-                  ? "var(--color-red)"
-                  : "var(--color-muted2)",
-          }}
-        >
-          {factVsLedgerLine}
-        </p>
-      ) : null}
-
-      <div className="h-px bg-[var(--color-divider)]" />
-
-      <div>
-        <div className="text-[12px] font-medium uppercase tracking-wide text-[var(--color-muted3)]">
-          Баланс журналу
+          Баланс за період
         </div>
         {balanceLine ? (
           <p className="mt-0.5 text-[14px] font-medium leading-snug text-[var(--color-text)]">
@@ -237,15 +182,10 @@ function JournalForecastBlock({
             Немає днів із записами їжі
           </p>
         )}
-        {stanceLine ? (
-          <p className="mt-1 text-[13px] leading-snug text-[var(--color-muted2)]">
-            {stanceLine}
-          </p>
-        ) : null}
-        {maintenanceKcal != null && targetKcal != null && avgNetKcal != null ? (
-          <p className="mt-1 text-[12px] tabular-nums text-[var(--color-muted3)]">
-            ціль {targetKcal} · підтримка {maintenanceKcal} · середнє{" "}
-            {avgNetKcal} ккал/день
+        {targetKcal != null && avgNetKcal != null && loggedDays > 0 ? (
+          <p className="mt-1 text-[13px] tabular-nums text-[var(--color-muted2)]">
+            середнє {avgNetKcal} · ціль {targetKcal} ккал/день · {loggedDays}{" "}
+            {pluralDays(loggedDays)} із записами
           </p>
         ) : null}
       </div>
@@ -268,83 +208,23 @@ function JournalForecastBlock({
   );
 }
 
-function formatBalanceLine(
+function formatTargetBalance(
   vsTarget: number | null | undefined,
-  vsMaint: number | null | undefined,
   target: number | null | undefined,
-  daysOver: number,
   logged: number,
 ): string | null {
   if (vsTarget == null || logged <= 0) return null;
   const abs = Math.abs(vsTarget);
-  const overHint =
-    daysOver > 0
-      ? ` · ${daysOver} ${pluralDays(daysOver)} над ціллю`
-      : "";
-  if (Math.abs(vsTarget) < Math.max(80, Math.round((target ?? 2000) * 0.02) * logged)) {
-    const maintBit =
-      vsMaint != null && Math.abs(vsMaint) >= 80
-        ? vsMaint < 0
-          ? ` (від підтримки ще −${Math.abs(vsMaint)} ккал)`
-          : ` (над підтримкою +${vsMaint} ккал)`
-        : "";
-    return `Біля денної цілі за період${maintBit}${overHint}`;
+  const near =
+    Math.abs(vsTarget) <
+    Math.max(80, Math.round((target ?? 2000) * 0.02) * logged);
+  if (near) {
+    return `Біля денної цілі за ${logged} ${pluralDays(logged)} із записами`;
   }
   if (vsTarget > 0) {
-    return `Профіцит ≈ +${abs} ккал над денною ціллю${overHint}`;
+    return `Профіцит ≈ +${abs} ккал над денною ціллю · ${logged} ${pluralDays(logged)} із записами`;
   }
-  return `Дефіцит ≈ −${abs} ккал від денної цілі${overHint}`;
-}
-
-function stanceSummary(
-  stance: ForecastResponse["calorieStance"] | undefined,
-  plannedPct: number | null | undefined,
-  avgNet: number | null | undefined,
-  maintenance: number | null | undefined,
-): string | null {
-  if (!stance || stance === "unknown" || plannedPct == null || plannedPct <= 0) {
-    return null;
-  }
-  const depth =
-    avgNet != null && maintenance != null && maintenance > 0
-      ? Math.abs(Math.round(((avgNet - maintenance) / maintenance) * 100))
-      : null;
-
-  switch (stance) {
-    case "on_plan":
-      return depth != null
-        ? `Темп ≈ −${depth}% від підтримки (план −${plannedPct}%) — ок.`
-        : `Темп у межах плану (−${plannedPct}% від підтримки).`;
-    case "shallow":
-      return `Дефіцит м’якший за план (−${plannedPct}%): худнеш повільніше, бо були дні над ціллю.`;
-    case "deep":
-      return `Глибше за план (−${plannedPct}%) — стеж, щоб не було замало їжі.`;
-    case "maintenance":
-      return `Майже без дефіциту при плані −${plannedPct}% — до цілі майже не рухає журнал.`;
-    case "surplus":
-      return `Журнал у профіциті над підтримкою — калорії тягнуть вагу вгору, не до цілі.`;
-    default:
-      return null;
-  }
-}
-
-function scaleGapLine(
-  scaleVsLedger: number | null,
-  stance: ForecastResponse["calorieStance"] | undefined,
-): string | null {
-  if (scaleVsLedger == null || Math.abs(scaleVsLedger) < 0.15) {
-    return "На вагах і за калоріями зараз близько.";
-  }
-  if (scaleVsLedger < 0) {
-    // current < expected → lighter on scale than journal predicts
-    const gap = Math.abs(scaleVsLedger).toFixed(1).replace(".", ",");
-    if (stance === "surplus" || stance === "shallow" || stance === "maintenance") {
-      return `На вагах легше на ${gap} кг, ніж каже журнал — але за калоріями темп слабкий або з переборами.`;
-    }
-    return `На вагах легше на ${gap} кг, ніж каже журнал (факт попереду калорій).`;
-  }
-  const gap = scaleVsLedger.toFixed(1).replace(".", ",");
-  return `На вагах важче на ${gap} кг, ніж каже журнал — калорії ще не «наздогнали» ваги.`;
+  return `Дефіцит ≈ −${abs} ккал від денної цілі · ${logged} ${pluralDays(logged)} із записами`;
 }
 
 /** Швидке зважування: одне поле і кнопка — без відкриття форми профілю. */

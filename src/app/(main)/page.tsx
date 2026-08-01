@@ -170,7 +170,7 @@ export function OverviewTab() {
               <ActiveEpic />
               <section className="mcard p-[18px_18px_16px]">
                 <div className="mb-3.5 flex items-baseline justify-between">
-                  <span className="lbl">Останні 7 днів</span>
+                  <span className="lbl">Цей тиждень</span>
                   <span className="text-[14px] text-[var(--color-muted3)]">
                     ціль {user.targetCalories.toLocaleString("uk-UA")}
                   </span>
