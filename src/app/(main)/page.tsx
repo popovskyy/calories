@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ChevronDown } from "lucide-react";
@@ -29,10 +29,36 @@ const WeeklyChart = dynamic(
   },
 );
 
+/** Повільний скрол до низу сторінки, підлаштовується під зростаючу висоту accordion. */
+function scrollPageBottomSlow(durationMs = 480) {
+  const startY = window.scrollY;
+  const t0 = performance.now();
+  const easeOut = (t: number) => 1 - (1 - t) ** 3;
+
+  const tick = (now: number) => {
+    const p = Math.min(1, (now - t0) / durationMs);
+    const maxY = Math.max(
+      0,
+      document.documentElement.scrollHeight - window.innerHeight,
+    );
+    window.scrollTo(0, startY + (maxY - startY) * easeOut(p));
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 export function OverviewTab() {
   const { user, isLoading, isError, refetch } = useCurrentUser();
   const dash = useDashboard();
   const [moreOpen, setMoreOpen] = useState(false);
+  const scrollMoreRef = useRef(false);
+
+  // Скрол лише після кліку «Ще» (не коли QuestChip відкриває той самий accordion).
+  useEffect(() => {
+    if (!moreOpen || !scrollMoreRef.current) return;
+    scrollMoreRef.current = false;
+    scrollPageBottomSlow(520);
+  }, [moreOpen]);
 
   if (isError || dash.isError) {
     return (
@@ -60,6 +86,14 @@ export function OverviewTab() {
         block: "nearest",
       });
     }, 340);
+  };
+
+  const toggleMore = () => {
+    setMoreOpen((o) => {
+      const next = !o;
+      if (next) scrollMoreRef.current = true;
+      return next;
+    });
   };
 
   return (
@@ -143,7 +177,7 @@ export function OverviewTab() {
         <button
           type="button"
           aria-expanded={moreOpen}
-          onClick={() => setMoreOpen((o) => !o)}
+          onClick={toggleMore}
           className="mcard flex w-full cursor-pointer items-center justify-between gap-2 px-[18px] py-3.5 text-left"
         >
           <span className="lbl !mb-0">Ще</span>
