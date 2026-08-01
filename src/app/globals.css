@@ -2286,6 +2286,11 @@ html[data-theme="minecraft"] .rounded-full {
   35% { transform: translateY(-1px) scaleY(1.01) rotate(1.5deg); }
   70% { transform: translateY(-1.5px) scaleY(1.012) rotate(0.5deg); }
 }
+/* Комікс-хмара біля голови оленя при переборі */
+@keyframes scareBubbleIn {
+  0% { transform: scale(0.55) translateY(8px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
 @keyframes headScan {
   0%,
   100% { transform: rotate(-3deg); }
