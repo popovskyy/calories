@@ -49,7 +49,7 @@ function spawnFir(id: number, existing: Fir[]): Fir | null {
     id,
     leftPct,
     bottomPx: back ? rand(15, 22) : rand(5, 12),
-    scale: back ? rand(0.26, 0.38) : rand(0.36, 0.55),
+    scale: back ? rand(0.42, 0.58) : rand(0.55, 0.78),
     growMs: rand(2400, 4800),
     holdMs: rand(8000, 17000),
     fadeMs: rand(800, 1500),
@@ -164,9 +164,9 @@ export function CampFirGrove() {
           style={{
             left: `${fir.leftPct}%`,
             bottom: fir.bottomPx,
-            width: 56,
-            height: 86,
-            marginLeft: -28,
+            width: 72,
+            height: 110,
+            marginLeft: -36,
             transform: `scale(${fir.scale})`,
             transformOrigin: "50% 100%",
           }}
@@ -204,9 +204,9 @@ export function CampFirGrove() {
 /** Компактна ялинка — той самий лісовий силует, без слідів сокири. */
 function FirSapling() {
   return (
-    <svg
-      width="56"
-      height="86"
+            <svg
+      width="72"
+      height="110"
       viewBox="0 0 88 132"
       fill="none"
       className="overflow-visible"

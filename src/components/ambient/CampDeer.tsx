@@ -16,19 +16,26 @@ const EASE_SOFT = [0.22, 1, 0.36, 1] as const;
 const EASE_LEAVE = [0.45, 0.05, 0.55, 0.95] as const;
 
 /** Зони (px відносно left-10). */
-const FOREST_MIN = -40;
-const FOREST_MAX = 35;
-const PATH_MIN = 40;
-const PATH_MAX = 85;
-const CLEARING_MIN = 85;
-const CLEARING_MAX = 135;
+const FOREST_MIN = -36;
+const FOREST_MAX = 38;
+const PATH_MIN = 42;
+const PATH_MAX = 88;
+const CLEARING_MIN = 88;
+const CLEARING_MAX = 132;
 const FIRE_CENTER = 112;
 
-const SCALE_FOREST = [0.72, 0.82] as const;
-const SCALE_PATH = [0.88, 1.0] as const;
-const SCALE_FIRE = [1.08, 1.18] as const;
+const SCALE_FOREST = [0.7, 0.84] as const;
+const SCALE_PATH = [0.9, 1.02] as const;
+const SCALE_FIRE = [1.1, 1.22] as const;
 
-type PatrolBit = "watch" | "graze" | "approach" | "retreat" | "patrol";
+type AfterPatrol =
+  | "watch"
+  | "graze"
+  | "approach"
+  | "retreat"
+  | "sniff"
+  | "lookAround"
+  | "morePatrol";
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -49,25 +56,32 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
 }
 
-function walkDuration(from: number, to: number, secPerPx = 0.038) {
-  return clamp(Math.abs(to - from) * secPerPx, 1.6, 5.0);
+function walkDuration(from: number, to: number, secPerPx = 0.04) {
+  return clamp(Math.abs(to - from) * secPerPx, 1.4, 5.5);
 }
 
 function scaleForX(px: number) {
   if (px <= FOREST_MAX) return rand(SCALE_FOREST[0], SCALE_FOREST[1]);
   if (px < CLEARING_MIN) {
-    const t = (px - PATH_MIN) / (CLEARING_MIN - PATH_MIN);
+    const t = (px - PATH_MIN) / Math.max(1, CLEARING_MIN - PATH_MIN);
     return SCALE_PATH[0] + clamp(t, 0, 1) * (SCALE_PATH[1] - SCALE_PATH[0]);
   }
   return rand(SCALE_FIRE[0], SCALE_FIRE[1]);
 }
 
 /**
- * Олень-NPC біля вогнища: живе в лісі зліва, виходить з-під ялинок,
- * патрулює / дивиться / пасеться / підходить ближче (scale↑), іде назад у ліс.
- * Interruptible flee від дровини або тапу — з будь-якого стану.
+ * Олень-NPC: живе в лісі, приймає рішення бітами (огляд / нюх / підхід /
+ * відступ), а не «край → вогонь → край». При згаслому вогні (+300 ккал) —
+ * хаос: бігає й росте.
  */
-export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
+export function CampDeer({
+  ritualActive,
+  calorieChaos = false,
+}: {
+  ritualActive: boolean;
+  /** Вогонь згас від перебору — олень у паніці. */
+  calorieChaos?: boolean;
+}) {
   const reduce = useReducedMotion();
   const x = useMotionValue(rand(FOREST_MIN, FOREST_MAX));
   const scale = useMotionValue(rand(SCALE_FOREST[0], SCALE_FOREST[1]));
@@ -77,7 +91,6 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
   const [curious, setCurious] = useState(false);
   const [scared, setScared] = useState(false);
   const [startled, setStartled] = useState(false);
-  /** Після втечі — довше сидить у лісі. */
   const postFleeForest = useRef(false);
   const ctrls = useRef<AnimationPlaybackControls[]>([]);
   const gen = useRef(0);
@@ -94,10 +107,9 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
     return c;
   };
 
-  // Патруль NPC, поки немає flee
+  // Хаос при згаслому вогні: біг туди-сюди + ріст
   useEffect(() => {
-    if (reduce) return;
-    if (fleeing) return;
+    if (reduce || !calorieChaos || fleeing) return;
 
     const my = ++gen.current;
     let cancelled = false;
@@ -106,14 +118,62 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
     const sleep = (ms: number) =>
       new Promise<void>((resolve) => {
         const t = window.setTimeout(resolve, ms);
-        ctrls.current.push({
-          stop: () => window.clearTimeout(t),
-        } as AnimationPlaybackControls);
+        ctrls.current.push({ stop: () => window.clearTimeout(t) } as AnimationPlaybackControls);
+      });
+
+    const run = async () => {
+      setScared(true);
+      setCurious(false);
+      opacity.set(1);
+      let grow = 1.2;
+      while (alive()) {
+        grow = Math.min(1.65, grow + rand(0.04, 0.1));
+        const dest =
+          Math.random() < 0.5
+            ? rand(FOREST_MIN, PATH_MAX)
+            : rand(PATH_MIN, CLEARING_MAX - 8);
+        scaleX.set(dest >= x.get() ? 1 : -1);
+        setGait("run");
+        track(animate(scale, grow, { duration: 0.6, ease: [...EASE_SOFT] }));
+        await track(
+          animate(x, dest, {
+            duration: rand(0.55, 0.95),
+            ease: [0.2, 0.8, 0.2, 1],
+          }),
+        );
+        if (!alive()) break;
+        if (Math.random() < 0.35) {
+          setGait("idle");
+          await sleep(rand(180, 420));
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+      stopCtrls();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calorieChaos, fleeing, reduce]);
+
+  // Звичайний NPC-патруль
+  useEffect(() => {
+    if (reduce) return;
+    if (fleeing || calorieChaos) return;
+
+    const my = ++gen.current;
+    let cancelled = false;
+    const alive = () => !cancelled && gen.current === my;
+
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        const t = window.setTimeout(resolve, ms);
+        ctrls.current.push({ stop: () => window.clearTimeout(t) } as AnimationPlaybackControls);
       });
 
     const faceToward = (target: number) => {
-      const cur = x.get();
-      scaleX.set(target >= cur ? 1 : -1);
+      scaleX.set(target >= x.get() ? 1 : -1);
     };
 
     const moveTo = async (
@@ -134,16 +194,13 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       setGait(opts?.gait ?? "walk");
       if (opts?.targetScale != null) {
         track(
-          animate(scale, opts.targetScale, {
-            duration: dur * 0.9,
-            ease: [...ease],
-          }),
+          animate(scale, opts.targetScale, { duration: dur * 0.9, ease: [...ease] }),
         );
       }
       if (opts?.targetOpacity != null) {
         track(
           animate(opacity, opts.targetOpacity, {
-            duration: Math.min(dur, 0.8),
+            duration: Math.min(dur, 0.85),
             ease: [...EASE_SOFT],
           }),
         );
@@ -158,211 +215,237 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       setCurious(false);
     };
 
-    /** Стоїть/дихає серед ялинок; інколи мікро-зсув. */
     const inForest = async (longStay = false) => {
       setScared(false);
       const spot = rand(FOREST_MIN + 4, FOREST_MAX - 2);
       const s = rand(SCALE_FOREST[0], SCALE_FOREST[1]);
-      // Якщо вже в лісі — тихий дрейф; інакше підійти
-      if (x.get() > FOREST_MAX + 8) {
+      if (x.get() > FOREST_MAX + 10) {
         await moveTo(spot, {
           targetScale: s,
-          targetOpacity: rand(0.55, 0.75),
+          targetOpacity: rand(0.58, 0.78),
           ease: EASE_LEAVE,
         });
       } else {
         x.set(spot);
         scale.set(s);
-        if (opacity.get() < 0.4) opacity.set(rand(0.55, 0.72));
-        else {
+        if (opacity.get() < 0.35) {
           track(
-            animate(opacity, rand(0.55, 0.75), {
-              duration: 0.5,
-              ease: [...EASE_SOFT],
-            }),
+            animate(opacity, rand(0.58, 0.78), { duration: 0.5, ease: [...EASE_SOFT] }),
           );
         }
       }
       if (!alive()) return;
 
-      const stay = longStay ? rand(5000, 11000) : rand(2000, 7000);
+      const stay = longStay ? rand(6000, 14000) : rand(2800, 9000);
       const end = performance.now() + stay;
       while (alive() && performance.now() < end) {
-        await idlePose(rand(900, 2200), Math.random() < 0.25);
+        // Дивиться вглиб лісу / до вогню
+        if (Math.random() < 0.4) {
+          scaleX.set(Math.random() < 0.55 ? 1 : -1);
+          await idlePose(rand(1100, 2800), Math.random() < 0.45);
+        } else {
+          await idlePose(rand(800, 2000), Math.random() < 0.2);
+        }
         if (!alive()) return;
-        // мікро-зсув у лісі
-        if (Math.random() < 0.45) {
+        if (Math.random() < 0.5) {
           const nudge = clamp(
-            x.get() + rand(6, 14) * (Math.random() < 0.5 ? -1 : 1),
+            x.get() + rand(8, 18) * (Math.random() < 0.5 ? -1 : 1),
             FOREST_MIN,
             FOREST_MAX,
           );
           await moveTo(nudge, {
-            duration: rand(0.7, 1.2),
+            duration: rand(0.85, 1.5),
             targetScale: rand(SCALE_FOREST[0], SCALE_FOREST[1]),
-            targetOpacity: rand(0.55, 0.78),
+            targetOpacity: rand(0.58, 0.8),
           });
         }
-        if (!alive()) return;
       }
     };
 
-    /** Повільно виходить на стежку. */
     const emerge = async () => {
+      // Інколи визирає, ховається, і лише потім виходить
+      if (Math.random() < 0.35) {
+        scaleX.set(1);
+        const edge = rand(PATH_MIN - 2, PATH_MIN + 10);
+        await moveTo(edge, {
+          duration: rand(1.2, 2.0),
+          targetScale: rand(0.86, 0.96),
+          targetOpacity: 0.9,
+        });
+        if (!alive()) return;
+        await idlePose(rand(700, 1600), true);
+        if (!alive()) return;
+        if (Math.random() < 0.4) {
+          scaleX.set(-1);
+          await moveTo(rand(FOREST_MIN + 4, FOREST_MAX), {
+            duration: rand(1.0, 1.6),
+            targetScale: rand(SCALE_FOREST[0], SCALE_FOREST[1]),
+            targetOpacity: rand(0.55, 0.72),
+            ease: EASE_LEAVE,
+          });
+          if (!alive()) return;
+          await sleep(rand(800, 2200));
+          if (!alive()) return;
+        }
+      }
+
       scaleX.set(1);
-      const pathX = rand(PATH_MIN + 6, PATH_MAX - 4);
+      const pathX = rand(PATH_MIN + 4, PATH_MAX - 2);
       await moveTo(pathX, {
-        duration: rand(2.0, 3.5),
+        duration: rand(2.2, 4.0),
         targetScale: rand(SCALE_PATH[0], SCALE_PATH[1]),
-        targetOpacity: 0.95,
-        ease: EASE_SOFT,
+        targetOpacity: 0.96,
       });
       if (!alive()) return;
-      await idlePose(rand(600, 1400), Math.random() < 0.5);
+      await idlePose(rand(700, 1800), Math.random() < 0.6);
     };
 
-    /** 1–3 кроки PATH / CLEARING. */
     const patrol = async () => {
       const steps = 1 + Math.floor(Math.random() * 3);
       for (let i = 0; i < steps; i++) {
         if (!alive()) return;
-        const cur = x.get();
-        const bandLo = Math.random() < 0.55 ? PATH_MIN : CLEARING_MIN;
-        const bandHi = bandLo === PATH_MIN ? PATH_MAX : CLEARING_MAX;
-        const target = clamp(cur + rand(14, 28) * (Math.random() < 0.55 ? 1 : -1), bandLo, bandHi);
+        const preferPath = Math.random() < 0.6;
+        const lo = preferPath ? PATH_MIN : CLEARING_MIN;
+        const hi = preferPath ? PATH_MAX : CLEARING_MAX;
+        const target = clamp(
+          x.get() + rand(12, 32) * (Math.random() < 0.58 ? 1 : -1),
+          lo,
+          hi,
+        );
         await moveTo(target, {
-          duration: rand(0.7, 1.35),
+          duration: rand(0.85, 1.7),
           targetScale: scaleForX(target),
-          targetOpacity: 0.95,
+          targetOpacity: 0.96,
         });
         if (!alive()) return;
-        await idlePose(rand(500, 1400), Math.random() < 0.35);
+        // Пауза: думає
+        if (Math.random() < 0.55) {
+          await idlePose(rand(600, 2000), Math.random() < 0.4);
+        }
       }
     };
 
-    /** Дивиться на вогонь або «в кадр» без ходьби. */
     const watch = async () => {
       setGait("idle");
-      // Обличчям до вогню або розворот «дивиться на глядача»
-      if (Math.random() < 0.55) {
-        scaleX.set(x.get() < FIRE_CENTER ? 1 : -1);
-      } else {
+      if (Math.random() < 0.65) scaleX.set(x.get() < FIRE_CENTER ? 1 : -1);
+      else {
         scaleX.set(scaleX.get() >= 0 ? -1 : 1);
-        await sleep(rand(200, 450));
-        if (!alive()) return;
+        await sleep(rand(250, 500));
       }
-      setCurious(true);
-      await sleep(rand(1500, 4000));
       if (!alive()) return;
+      setCurious(true);
+      await sleep(rand(1800, 5200));
       setCurious(false);
     };
 
-    /** Короткі кроки «пасіння». */
+    const lookAround = async () => {
+      setGait("idle");
+      for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+        if (!alive()) return;
+        scaleX.set(scaleX.get() >= 0 ? -1 : 1);
+        setCurious(Math.random() < 0.5);
+        await sleep(rand(700, 1400));
+      }
+      setCurious(false);
+    };
+
+    const sniff = async () => {
+      // «Нюхає» — дрібні кроки + довгий idle
+      const cur = x.get();
+      const target = clamp(cur + rand(4, 10) * (Math.random() < 0.5 ? -1 : 1), PATH_MIN, CLEARING_MAX - 12);
+      await moveTo(target, {
+        duration: rand(0.45, 0.75),
+        targetScale: scaleForX(target) * 0.96,
+      });
+      if (!alive()) return;
+      await idlePose(rand(1400, 2800), true);
+    };
+
     const graze = async () => {
-      const n = 2 + Math.floor(Math.random() * 2);
+      const n = 2 + Math.floor(Math.random() * 3);
       for (let i = 0; i < n; i++) {
         if (!alive()) return;
         const cur = x.get();
         const target = clamp(
-          cur + rand(5, 11) * (Math.random() < 0.5 ? -1 : 1),
+          cur + rand(5, 12) * (Math.random() < 0.5 ? -1 : 1),
           PATH_MIN,
-          Math.min(CLEARING_MAX - 10, cur + 20),
+          Math.min(CLEARING_MAX - 12, PATH_MAX + 20),
         );
         await moveTo(target, {
-          duration: rand(0.4, 0.7),
+          duration: rand(0.45, 0.8),
           targetScale: scaleForX(target) * 0.97,
-          targetOpacity: 0.95,
         });
         if (!alive()) return;
-        await idlePose(rand(700, 1400), false);
+        await idlePose(rand(800, 1600), false);
       }
     };
 
-    /** Ближче до жару + більший scale. */
     const approach = async () => {
-      const closer = clamp(
-        FIRE_CENTER + rand(-10, 14),
-        CLEARING_MIN,
-        CLEARING_MAX,
-      );
+      const closer = clamp(FIRE_CENTER + rand(-8, 12), CLEARING_MIN, CLEARING_MAX);
       scaleX.set(1);
       await moveTo(closer, {
-        duration: rand(1.0, 2.0),
+        duration: rand(1.2, 2.4),
         targetScale: rand(SCALE_FIRE[0], SCALE_FIRE[1]),
         targetOpacity: 1,
       });
       if (!alive()) return;
       setGait("idle");
       setCurious(true);
-      await sleep(rand(800, 1600));
+      await sleep(rand(1000, 2200));
       setCurious(false);
-    };
 
-    /** Біля вогню: насторожено, інколи крок назад або сам тікає в ліс. */
-    const wary = async (): Promise<"retreat" | "patrol"> => {
-      setGait("idle");
-      setCurious(true);
-      await sleep(rand(700, 1600));
-      if (!alive()) return "patrol";
-
-      if (Math.random() < 0.22) {
-        setCurious(false);
-        return "retreat";
+      // Насторожився біля жару
+      if (Math.random() < 0.55) {
+        await sleep(rand(400, 900));
+        if (!alive()) return;
+        const back = clamp(closer - rand(14, 26), PATH_MIN, CLEARING_MAX);
+        scaleX.set(-1);
+        await moveTo(back, {
+          duration: rand(0.55, 1.0),
+          targetScale: scaleForX(back),
+        });
+        if (!alive()) return;
+        await idlePose(rand(600, 1400), true);
       }
-
-      // Крок назад від жару
-      const cur = x.get();
-      const back = clamp(cur - rand(12, 22), PATH_MIN, CLEARING_MAX);
-      scaleX.set(-1);
-      await moveTo(back, {
-        duration: rand(0.55, 0.95),
-        targetScale: scaleForX(back),
-      });
-      if (!alive()) return "patrol";
-      setGait("idle");
-      setCurious(false);
-      await sleep(rand(500, 1200));
-      return Math.random() < 0.35 ? "retreat" : "patrol";
     };
 
-    /** Walk назад у ліс (не run). */
     const retreatForest = async () => {
       setCurious(false);
       setGait("idle");
-      await sleep(rand(120, 350));
+      await sleep(rand(200, 600));
+      if (!alive()) return;
+      // Спочатку дивиться назад на вогонь
+      scaleX.set(1);
+      await idlePose(rand(500, 1200), true);
       if (!alive()) return;
       scaleX.set(-1);
-      await sleep(rand(400, 1100));
+      await sleep(rand(350, 900));
       if (!alive()) return;
-      const spot = rand(FOREST_MIN + 2, FOREST_MAX - 4);
+      const spot = rand(FOREST_MIN + 2, FOREST_MAX - 2);
       await moveTo(spot, {
-        duration: walkDuration(x.get(), spot, 0.042),
+        duration: walkDuration(x.get(), spot, 0.045),
         targetScale: rand(SCALE_FOREST[0], SCALE_FOREST[1]),
-        targetOpacity: rand(0.55, 0.72),
+        targetOpacity: rand(0.55, 0.74),
         ease: EASE_LEAVE,
       });
-      if (!alive()) return;
       setGait("idle");
     };
 
-    /** З лісу — півкроку в кадр і назад. */
-    const peek = async () => {
+    const peekOnly = async () => {
       scaleX.set(1);
-      const edge = rand(PATH_MIN - 4, PATH_MIN + 12);
-      await moveTo(edge, {
-        duration: rand(1.1, 1.8),
-        targetScale: rand(0.84, 0.95),
-        targetOpacity: 0.88,
+      await moveTo(rand(PATH_MIN - 4, PATH_MIN + 14), {
+        duration: rand(1.2, 2.0),
+        targetScale: rand(0.84, 0.96),
+        targetOpacity: 0.9,
       });
       if (!alive()) return;
-      await idlePose(rand(800, 1800), true);
+      await lookAround();
       if (!alive()) return;
       scaleX.set(-1);
-      const back = rand(FOREST_MIN + 4, FOREST_MAX - 2);
-      await moveTo(back, {
-        duration: rand(1.0, 1.7),
+      await moveTo(rand(FOREST_MIN + 4, FOREST_MAX), {
+        duration: rand(1.1, 1.9),
         targetScale: rand(SCALE_FOREST[0], SCALE_FOREST[1]),
-        targetOpacity: rand(0.55, 0.7),
+        targetOpacity: rand(0.55, 0.72),
         ease: EASE_LEAVE,
       });
     };
@@ -371,17 +454,13 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       setScared(false);
       setCurious(false);
 
-      // Старт: уже в лісі, не з дірки екрана
       if (opacity.get() < 0.3) {
         x.set(rand(FOREST_MIN + 6, FOREST_MAX - 4));
         scale.set(rand(SCALE_FOREST[0], SCALE_FOREST[1]));
         scaleX.set(1);
         opacity.set(0);
         track(
-          animate(opacity, rand(0.55, 0.72), {
-            duration: 0.55,
-            ease: [...EASE_SOFT],
-          }),
+          animate(opacity, rand(0.58, 0.76), { duration: 0.6, ease: [...EASE_SOFT] }),
         );
       }
 
@@ -391,65 +470,71 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
         await inForest(longForest);
         if (!alive()) break;
 
-        // ~15%: лише виглянув і сховався
-        if (Math.random() < 0.15) {
-          await peek();
-          if (!alive()) break;
+        // Рішення в лісі: виглянути / вийти / ще почекати
+        const forestChoice = pickWeighted({
+          peek: 22,
+          emerge: 58,
+          stay: 20,
+        } as const);
+        if (forestChoice === "stay") continue;
+        if (forestChoice === "peek") {
+          await peekOnly();
           continue;
         }
 
         await emerge();
         if (!alive()) break;
 
-        // Цикл біля галявини: кілька бітів, потім часто назад у ліс
-        let loops = 0;
-        while (alive() && loops < 5) {
-          loops += 1;
+        // Кілька «думок» на галявині, без жорсткого скрипту
+        let thoughts = 0;
+        const maxThoughts = 3 + Math.floor(Math.random() * 4);
+        while (alive() && thoughts < maxThoughts) {
+          thoughts += 1;
           await patrol();
           if (!alive()) break;
 
-          const bit: PatrolBit = pickWeighted({
-            watch: 25,
-            graze: 15,
-            approach: 25,
-            retreat: 20,
-            patrol: 15,
+          const bit: AfterPatrol = pickWeighted({
+            watch: 22,
+            graze: 14,
+            approach: 20,
+            retreat: 16,
+            sniff: 12,
+            lookAround: 10,
+            morePatrol: 6,
           });
 
-          if (bit === "patrol") {
-            continue;
-          }
+          if (bit === "morePatrol") continue;
           if (bit === "watch") {
             await watch();
-            if (!alive()) break;
+            continue;
+          }
+          if (bit === "lookAround") {
+            await lookAround();
+            continue;
+          }
+          if (bit === "sniff") {
+            await sniff();
             continue;
           }
           if (bit === "graze") {
             await graze();
-            if (!alive()) break;
             continue;
           }
           if (bit === "approach") {
             await approach();
-            if (!alive()) break;
-            const next = await wary();
-            if (!alive()) break;
-            if (next === "retreat") {
+            // Після підходу часто тікає в ліс
+            if (Math.random() < 0.45) {
               await retreatForest();
               break;
             }
             continue;
           }
-          // retreat
           await retreatForest();
           break;
         }
 
         if (!alive()) break;
-        // Якщо вийшли з циклу без retreat — все одно йдемо в ліс
-        if (x.get() > FOREST_MAX) {
-          await retreatForest();
-        }
+        if (x.get() > FOREST_MAX) await retreatForest();
       }
     };
 
@@ -458,10 +543,10 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
       cancelled = true;
       stopCtrls();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- motion values stable
-  }, [fleeing, reduce]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleeing, calorieChaos, reduce]);
 
-  // Втеча: alert → run у ліс з поточної позиції
+  // Втеча від ритуалу / тапу
   useEffect(() => {
     if (!fleeing || reduce) return;
 
@@ -493,7 +578,7 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
 
       scaleX.set(-1);
       setGait("run");
-      const forestX = rand(FOREST_MIN - 8, FOREST_MIN + 6);
+      const forestX = rand(FOREST_MIN - 6, FOREST_MIN + 8);
       track(
         animate(x, forestX, {
           duration: 0.95,
@@ -507,7 +592,7 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
         }),
       );
       track(
-        animate(opacity, 0.35, {
+        animate(opacity, calorieChaos ? 0.7 : 0.4, {
           duration: 0.7,
           delay: 0.22,
           ease: [0.4, 0, 1, 1],
@@ -520,8 +605,6 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
         await sleep(1400);
         if (gen.current === my) setStartled(false);
       }
-      // Ритуал: fleeing лишається true доки Campfire не зніме ritualActive;
-      // після цього patrol effect знову стартує з InForest (longStay).
     };
 
     void flee();
@@ -545,13 +628,12 @@ export function CampDeer({ ritualActive }: { ritualActive: boolean }) {
         }
       }}
     >
-      {/* scaleX окремо, щоб flip не конфліктував із розміром NPC */}
       <motion.div style={{ scaleX }}>
         <Deer
           variant="camp"
           width={58}
           height={82}
-          scared={scared}
+          scared={scared || calorieChaos}
           gait={gait}
           curious={curious}
         />

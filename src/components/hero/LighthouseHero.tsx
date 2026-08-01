@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { isInTargetFor } from "@/lib/economy";
+import { heroHeatFromCalories } from "@/lib/hero-heat";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { claimRitualSound, playFoghorn, playLighthouseDing } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
@@ -26,7 +27,8 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
   const reduce = useReducedMotion();
   const neon = frame === "neon";
   const safeTarget = target > 0 ? target : 1;
-  const progress = Math.min(Math.max(consumed / safeTarget, 0), 1);
+  const heat = heroHeatFromCalories(consumed, target);
+  const progress = heat.extinguished ? 0 : Math.min(Math.max(consumed / safeTarget, 0), 1);
   const remaining = target - consumed;
   const over = remaining < 0;
   const inTarget = consumed > 0 && isInTargetFor(consumed, safeTarget, goal);
@@ -77,20 +79,39 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[44px]" : digits >= 4 ? "text-[52px]" : "text-[58px]";
 
+  // Сила лампи від калорій (той самий heroHeat, що й у вогнища).
+  const lampPower = heat.extinguished ? 0.04 : heat.intensity;
+  const lampDim = heat.extinguished || heat.warn;
+
   // Куплена рамка «Неон» перефарбовує світло маяка — інакше преміум-тема
   // просто з'їдала покупку (рамки не було видно взагалі).
   const barColor = neon
-    ? over
-      ? "#ff2bd6"
-      : "#00f0ff"
-    : over
-      ? "#ff9a6c"
-      : inTarget
-        ? "#7fe3bd"
-        : "#ffc878";
-  const lampColor = neon ? (over ? "#ff2bd6" : "#aefaff") : over ? "#ff9a6c" : "#ffe0a8";
+    ? heat.extinguished
+      ? "#3a4550"
+      : over
+        ? "#ff2bd6"
+        : "#00f0ff"
+    : heat.extinguished
+      ? "#3a4550"
+      : over
+        ? "#ff9a6c"
+        : inTarget
+          ? "#7fe3bd"
+          : "#ffc878";
+  const lampColor = neon
+    ? heat.extinguished
+      ? "#1a2830"
+      : over
+        ? "#ff2bd6"
+        : "#aefaff"
+    : heat.extinguished
+      ? "#2a2218"
+      : over
+        ? "#ff9a6c"
+        : "#ffe0a8";
   const beamFrom = neon ? "#8df3ff" : "#ffd9a0";
   const beamTo = neon ? "#00f0ff" : "#ffb35c";
+  const beamOpacity = lampPower;
 
   return (
     <div className="relative my-1 h-[250px] w-full shrink-0 overflow-hidden">
@@ -111,20 +132,36 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
         <div
           className="mt-2 rounded-[var(--radius-pill)] px-3 py-1 text-[13px] font-bold"
           style={{
-            background: over
-              ? "color-mix(in srgb, #ff7a5c 30%, rgba(7,12,18,.9))"
-              : inTarget
-                ? "color-mix(in srgb, #5ec8a0 30%, rgba(7,12,18,.9))"
-                : "color-mix(in srgb, #ffb35c 26%, rgba(7,12,18,.9))",
-            color: over ? "#ffd9cc" : inTarget ? "#c9f5e4" : "#ffe6bd",
+            background: heat.extinguished
+              ? "color-mix(in srgb, #6a7380 28%, rgba(7,12,18,.9))"
+              : heat.warn
+                ? "color-mix(in srgb, #ff9a6c 32%, rgba(7,12,18,.9))"
+                : over
+                  ? "color-mix(in srgb, #ff7a5c 30%, rgba(7,12,18,.9))"
+                  : inTarget
+                    ? "color-mix(in srgb, #5ec8a0 30%, rgba(7,12,18,.9))"
+                    : "color-mix(in srgb, #ffb35c 26%, rgba(7,12,18,.9))",
+            color: heat.extinguished
+              ? "#c5ced8"
+              : heat.warn
+                ? "#ffe0cc"
+                : over
+                  ? "#ffd9cc"
+                  : inTarget
+                    ? "#c9f5e4"
+                    : "#ffe6bd",
             boxShadow: "inset 0 0 0 1px rgba(255,255,255,.14)",
           }}
         >
-          {over
-            ? `Перебір ${Math.abs(remaining).toLocaleString("uk-UA")}`
-            : inTarget
-              ? "У нормі"
-              : `Ще ${remaining.toLocaleString("uk-UA")} ккал`}
+          {heat.extinguished
+            ? "Маяк згас від перебору"
+            : heat.warn
+              ? "Обережно — світло слабшає"
+              : over
+                ? `Перебір ${Math.abs(remaining).toLocaleString("uk-UA")}`
+                : inTarget
+                  ? "У нормі"
+                  : `Ще ${remaining.toLocaleString("uk-UA")} ккал`}
         </div>
 
         {/* Прогрес — смуга світла: читається миттєво, на відміну від кута променя */}
@@ -173,9 +210,13 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
         <circle cx="62" cy="132" r="1" fill="#dbe8f5" opacity=".3" />
         <circle cx="292" cy="140" r="1.2" fill="#dbe8f5" opacity=".35" />
 
-        {/* промінь над водою, від ліхтаря вліво */}
-        <polygon points="246,168 252,168 8,224 8,196" fill="url(#lh-beam)" />
-        {ritualActive && !reduce ? (
+        {/* промінь над водою — сила від калорій */}
+        <polygon
+          points="246,168 252,168 8,224 8,196"
+          fill="url(#lh-beam)"
+          opacity={beamOpacity}
+        />
+        {ritualActive && !reduce && !heat.extinguished ? (
           <polygon
             key={`sweep-${ritualKey}`}
             points="246,168 252,168 8,232 8,188"
@@ -192,7 +233,7 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
           <path d="M42 240 h26 M86 240 h32 M138 240 h38 M196 240 h28 M242 240 h36" stroke="#2c4258" strokeWidth="1.1" opacity=".38" />
         </g>
         {/* відблиск ліхтаря на воді */}
-        <ellipse cx="249" cy="224" rx="9" ry="18" fill={beamTo} opacity=".2" />
+        <ellipse cx="249" cy="224" rx="9" ry="18" fill={beamTo} opacity={0.08 + lampPower * 0.18} />
 
         {/* скеля з підсвіченим гребенем — інакше зливається з водою */}
         <path d="M218 214 L228 200 L272 200 L282 214 Z" fill="#0e1721" />
@@ -209,9 +250,9 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
           style={{ cursor: "pointer" }}
           className="touch-manipulation"
         >
-          <ellipse cx="250" cy="162" rx="36" ry="28" fill="url(#lh-halo)" />
+          <ellipse cx="250" cy="162" rx="36" ry="28" fill="url(#lh-halo)" opacity={lampPower} />
           <rect x="236" y="168" width="28" height="4" rx="1.5" fill="#2a3848" />
-          {/* скло ліхтаря: тепле ядро + ребра рами, а не білий брусок */}
+          {/* скло ліхтаря: яскравість від калорій */}
           <rect
             x="242"
             y="155"
@@ -219,16 +260,22 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
             height="13"
             rx="2.5"
             fill={lampColor}
+            opacity={Math.max(0.15, lampPower)}
             style={{
-              animation: reduce
+              animation: reduce || heat.extinguished
                 ? undefined
                 : ritualActive
                   ? "lhLampFlare 1.7s ease-out"
                   : tapFlash
                     ? "lhLampFlare 0.6s ease-out"
-                    : inTarget
+                    : inTarget && !lampDim
                       ? "lighthousePulse 2.4s ease-in-out infinite"
                       : undefined,
+              filter: heat.extinguished
+                ? "brightness(0.35)"
+                : heat.warn
+                  ? "brightness(0.7)"
+                  : undefined,
             }}
           />
           <g opacity=".5" stroke="#8a5a22" strokeWidth=".9">

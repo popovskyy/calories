@@ -8,6 +8,7 @@ import { CampLogVisual } from "@/components/ambient/CampLogVisual";
 import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
+import { heroHeatFromCalories } from "@/lib/hero-heat";
 import { claimRitualSound, playFireBurst, playFireSizzle, playLogToss } from "@/lib/sfx";
 import { haptic } from "@/lib/haptics";
 import { useAppStore } from "@/store/useAppStore";
@@ -15,8 +16,9 @@ import { useCurrentUser } from "@/hooks/useQueries";
 
 const FLAME_RADIUS = "50% 50% 46% 46% / 66% 66% 34% 34%";
 const TREE_TOSS_MS = 2600;
-const FIRE_SCALE_PER_LOG = 0.1;
-const FIRE_SCALE_MAX = 1.45;
+/** Колода з дерева лише трохи підживлює, якщо вогонь ще живий. */
+const FIRE_SCALE_PER_LOG = 0.06;
+const FIRE_SCALE_LOG_CAP = 0.18;
 
 /**
  * Палітра вогню. Куплена рамка «Неон» не просто ховалась у лісовій темі —
@@ -52,14 +54,15 @@ const FIRE = {
  * навігацію, тож ритуал відпрацює й тоді, коли користувач збереже їжу на
  * /add і повернеться на Огляд лише за кілька екранів.
  *
- * Окремо — ambient-дерево: рубаєш → кидаєш колоди → полум'я росте локально,
- * без armRecalc.
+ * Окремо — ambient-дерево: рубаєш → кидаєш колоди → легкий бонус до полум'я,
+ * якщо вогонь ще не згасає від перебору калорій.
  */
 export function Campfire({ consumed, target, frame }: HeroProps) {
   const reduce = useReducedMotion();
   const remaining = target - consumed;
   const over = remaining < 0;
   const fire = frame === "neon" ? FIRE.neon : FIRE.warm;
+  const heat = heroHeatFromCalories(consumed, target);
 
   const recalc = useAppStore((s) => s.recalc);
   const consumeRecalc = useAppStore((s) => s.consumeRecalc);
@@ -84,8 +87,15 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const [treeTossSide, setTreeTossSide] = useState<"left" | "right">("right");
   const [pokeKey, setPokeKey] = useState(0);
   const treeTossing = treeTossKey !== null;
-  const fireScale = Math.min(1 + logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_MAX);
-  const flaring = active || treeTossing;
+
+  // База від калорій; колоди — дрібний бонус, поки не warning/out
+  const logBoost =
+    heat.extinguished || heat.warn
+      ? 0
+      : Math.min(logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_LOG_CAP);
+  const fireScale = heat.extinguished ? 0.08 : Math.max(0.12, heat.intensity + logBoost) * 1.15;
+  const fireOpacity = heat.extinguished ? 0.12 : 0.45 + heat.intensity * 0.55;
+  const flaring = !heat.extinguished && (active || treeTossing);
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -155,23 +165,51 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         </div>
       </div>
 
-      {/* ореол — компактніший, пульсує разом із полум'ям */}
+      {/* ореол — сила від калорій */}
       <div
         className="fire-glow pointer-events-none absolute -bottom-1 left-1/2 h-[120px] w-[160px]"
         style={{
           background:
             `radial-gradient(50% 60% at 50% 80%, ${fire.glow}, transparent 70%)`,
-          animation: "fireGlow 2.8s ease-in-out infinite",
+          animation: heat.extinguished ? undefined : "fireGlow 2.8s ease-in-out infinite",
           transform: `translateX(-50%) scale(${fireScale})`,
           transformOrigin: "50% 100%",
+          opacity: heat.extinguished ? 0.08 : 0.35 + heat.intensity * 0.65,
         }}
       />
+
+      {/* попередження при переборі +100 */}
+      {heat.warn ? (
+        <div
+          className="pointer-events-none absolute bottom-[118px] left-1/2 z-[4] w-[90%] -translate-x-1/2 text-center text-[11px] font-bold leading-tight"
+          style={{
+            color: "#ffc9a8",
+            textShadow: "0 1px 8px rgba(0,0,0,.75)",
+          }}
+        >
+          Обережно — вогонь може потухнути
+        </div>
+      ) : null}
+      {heat.extinguished ? (
+        <div
+          className="pointer-events-none absolute bottom-[118px] left-1/2 z-[4] w-[90%] -translate-x-1/2 text-center text-[11px] font-bold leading-tight"
+          style={{
+            color: "#c4b8a8",
+            textShadow: "0 1px 8px rgba(0,0,0,.75)",
+          }}
+        >
+          Вогонь згас від перебору
+        </div>
+      ) : null}
 
       {/* ялинки біля оленя — ростуть у лівому коридорі, не затуляють вогонь */}
       <CampFirGrove />
 
-      {/* олень біля вогнища — тікає і від meal-ритуалу, і від колоди з дерева */}
-      <CampDeer ritualActive={active || treeTossing} />
+      {/* олень: ритуал / хаос при згаслому вогні */}
+      <CampDeer
+        ritualActive={active || treeTossing}
+        calorieChaos={heat.extinguished}
+      />
 
       {/* сосни з обох боків вогнища */}
       <CampTree side="left" onLogToss={() => onTreeLogToss("left")} />
@@ -184,17 +222,22 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         onPointerDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (heat.extinguished) {
+            haptic("click");
+            return;
+          }
           playFireSizzle();
           haptic("click");
           if (!reduce) setPokeKey((k) => k + 1);
         }}
       >
-        {/* полум'я — росте з logsFed; flare / poke поверх базового scale */}
+        {/* полум'я — висота від калорій (+ легкий бонус від колод) */}
         <div
           className="absolute inset-0"
           style={{
             transform: `scale(${fireScale})`,
             transformOrigin: "50% 100%",
+            opacity: fireOpacity,
           }}
         >
           <div
