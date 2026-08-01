@@ -205,55 +205,132 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
 
 function PineVisual({ chops }: { chops: number }) {
   return (
-    <div className="absolute inset-0">
-      <div
-        className="absolute left-1/2 top-[4px] h-0 w-0 -translate-x-1/2"
-        style={{
-          borderLeft: "20px solid transparent",
-          borderRight: "20px solid transparent",
-          borderBottom: "32px solid #1a2e1a",
-        }}
-      />
-      <div
-        className="absolute left-1/2 top-[28px] h-0 w-0 -translate-x-1/2"
-        style={{
-          borderLeft: "28px solid transparent",
-          borderRight: "28px solid transparent",
-          borderBottom: "38px solid #243d24",
-        }}
-      />
-      <div
-        className="absolute left-1/2 top-[52px] h-0 w-0 -translate-x-1/2"
-        style={{
-          borderLeft: "32px solid transparent",
-          borderRight: "32px solid transparent",
-          borderBottom: "42px solid #2d4a28",
-        }}
-      />
-      <div
-        className="absolute bottom-0 left-1/2 h-[40px] w-[14px] -translate-x-1/2 rounded-sm"
-        style={{
-          background: "linear-gradient(90deg,#5c3a1e,#3d2612 55%,#2a1a0c)",
-        }}
-      />
-      {chops >= 2 ? (
-        <div
-          className="absolute bottom-[22px] left-[28px] h-[2px] w-[16px] rounded-full bg-[#1a1008]/85"
-          style={{ transform: "rotate(-18deg)" }}
+    <div className="absolute inset-0 flex items-end justify-center pb-0.5">
+      <svg
+        width="88"
+        height="132"
+        viewBox="0 0 88 132"
+        fill="none"
+        aria-hidden
+        className="overflow-visible"
+      >
+        {/* м’яка тінь під кроною */}
+        <ellipse cx="44" cy="126" rx="22" ry="4" fill="#000" opacity="0.22" />
+
+        {/* стовбур */}
+        <path
+          d="M38 88c1 8 1.5 18 1.5 30h9c0-12 .5-22 1.5-30
+             c-2-1-5-2-6-2s-4 1-6 2Z"
+          fill="#4a3018"
         />
-      ) : null}
-      {chops >= 5 ? (
-        <div
-          className="absolute bottom-[16px] left-[26px] h-[2.5px] w-[18px] rounded-full bg-[#1a1008]/90"
-          style={{ transform: "rotate(-12deg)" }}
+        <path
+          d="M41 90c.6 8 .8 16 .9 28h5.2c0-12 .2-20 .8-28
+             c-1.2-.6-2.8-1-3.45-1-.7 0-2.2.4-3.45 1Z"
+          fill="#6b4524"
         />
-      ) : null}
-      {chops >= 8 ? (
-        <div
-          className="absolute bottom-[26px] right-[26px] h-[2px] w-3.5 rounded-full bg-[#1a1008]/75"
-          style={{ transform: "rotate(22deg)" }}
+        <path
+          d="M43.2 92v26"
+          stroke="#2a180c"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          opacity="0.45"
         />
-      ) : null}
+
+        {/* нижній ярус крони — зубчастий */}
+        <path
+          d="M44 48
+             L72 92
+             L60 86 L54 96 L44 88 L34 96 L28 86 L16 92
+             Z"
+          fill="#1c331c"
+        />
+        <path
+          d="M44 52
+             L64 86
+             L56 82 L50 90 L44 84 L38 90 L32 82 L24 86
+             Z"
+          fill="#2a4a28"
+          opacity="0.9"
+        />
+
+        {/* середній ярус */}
+        <path
+          d="M44 28
+             L66 68
+             L56 62 L50 72 L44 64 L38 72 L32 62 L22 68
+             Z"
+          fill="#243f22"
+        />
+        <path
+          d="M44 32
+             L58 64
+             L52 60 L47 68 L44 62 L41 68 L36 60 L30 64
+             Z"
+          fill="#355c32"
+          opacity="0.85"
+        />
+
+        {/* верхній ярус */}
+        <path
+          d="M44 8
+             L60 46
+             L52 42 L47 50 L44 44 L41 50 L36 42 L28 46
+             Z"
+          fill="#2d4d2a"
+        />
+        <path
+          d="M44 12
+             L54 42
+             L49 39 L46 45 L44 40 L42 45 L39 39 L34 42
+             Z"
+          fill="#3f6a3a"
+          opacity="0.9"
+        />
+
+        {/* світлий блік зліва на кроні */}
+        <path
+          d="M40 18 L36 40 L42 36 L40 50 L44 30 Z"
+          fill="#7aab6a"
+          opacity="0.18"
+        />
+        <path
+          d="M38 40 L32 62 L40 56 L38 74 L44 52 Z"
+          fill="#7aab6a"
+          opacity="0.12"
+        />
+
+        {/* верхівка */}
+        <path d="M44 4 L48 16 L44 14 L40 16 Z" fill="#4a7a42" />
+
+        {/* зарубки від сокири */}
+        {chops >= 2 ? (
+          <path
+            d="M30 104 L46 100"
+            stroke="#1a1008"
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity="0.85"
+          />
+        ) : null}
+        {chops >= 5 ? (
+          <path
+            d="M28 110 L48 106"
+            stroke="#1a1008"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            opacity="0.9"
+          />
+        ) : null}
+        {chops >= 8 ? (
+          <path
+            d="M42 100 L56 106"
+            stroke="#1a1008"
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity="0.75"
+          />
+        ) : null}
+      </svg>
     </div>
   );
 }
