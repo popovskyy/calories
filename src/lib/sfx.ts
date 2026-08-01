@@ -1,14 +1,15 @@
 /**
- * Звуки без ассетів — усе синтезується WebAudio.
+ * Звуки застосунку.
  *
- * Рецепт «підкидання дровини» з дизайн-хендофу: whoosh (білий шум крізь
- * lowpass 320 → 1600 → 500 Hz) плюс три square-тріски гілки на 0.5 / 0.58 / 0.71s.
+ * Часті UI / Forest-куеси — готові CC0-семпли через Howler (`public/sounds/`).
+ * Фінішери, епіки, тематичні ритуали (маяк / полонина) лишаються WebAudio-
+ * синтезом: рідкі, залежать від саундпака нотами.
  *
- * AudioContext створюється лениво при першому виклику: мобільні браузери
- * дозволяють звук лише після жесту користувача, а до першого тапу контекст
- * взагалі не потрібен.
+ * Howl створюється лениво; `preloadSfxSamples()` варто кликнути з першого
+ * user gesture (GlobalClickFx), щоб мобільний браузер розблокував аудіо.
  */
 
+import { Howl } from "howler";
 import { getSettings } from "@/lib/settings";
 
 let ctx: AudioContext | null = null;
@@ -41,11 +42,81 @@ function soundAllowed(): boolean {
   return !prefersReducedMotion() && getSettings().sound;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Семпли (Howler)                                                    */
+/* ------------------------------------------------------------------ */
+
+type SampleId =
+  | "chop"
+  | "fire-sizzle"
+  | "fire-burst"
+  | "log-toss"
+  | "deer-startle"
+  | "ui-click"
+  | "ui-nav"
+  | "ui-confirm"
+  | "ui-destructive"
+  | "save-ack";
+
+const SAMPLE_IDS: SampleId[] = [
+  "chop",
+  "fire-sizzle",
+  "fire-burst",
+  "log-toss",
+  "deer-startle",
+  "ui-click",
+  "ui-nav",
+  "ui-confirm",
+  "ui-destructive",
+  "save-ack",
+];
+
+/** Саундпак магазину → rate/volume поверх одного набору семплів. */
+const SAMPLE_PACK: Record<string, { rate: number; volume: number }> = {
+  default: { rate: 1, volume: 0.88 },
+  blocky: { rate: 0.9, volume: 0.98 },
+  retro: { rate: 1.18, volume: 0.72 },
+  cinema: { rate: 0.8, volume: 1 },
+};
+
+const howls = new Map<SampleId, Howl>();
+
+function getHowl(id: SampleId): Howl {
+  let h = howls.get(id);
+  if (!h) {
+    h = new Howl({
+      src: [`/sounds/${id}.mp3`],
+      preload: true,
+      html5: false,
+      volume: 1,
+    });
+    howls.set(id, h);
+  }
+  return h;
+}
+
+/** Прогріти семпли після першого жесту користувача. */
+export function preloadSfxSamples() {
+  if (typeof window === "undefined") return;
+  for (const id of SAMPLE_IDS) getHowl(id);
+}
+
+function playSample(id: SampleId, pack = "default", baseVol = 0.8) {
+  if (!soundAllowed()) return;
+  try {
+    const p = SAMPLE_PACK[pack] ?? SAMPLE_PACK.default!;
+    const h = getHowl(id);
+    h.rate(p.rate);
+    h.volume(Math.min(1, Math.max(0, baseVol * p.volume)));
+    h.play();
+  } catch {
+    /* звук ніколи не має ламати навігацію */
+  }
+}
+
 /**
- * Профілі саундпаків.
- *
- * Пакет змінює саме тембр удару: тип хвилі, висоту й кількість тріскотів.
- * Оскільки все синтезується, новий пакет — це кілька чисел, а не аудіофайл.
+ * Профілі саундпаків для WebAudio-фінішерів (ноти / хвиля).
+ * Семплові куеси див. SAMPLE_PACK вище.
  */
 interface PackProfile {
   /** Форма хвилі удару. */
@@ -63,16 +134,14 @@ interface PackProfile {
 }
 
 const PACKS: Record<string, PackProfile> = {
-  // Теплий, ненав'язливий — оригінальний рецепт дизайн-хендофу.
   default: {
-    wave: "square",
+    wave: "triangle",
     baseHz: 160,
     stepHz: 30,
     hits: [0.5, 0.58, 0.71],
     punch: 0.09,
     whoosh: true,
   },
-  // Сухий дерев'яний «клац» — два коротких удари, без шуму.
   blocky: {
     wave: "triangle",
     baseHz: 220,
@@ -81,7 +150,6 @@ const PACKS: Record<string, PackProfile> = {
     punch: 0.13,
     whoosh: false,
   },
-  // 8-біт: висока пила, чотири швидкі ноти вгору-вниз.
   retro: {
     wave: "sawtooth",
     baseHz: 440,
@@ -90,7 +158,6 @@ const PACKS: Record<string, PackProfile> = {
     punch: 0.07,
     whoosh: false,
   },
-  // Кіно: низький синус із довгим шумовим підйомом.
   cinema: {
     wave: "sine",
     baseHz: 70,
@@ -192,31 +259,9 @@ export function playFinisher(pack = "default", finisher = "confetti") {
 
 /**
  * Підтвердження звичайного запису їжі (не ±5%).
- * Завжди cinema: низький бас у два удари — впізнавано, але тихіше за перемогу.
  */
 export function playSaveAck() {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  try {
-    const now = ac.currentTime;
-    const f = FANFARE.cinema!;
-    f.notes.forEach((hz, i) => {
-      const at = now + i * 0.11;
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      osc.type = f.wave;
-      osc.frequency.setValueAtTime(hz, at);
-      gain.gain.setValueAtTime(f.gain * 0.72, at);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.32);
-      osc.connect(gain).connect(ac.destination);
-      osc.start(at);
-      osc.stop(at + 0.35);
-    });
-  } catch {
-    /* звук ніколи не має ламати навігацію */
-  }
+  playSample("save-ack", "cinema", 0.75);
 }
 
 /** Унікальний «голос» фінішера поверх акорду саундпака. */
@@ -430,424 +475,52 @@ export function playSheepBell(pack = "default") {
   }
 }
 
-/**
- * Дровина летить у вогонь: whoosh + тріск. Тембр залежить від саундпака.
- */
+/** Дровина летить у вогонь: whoosh + thud. Тембр — rate/vol саундпака. */
 export function playLogToss(pack = "default") {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  const p = getPackProfile(pack);
-
-  try {
-    const now = ac.currentTime;
-
-    if (p.whoosh) {
-      // whoosh — білий шум із рухомим lowpass
-      const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * 1.2), ac.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        data[i] = (Math.random() * 2 - 1) * 0.7;
-      }
-      const source = ac.createBufferSource();
-      source.buffer = buffer;
-
-      const lowpass = ac.createBiquadFilter();
-      lowpass.type = "lowpass";
-      lowpass.frequency.setValueAtTime(320, now);
-      lowpass.frequency.exponentialRampToValueAtTime(1600, now + 0.5);
-      lowpass.frequency.exponentialRampToValueAtTime(500, now + 1.1);
-
-      const gain = ac.createGain();
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.14, now + 0.45);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
-
-      source.connect(lowpass).connect(gain).connect(ac.destination);
-      source.start(now);
-      source.stop(now + 1.2);
-    }
-
-    // удар(и) — саме тут чутно різницю між пакетами
-    p.hits.forEach((offset, i) => {
-      const osc = ac.createOscillator();
-      const oscGain = ac.createGain();
-      osc.type = p.wave;
-      // Частота не може впасти до нуля або нижче — інакше WebAudio кине помилку.
-      const hz = Math.max(40, p.baseHz - i * p.stepHz);
-      osc.frequency.setValueAtTime(hz, now + offset);
-      oscGain.gain.setValueAtTime(p.punch, now + offset);
-      oscGain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.07);
-      osc.connect(oscGain).connect(ac.destination);
-      osc.start(now + offset);
-      osc.stop(now + offset + 0.08);
-    });
-  } catch {
-    /* звук ніколи не має ламати навігацію */
-  }
+  playSample("log-toss", pack, 0.85);
 }
 
-/**
- * Універсальний «тік» на будь-який тап по кнопці чи посиланню.
- *
- * Найчастіший звук у застосунку, тому найдешевший: один короткий синус
- * (~40 мс) без шуму й без ланцюжка ударів. Тембр трохи різний по пакетах,
- * щоб куплений саундпак відчувався і тут, а не лише у фінішері.
- */
-const CLICK_HZ: Record<string, number> = {
-  default: 720,
-  blocky: 540,
-  retro: 880,
-  cinema: 360,
-};
-
+/** Універсальний «тік» на тап по кнопці / посиланню. */
 export function playUiClick(pack = "default") {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  try {
-    const now = ac.currentTime;
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.type = pack === "retro" ? "square" : "sine";
-    osc.frequency.setValueAtTime(CLICK_HZ[pack] ?? CLICK_HZ.default!, now);
-    gain.gain.setValueAtTime(0.05, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
-    osc.connect(gain).connect(ac.destination);
-    osc.start(now);
-    osc.stop(now + 0.05);
-  } catch {
-    /* звук ніколи не має ламати навігацію */
-  }
+  playSample("ui-click", pack, 0.7);
 }
 
-/**
- * Тик по оленю (без ритуалу дровини) — коротке «хрусь» гілки під копитом.
- * Тихіший і різкіший за logToss, щоб не плутався з ним.
- */
+/** Тик по оленю — коротке «хрусь» гілки. */
 export function playDeerStartle() {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  try {
-    const now = ac.currentTime;
-    [0, 0.05].forEach((offset, i) => {
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(300 - i * 60, now + offset);
-      gain.gain.setValueAtTime(0.1, now + offset);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.06);
-      osc.connect(gain).connect(ac.destination);
-      osc.start(now + offset);
-      osc.stop(now + offset + 0.07);
-    });
-  } catch {
-    /* звук ніколи не має ламати навігацію */
-  }
+  playSample("deer-startle", "default", 0.75);
 }
 
-/**
- * Удар сокири по дереву біля вогнища.
- * Низький стук + тріск кори + короткий «клинок» — щоб кожен тап було чути.
- */
+/** Удар сокири по дереву біля вогнища. */
 export function playWoodChop() {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  const run = () => {
-    try {
-      const now = ac.currentTime;
-
-      // 1) Низький стук по стовбуру
-      const thud = ac.createOscillator();
-      const thudGain = ac.createGain();
-      thud.type = "sine";
-      thud.frequency.setValueAtTime(95, now);
-      thud.frequency.exponentialRampToValueAtTime(48, now + 0.09);
-      thudGain.gain.setValueAtTime(0.28, now);
-      thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
-      thud.connect(thudGain).connect(ac.destination);
-      thud.start(now);
-      thud.stop(now + 0.11);
-
-      // 2) Тріск деревини (шум)
-      const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.1), ac.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        const env = Math.pow(1 - i / data.length, 1.6);
-        data[i] = (Math.random() * 2 - 1) * env;
-      }
-      const crack = ac.createBufferSource();
-      crack.buffer = buffer;
-      const hip = ac.createBiquadFilter();
-      hip.type = "bandpass";
-      hip.frequency.setValueAtTime(1400, now);
-      hip.Q.setValueAtTime(1.2, now);
-      const crackGain = ac.createGain();
-      crackGain.gain.setValueAtTime(0.22, now);
-      crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-      crack.connect(hip).connect(crackGain).connect(ac.destination);
-      crack.start(now);
-      crack.stop(now + 0.1);
-
-      // 3) Короткий «клинок» / друге дерево
-      const blade = ac.createOscillator();
-      const bladeGain = ac.createGain();
-      blade.type = "triangle";
-      blade.frequency.setValueAtTime(320, now + 0.012);
-      blade.frequency.exponentialRampToValueAtTime(140, now + 0.07);
-      bladeGain.gain.setValueAtTime(0.0001, now);
-      bladeGain.gain.linearRampToValueAtTime(0.12, now + 0.014);
-      bladeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-      blade.connect(bladeGain).connect(ac.destination);
-      blade.start(now);
-      blade.stop(now + 0.09);
-    } catch {
-      /* звук ніколи не має ламати навігацію */
-    }
-  };
-
-  // Якщо контекст ще suspended — граємо після resume, інакше перший тап німий
-  if (ac.state === "suspended") {
-    void ac.resume().then(run).catch(() => {});
-    return;
-  }
-  run();
+  playSample("chop", "default", 0.9);
 }
 
-/**
- * Дровина вдарила в жар: тріск + низький «рокіт» полум'я.
- * Окремо від whoosh польоту — кликати, коли колода долітає.
- */
+/** Дровина вдарила в жар — кликати, коли колода долітає. */
 export function playFireBurst() {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  const run = () => {
-    try {
-      const now = ac.currentTime;
-
-      // Шипіння / тріск жару
-      const crackBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.55), ac.sampleRate);
-      const crackData = crackBuf.getChannelData(0);
-      for (let i = 0; i < crackData.length; i++) {
-        const t = i / crackData.length;
-        const env = Math.sin(Math.PI * Math.min(1, t * 1.35)) * Math.pow(1 - t, 0.55);
-        // Рідкі «клацання» вугілля
-        const pop = Math.random() > 0.985 ? Math.random() * 0.9 : 0;
-        crackData[i] = ((Math.random() * 2 - 1) * 0.55 + pop) * env;
-      }
-      const crack = ac.createBufferSource();
-      crack.buffer = crackBuf;
-      const band = ac.createBiquadFilter();
-      band.type = "bandpass";
-      band.frequency.setValueAtTime(1800, now);
-      band.frequency.exponentialRampToValueAtTime(700, now + 0.45);
-      band.Q.setValueAtTime(0.7, now);
-      const crackGain = ac.createGain();
-      crackGain.gain.setValueAtTime(0.0001, now);
-      crackGain.gain.exponentialRampToValueAtTime(0.2, now + 0.04);
-      crackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
-      crack.connect(band).connect(crackGain).connect(ac.destination);
-      crack.start(now);
-      crack.stop(now + 0.55);
-
-      // Низький рокіт полум'я
-      const roarBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.7), ac.sampleRate);
-      const roarData = roarBuf.getChannelData(0);
-      for (let i = 0; i < roarData.length; i++) {
-        const t = i / roarData.length;
-        const env = Math.sin(Math.PI * Math.min(1, t * 1.2)) * (1 - t * 0.65);
-        roarData[i] = (Math.random() * 2 - 1) * env;
-      }
-      const roar = ac.createBufferSource();
-      roar.buffer = roarBuf;
-      const low = ac.createBiquadFilter();
-      low.type = "lowpass";
-      low.frequency.setValueAtTime(220, now);
-      low.frequency.exponentialRampToValueAtTime(380, now + 0.2);
-      low.frequency.exponentialRampToValueAtTime(160, now + 0.65);
-      const roarGain = ac.createGain();
-      roarGain.gain.setValueAtTime(0.0001, now);
-      roarGain.gain.exponentialRampToValueAtTime(0.24, now + 0.06);
-      roarGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
-      roar.connect(low).connect(roarGain).connect(ac.destination);
-      roar.start(now);
-      roar.stop(now + 0.72);
-
-      // Два швидких «клаци» вугілля
-      [0.05, 0.14, 0.28].forEach((offset, i) => {
-        const osc = ac.createOscillator();
-        const g = ac.createGain();
-        osc.type = "square";
-        osc.frequency.setValueAtTime(180 - i * 35, now + offset);
-        g.gain.setValueAtTime(0.07, now + offset);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.045);
-        osc.connect(g).connect(ac.destination);
-        osc.start(now + offset);
-        osc.stop(now + offset + 0.05);
-      });
-    } catch {
-      /* звук ніколи не має ламати навігацію */
-    }
-  };
-
-  if (ac.state === "suspended") {
-    void ac.resume().then(run).catch(() => {});
-    return;
-  }
-  run();
+  playSample("fire-burst", "default", 0.88);
 }
 
-/**
- * Тап по вогнищу — коротке шкварчання жару (тихіше за fireBurst).
- */
+/** Тап по вогнищу — коротке шкварчання жару. */
 export function playFireSizzle() {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  const run = () => {
-    try {
-      const now = ac.currentTime;
-
-      // Шипіння жиру/жару
-      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.38), ac.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        const t = i / data.length;
-        const env = Math.pow(1 - t, 0.4) * (0.55 + 0.45 * Math.sin(t * Math.PI));
-        const hiss = (Math.random() * 2 - 1) * 0.7;
-        const pop = Math.random() > 0.97 ? (Math.random() * 2 - 1) * 0.8 : 0;
-        data[i] = (hiss * 0.65 + pop) * env;
-      }
-      const src = ac.createBufferSource();
-      src.buffer = buf;
-      const hip = ac.createBiquadFilter();
-      hip.type = "highpass";
-      hip.frequency.setValueAtTime(900, now);
-      const band = ac.createBiquadFilter();
-      band.type = "bandpass";
-      band.frequency.setValueAtTime(2400, now);
-      band.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
-      band.Q.setValueAtTime(0.55, now);
-      const gain = ac.createGain();
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
-      src.connect(hip).connect(band).connect(gain).connect(ac.destination);
-      src.start(now);
-      src.stop(now + 0.38);
-
-      // Пара клацань вугілля
-      [0.02, 0.09, 0.18].forEach((offset, i) => {
-        const osc = ac.createOscillator();
-        const g = ac.createGain();
-        osc.type = "square";
-        osc.frequency.setValueAtTime(260 - i * 50, now + offset);
-        g.gain.setValueAtTime(0.055, now + offset);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.04);
-        osc.connect(g).connect(ac.destination);
-        osc.start(now + offset);
-        osc.stop(now + offset + 0.045);
-      });
-    } catch {
-      /* звук ніколи не має ламати навігацію */
-    }
-  };
-
-  if (ac.state === "suspended") {
-    void ac.resume().then(run).catch(() => {});
-    return;
-  }
-  run();
+  playSample("fire-sizzle", "default", 0.72);
 }
 
 /**
- * Тап по навігаційній посилці (таби внизу, лінки на інші сторінки).
- *
- * Навмисно тихіший і нижчий за базовий клік: перехід між сторінками не
- * миттєвий (завантаження даних), тому звук не повинен звучати як
- * «дію виконано» — радше як «тап прийнято, зачекай».
+ * Тап по навігаційній посилці (таби / лінки).
+ * Тихіший за базовий клік: «тап прийнято», не «дію виконано».
  */
 export function playUiNav(pack = "default") {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  try {
-    const now = ac.currentTime;
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.type = pack === "retro" ? "square" : "sine";
-    osc.frequency.setValueAtTime(340, now);
-    osc.frequency.exponentialRampToValueAtTime(220, now + 0.09);
-    gain.gain.setValueAtTime(0.035, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-    osc.connect(gain).connect(ac.destination);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  } catch {
-    /* звук ніколи не має ламати навігацію */
-  }
+  playSample("ui-nav", pack, 0.62);
 }
 
-/**
- * Тап по основній (btn-primary) дії — «Зберегти», «Розрахувати» тощо.
- * Два висхідних тони замість одного: помітніше підтверджує вагому дію.
- */
+/** Тап по основній (btn-primary) дії. */
 export function playUiConfirm(pack = "default") {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  try {
-    const now = ac.currentTime;
-    const base = CLICK_HZ[pack] ?? CLICK_HZ.default!;
-    [base, base * 1.28].forEach((hz, i) => {
-      const at = now + i * 0.05;
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      osc.type = pack === "retro" ? "square" : "triangle";
-      osc.frequency.setValueAtTime(hz, at);
-      gain.gain.setValueAtTime(0.06, at);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.08);
-      osc.connect(gain).connect(ac.destination);
-      osc.start(at);
-      osc.stop(at + 0.09);
-    });
-  } catch {
-    /* звук ніколи не має ламати навігацію */
-  }
+  playSample("ui-confirm", pack, 0.78);
 }
 
-/** Тап по деструктивній дії (видалити) — короткий низький «снап». */
-export function playUiDestructive() {
-  if (!soundAllowed()) return;
-  const ac = getContext();
-  if (!ac) return;
-
-  try {
-    const now = ac.currentTime;
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(180, now);
-    osc.frequency.exponentialRampToValueAtTime(90, now + 0.08);
-    gain.gain.setValueAtTime(0.07, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-    osc.connect(gain).connect(ac.destination);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  } catch {
-    /* звук ніколи не має ламати навігацію */
-  }
+/** Тап по деструктивній дії (видалити). */
+export function playUiDestructive(pack = "default") {
+  playSample("ui-destructive", pack, 0.75);
 }
 
 /**

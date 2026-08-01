@@ -283,13 +283,16 @@ export const FRAMES: CosmeticDef[] = [
   },
 ];
 
-/** Саундпаки — синтезуються WebAudio, ассетів не потребують (див. lib/sfx.ts). */
+/**
+ * Саундпаки — змінюють характер кліків / Forest-куесів (rate + volume)
+ * і ноти фінішерів (WebAudio). Див. lib/sfx.ts.
+ */
 export const SOUNDPACKS: CosmeticDef[] = [
   {
     id: "default",
     kind: "soundpack",
     nameUk: "Стандартний",
-    description: "Мʼякий трикутний акорд із трьох нот. Базовий — уже є в тебе",
+    description: "Звична швидкість і гучність. Базовий — уже є в тебе",
     unlock: { via: "shop", price: 0 },
     swatch: "#9184d9",
     sortOrder: 10,
@@ -298,7 +301,7 @@ export const SOUNDPACKS: CosmeticDef[] = [
     id: "blocky",
     kind: "soundpack",
     nameUk: "Блоковий",
-    description: "Сухий дерев'яний «клац» — два коротких удари, як у Minecraft",
+    description: "Трохи нижче й гучніше — сухий «дерев'яний» характер",
     unlock: { via: "shop", price: 180 },
     swatch: "#5b9c3a",
     sortOrder: 20,
@@ -307,7 +310,7 @@ export const SOUNDPACKS: CosmeticDef[] = [
     id: "retro",
     kind: "soundpack",
     nameUk: "8-біт",
-    description: "Швидка гама з чотирьох нот угору, як на старій приставці",
+    description: "Швидше й легше — як на старій приставці",
     unlock: { via: "shop", price: 150 },
     swatch: "#FF9600",
     sortOrder: 30,
@@ -316,7 +319,7 @@ export const SOUNDPACKS: CosmeticDef[] = [
     id: "cinema",
     kind: "soundpack",
     nameUk: "Кіно",
-    description: "Низький глибокий бас у два удари — важко й дорого",
+    description: "Повільніше й глибше — важко й дорого",
     unlock: { via: "shop", price: 300 },
     swatch: "#1A1A40",
     sortOrder: 40,
