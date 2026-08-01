@@ -90,37 +90,33 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
 
   return (
     <div
-      className={`absolute bottom-[14px] z-[3] w-[110px] touch-manipulation select-none ${
-        side === "left" ? "left-0" : "right-0"
+      className={`absolute bottom-[14px] z-[3] w-[100px] touch-manipulation select-none ${
+        side === "left" ? "-left-3" : "-right-3"
       }`}
       aria-hidden
     >
       {showTree ? (
         <button
           type="button"
-          className={`relative mx-auto block h-[150px] w-[100px] border-0 bg-transparent p-0 ${
+          className={`relative mx-auto block h-[150px] w-[92px] border-0 bg-transparent p-0 ${
             canChop ? "cursor-pointer" : "cursor-default"
           }`}
           style={{
             transformOrigin: "50% 100%",
             ["--lean" as string]: `${leanDeg}deg`,
-            // Розтягує хіт-зону під палець; без візуального фону
             WebkitTapHighlightColor: "transparent",
           }}
           disabled={!canChop}
           onPointerDown={(e) => {
-            // pointerdown надійніший за click на мобілці; stop щоб не
-            // з’їдав GlobalClickFx / інші шари
             e.preventDefault();
             e.stopPropagation();
             onChop();
           }}
         >
-          {/* Невидима хіт-площа на весь прямокутник кнопки */}
           <span className="absolute inset-0 z-[2]" />
 
           <div
-            className="pointer-events-none absolute inset-x-2 bottom-2 top-1"
+            className="pointer-events-none absolute inset-x-1 bottom-3 top-0"
             style={
               phase === "falling" && !reduce
                 ? {
@@ -154,9 +150,13 @@ export function CampTree({ onLogToss, side = "right" }: CampTreeProps) {
             </div>
           </div>
 
-          {/* Прогрес завжди видно, коли можна рубати */}
+          {/* Індикатор ударів — з зовнішнього боку, не на вогонь */}
           {canChop ? (
-            <div className="pointer-events-none absolute bottom-0 left-1/2 h-1.5 w-14 -translate-x-1/2 overflow-hidden rounded-full bg-black/40">
+            <div
+              className={`pointer-events-none absolute bottom-0 h-1.5 w-12 overflow-hidden rounded-full bg-black/40 ${
+                side === "left" ? "left-1" : "right-1"
+              }`}
+            >
               <div
                 className="h-full rounded-full bg-[#d4b07a]"
                 style={{

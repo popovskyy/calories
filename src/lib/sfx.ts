@@ -706,6 +706,70 @@ export function playFireBurst() {
 }
 
 /**
+ * Тап по вогнищу — коротке шкварчання жару (тихіше за fireBurst).
+ */
+export function playFireSizzle() {
+  if (!soundAllowed()) return;
+  const ac = getContext();
+  if (!ac) return;
+
+  const run = () => {
+    try {
+      const now = ac.currentTime;
+
+      // Шипіння жиру/жару
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.38), ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / data.length;
+        const env = Math.pow(1 - t, 0.4) * (0.55 + 0.45 * Math.sin(t * Math.PI));
+        const hiss = (Math.random() * 2 - 1) * 0.7;
+        const pop = Math.random() > 0.97 ? (Math.random() * 2 - 1) * 0.8 : 0;
+        data[i] = (hiss * 0.65 + pop) * env;
+      }
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      const hip = ac.createBiquadFilter();
+      hip.type = "highpass";
+      hip.frequency.setValueAtTime(900, now);
+      const band = ac.createBiquadFilter();
+      band.type = "bandpass";
+      band.frequency.setValueAtTime(2400, now);
+      band.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+      band.Q.setValueAtTime(0.55, now);
+      const gain = ac.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+      src.connect(hip).connect(band).connect(gain).connect(ac.destination);
+      src.start(now);
+      src.stop(now + 0.38);
+
+      // Пара клацань вугілля
+      [0.02, 0.09, 0.18].forEach((offset, i) => {
+        const osc = ac.createOscillator();
+        const g = ac.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(260 - i * 50, now + offset);
+        g.gain.setValueAtTime(0.055, now + offset);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.04);
+        osc.connect(g).connect(ac.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.045);
+      });
+    } catch {
+      /* звук ніколи не має ламати навігацію */
+    }
+  };
+
+  if (ac.state === "suspended") {
+    void ac.resume().then(run).catch(() => {});
+    return;
+  }
+  run();
+}
+
+/**
  * Тап по навігаційній посилці (таби внизу, лінки на інші сторінки).
  *
  * Навмисно тихіший і нижчий за базовий клік: перехід між сторінками не

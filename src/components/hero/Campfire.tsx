@@ -6,7 +6,8 @@ import { CampDeer } from "@/components/ambient/CampDeer";
 import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
-import { claimRitualSound, playFireBurst, playLogToss } from "@/lib/sfx";
+import { claimRitualSound, playFireBurst, playFireSizzle, playLogToss } from "@/lib/sfx";
+import { haptic } from "@/lib/haptics";
 import { useAppStore } from "@/store/useAppStore";
 import { useCurrentUser } from "@/hooks/useQueries";
 
@@ -126,7 +127,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const numSize = digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[52px]" : "text-[62px]";
 
   return (
-    <div className="relative my-1 h-[250px] w-full shrink-0 overflow-hidden">
+    <div className="relative my-1 h-[250px] w-full shrink-0 overflow-x-visible overflow-y-hidden">
       {/* цифри — найвищий шар */}
       <div className="pointer-events-none absolute inset-x-0 top-2.5 z-[3] flex flex-col items-center gap-px">
         <motion.div
@@ -170,10 +171,16 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
       <CampTree side="left" onLogToss={() => onTreeLogToss("left")} />
       <CampTree side="right" onLogToss={() => onTreeLogToss("right")} />
 
-      {/* вогонь + дрова + каміння: scale лише на полум'ї, дрова/каміння стоять */}
+      {/* вогонь + дрова + каміння: scale лише на полум'ї; тап — шкварчання */}
       <div
-        className="absolute bottom-0 left-1/2 z-[2] h-[150px] w-[196px]"
-        style={{ transform: "translateX(-50%)" }}
+        className="absolute bottom-0 left-1/2 z-[2] h-[150px] w-[196px] cursor-pointer touch-manipulation"
+        style={{ transform: "translateX(-50%)", WebkitTapHighlightColor: "transparent" }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          playFireSizzle();
+          haptic("click");
+        }}
       >
         {/* полум'я — росте з logsFed; flare поверх базового scale */}
         <div

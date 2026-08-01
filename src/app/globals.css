@@ -2031,14 +2031,14 @@ html[data-theme="minecraft"] .rounded-full {
 }
 /* Колода з дерева праворуч від вогню — коротша дуга */
 @keyframes treeLogToss {
-  0% { transform: translate(72px, -8px) rotate(8deg); opacity: 0; }
+  0% { transform: translate(96px, -8px) rotate(8deg); opacity: 0; }
   10% { opacity: 1; }
   68% { transform: translate(2px, 2px) rotate(-12deg); opacity: 1; }
   100% { transform: translate(2px, 2px) rotate(-12deg); opacity: 0; }
 }
 /* Колода з дерева зліва */
 @keyframes treeLogTossLeft {
-  0% { transform: translate(-72px, -8px) rotate(-8deg); opacity: 0; }
+  0% { transform: translate(-96px, -8px) rotate(-8deg); opacity: 0; }
   10% { opacity: 1; }
   68% { transform: translate(-2px, 2px) rotate(12deg); opacity: 1; }
   100% { transform: translate(-2px, 2px) rotate(12deg); opacity: 0; }
