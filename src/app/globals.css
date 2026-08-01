@@ -2096,6 +2096,13 @@ html[data-theme="minecraft"] .rounded-full {
   100% { transform: translateY(0) scaleY(1); }
   50% { transform: translateY(-1.5px) scaleY(1.012); }
 }
+/* Idle біля вогню: дихання + легкий нахил цікавості */
+@keyframes deerCurious {
+  0%,
+  100% { transform: translateY(0) scaleY(1) rotate(0deg); }
+  35% { transform: translateY(-1px) scaleY(1.01) rotate(1.5deg); }
+  70% { transform: translateY(-1.5px) scaleY(1.012) rotate(0.5deg); }
+}
 @keyframes headScan {
   0%,
   100% { transform: rotate(-3deg); }

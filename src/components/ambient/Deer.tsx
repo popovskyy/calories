@@ -56,6 +56,8 @@ interface DeerProps {
   scared?: boolean;
   /** Локомоція: idle = дихає/дивиться, walk/run = ноги */
   gait?: DeerGait;
+  /** Idle біля вогню: легкий нахил цікавості замість чистого дихання */
+  curious?: boolean;
 }
 
 export function Deer({
@@ -64,12 +66,13 @@ export function Deer({
   height,
   scared = false,
   gait = "walk",
+  curious = false,
 }: DeerProps) {
   const p = variant === "camp" ? CAMP : FIELD;
   const moving = gait === "walk" || gait === "run";
   /* run — швидкий цикл ніг; walk — повільніший, з м’яким easing у CSS */
   const pace = gait === "run" ? 0.28 : gait === "walk" ? 1.15 : 0;
-  const scan = gait === "idle" ? 8.2 : gait === "walk" ? 6.2 : 0;
+  const scan = gait === "idle" ? (curious ? 5.4 : 8.2) : gait === "walk" ? 6.2 : 0;
 
   return (
     <svg
@@ -80,7 +83,11 @@ export function Deer({
       className={scared ? "deer-scared" : undefined}
       style={
         gait === "idle"
-          ? { animation: "deerBreathe 3.6s ease-in-out infinite" }
+          ? {
+              animation: curious
+                ? "deerCurious 4.2s ease-in-out infinite"
+                : "deerBreathe 3.6s ease-in-out infinite",
+            }
           : gait === "run"
             ? { animation: "deerStalk 0.22s linear infinite" }
             : { animation: "deerStalk 1.1s ease-in-out infinite" }
