@@ -29,7 +29,9 @@ export function CampTree({ onLogToss }: CampTreeProps) {
   const chopsRef = useRef(0);
   const logSeq = useRef(0);
   const phaseRef = useRef<Phase>("ready");
-  phaseRef.current = phase;
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   // Падіння → дві колоди
   useEffect(() => {
