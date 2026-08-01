@@ -22,7 +22,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { playUiClick, playUiConfirm, playUiDestructive, playUiNav } from "@/lib/sfx";
+import {
+  playUiClick,
+  playUiConfirm,
+  playUiDestructive,
+  playUiNav,
+  preloadSfxSamples,
+} from "@/lib/sfx";
 import { haptic, type HapticKind } from "@/lib/haptics";
 import { getSettings } from "@/lib/settings";
 import { useCurrentUser } from "@/hooks/useQueries";
@@ -65,7 +71,7 @@ function playForKind(kind: SfxKind, pack: string) {
     case "none":
       return;
     case "destructive":
-      playUiDestructive();
+      playUiDestructive(pack);
       return;
     case "confirm":
       playUiConfirm(pack);
@@ -100,8 +106,16 @@ export function GlobalClickFx() {
   }, [user?.soundpack]);
 
   useEffect(() => {
+    let preloaded = false;
     const onPointerDown = (e: PointerEvent) => {
       if (e.isPrimary === false) return;
+
+      // Перший жест — розблокувати / прогріти Howler-семпли (мобільні).
+      if (!preloaded) {
+        preloaded = true;
+        preloadSfxSamples();
+      }
+
       const target = e.target;
       if (!(target instanceof Element)) return;
       const hit = target.closest(INTERACTIVE_SELECTOR);
