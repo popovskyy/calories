@@ -81,6 +81,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const [logsFed, setLogsFed] = useState(0);
   const [treeTossKey, setTreeTossKey] = useState<number | null>(null);
   const [treeTossSide, setTreeTossSide] = useState<"left" | "right">("right");
+  const [pokeKey, setPokeKey] = useState(0);
   const treeTossing = treeTossKey !== null;
   const fireScale = Math.min(1 + logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_MAX);
   const flaring = active || treeTossing;
@@ -172,7 +173,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
       <CampTree side="left" onLogToss={() => onTreeLogToss("left")} />
       <CampTree side="right" onLogToss={() => onTreeLogToss("right")} />
 
-      {/* вогонь + дрова + каміння — компактне кострище; тап — шкварчання */}
+      {/* вогонь + дрова + каміння — компактне кострище; тап — шкварчання + poke */}
       <div
         className="absolute bottom-0 left-1/2 z-[2] h-[130px] w-[140px] cursor-pointer touch-manipulation"
         style={{ transform: "translateX(-50%)", WebkitTapHighlightColor: "transparent" }}
@@ -181,9 +182,10 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
           e.stopPropagation();
           playFireSizzle();
           haptic("click");
+          if (!reduce) setPokeKey((k) => k + 1);
         }}
       >
-        {/* полум'я — росте з logsFed; flare поверх базового scale */}
+        {/* полум'я — росте з logsFed; flare / poke поверх базового scale */}
         <div
           className="absolute inset-0"
           style={{
@@ -200,12 +202,23 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
             }}
           >
             <div
+              key={`poke-${pokeKey}`}
+              className="absolute inset-0"
+              style={{
+                transformOrigin: "50% 100%",
+                animation:
+                  pokeKey > 0 && !flaring && !reduce
+                    ? "firePoke 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
+                    : undefined,
+              }}
+            >
+            <div
               className="flame absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
               style={{
                 borderRadius: FLAME_RADIUS,
                 background: fire.big,
                 filter: "blur(.35px)",
-                animation: "flameBig 1.15s linear infinite",
+                animation: "flameBig 0.95s linear infinite",
               }}
             />
             <div
@@ -213,7 +226,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
               style={{
                 borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                 background: fire.mid,
-                animation: "flameMid 0.85s linear infinite",
+                animation: "flameMid 0.72s linear infinite",
               }}
             />
             <div
@@ -221,7 +234,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
               style={{
                 background: fire.tip,
                 filter: "blur(1px)",
-                animation: "flameTip 1.05s linear infinite",
+                animation: "flameTip 0.9s linear infinite",
               }}
             />
             <div
@@ -229,7 +242,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
               style={{
                 borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                 background: fire.side,
-                animation: "flameSide 1.05s linear infinite",
+                animation: "flameSide 0.88s linear infinite",
                 transformOrigin: "50% 100%",
               }}
             />
@@ -238,12 +251,22 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
               style={{
                 borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                 background: fire.side,
-                animation: "flameSide 1.25s linear .35s infinite",
+                animation: "flameSide 1.05s linear .28s infinite",
+                transformOrigin: "50% 100%",
+              }}
+            />
+            {/* додатковий «язик» для щільності */}
+            <div
+              className="flame absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
+              style={{
+                borderRadius: "50% 50% 45% 45% / 68% 68% 32% 32%",
+                background: fire.mid,
+                opacity: 0.75,
+                animation: "flameMid 0.8s linear .15s infinite",
                 transformOrigin: "50% 100%",
               }}
             />
 
-            {/* постійні дрібні іскри */}
             {!reduce ? (
               <>
                 <div
@@ -252,7 +275,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                     background: fire.spark[0],
                     boxShadow: `0 0 6px ${fire.spark[0]}`,
                     ["--ex" as string]: "-6px",
-                    animation: "emberRise 1.6s ease-out infinite",
+                    animation: "emberRise 1.45s ease-out infinite",
                   }}
                 />
                 <div
@@ -261,7 +284,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                     background: fire.spark[1],
                     boxShadow: `0 0 6px ${fire.spark[1]}`,
                     ["--ex" as string]: "10px",
-                    animation: "emberRise 1.9s ease-out .4s infinite",
+                    animation: "emberRise 1.7s ease-out .35s infinite",
                   }}
                 />
                 <div
@@ -270,11 +293,21 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                     background: fire.spark[2],
                     boxShadow: `0 0 5px ${fire.spark[2]}`,
                     ["--ex" as string]: "-12px",
-                    animation: "emberRise 1.4s ease-out .85s infinite",
+                    animation: "emberRise 1.25s ease-out .7s infinite",
+                  }}
+                />
+                <div
+                  className="fire-spark absolute bottom-[50px] left-[48%] h-[2px] w-[2px] rounded-full"
+                  style={{
+                    background: fire.spark[0],
+                    boxShadow: `0 0 5px ${fire.spark[0]}`,
+                    ["--ex" as string]: "8px",
+                    animation: "emberRise 1.55s ease-out 1.05s infinite",
                   }}
                 />
               </>
             ) : null}
+            </div>
           </div>
         </div>
 
