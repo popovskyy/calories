@@ -79,9 +79,12 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[44px]" : digits >= 4 ? "text-[52px]" : "text-[58px]";
 
-  // Сила лампи від калорій (той самий heroHeat, що й у вогнища).
+  // Сила лампи від калорій (той самий heroHeat / size, що й у вогнища).
   const lampPower = heat.extinguished ? 0.04 : heat.intensity;
-  const lampDim = heat.extinguished || heat.dying;
+  // Dim лише коли після перебору size вже medium/small (не на легкому +43).
+  const lampDim =
+    heat.extinguished ||
+    (heat.warn && (heat.size === "medium" || heat.size === "small"));
 
   // Куплена рамка «Неон» перефарбовує світло маяка — інакше преміум-тема
   // просто з'їдала покупку (рамки не було видно взагалі).
@@ -273,7 +276,7 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
                       : undefined,
               filter: heat.extinguished
                 ? "brightness(0.35)"
-                : heat.warn
+                : lampDim
                   ? "brightness(0.7)"
                   : undefined,
             }}

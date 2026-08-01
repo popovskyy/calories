@@ -2039,6 +2039,42 @@ html[data-theme="minecraft"] .rounded-full {
   70% { transform: translateY(-4px) translateX(1px) scale(0.9); opacity: 0.7; }
   100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.85; }
 }
+/*
+ * Живий flicker через класи — не через inline animation, щоб перебір
+ * калорій ніколи не міг випадково поставити animation: none / undefined.
+ */
+.flame-big {
+  animation: flameBig 0.95s linear infinite;
+}
+.flame-mid {
+  animation: flameMid 0.72s linear infinite;
+}
+.flame-mid-alt {
+  animation: flameMid 0.8s linear 0.15s infinite;
+}
+.flame-side {
+  animation: flameSide 0.88s linear infinite;
+}
+.flame-side-alt {
+  animation: flameSide 1.05s linear 0.28s infinite;
+}
+.flame-tip {
+  animation: flameTip 0.9s linear infinite;
+}
+.fire-glow-live {
+  animation: fireGlow 2.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flame-big,
+  .flame-mid,
+  .flame-mid-alt,
+  .flame-side,
+  .flame-side-alt,
+  .flame-tip,
+  .fire-glow-live {
+    animation: none !important;
+  }
+}
 /* Дрібні іскри, що постійно летять угору */
 @keyframes emberRise {
   0% { transform: translate(0, 0) scale(1); opacity: 0; }

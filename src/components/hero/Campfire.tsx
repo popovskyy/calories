@@ -8,7 +8,7 @@ import { CampLogVisual } from "@/components/ambient/CampLogVisual";
 import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
-import { heroHeatFromCalories } from "@/lib/hero-heat";
+import { HERO_HEAT_SIZE_SCALE, heroHeatFromCalories } from "@/lib/hero-heat";
 import { claimRitualSound, playFireBurst, playFireSizzle, playLogToss } from "@/lib/sfx";
 import { haptic } from "@/lib/haptics";
 import { useAppStore } from "@/store/useAppStore";
@@ -88,19 +88,19 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const [pokeKey, setPokeKey] = useState(0);
   const treeTossing = treeTossKey !== null;
 
-  // База від калорій; колоди — дрібний бонус, поки полум'я не сідає/не тухне
+  // База від size; колоди — дрібний бонус, поки не dying/out
   const logBoost =
     heat.extinguished || heat.dying
       ? 0
       : Math.min(logsFed * FIRE_SCALE_PER_LOG, FIRE_SCALE_LOG_CAP);
-  const fireScale = heat.extinguished
-    ? 0
-    : Math.max(0.1, heat.intensity + logBoost) * 1.12;
-  const fireOpacity = heat.extinguished ? 0 : 0.35 + heat.intensity * 0.65;
-  // Поки не out — полум'я завжди з flicker. Іскри/ритуал — поки не dying.
+  const baseScale =
+    heat.size === "out" ? 0 : HERO_HEAT_SIZE_SCALE[heat.size];
+  const fireScale = heat.extinguished ? 0 : baseScale + logBoost;
+  const fireOpacity = heat.extinguished ? 0 : 0.4 + heat.intensity * 0.6;
+  // Поки не out — полум'я завжди з CSS flicker. Іскри — не на small.
   const alive = !heat.extinguished;
-  const lively = alive && !heat.dying;
-  const flaring = lively && (active || treeTossing);
+  const showSparks = alive && heat.size !== "small" && !reduce;
+  const flaring = alive && heat.size !== "small" && (active || treeTossing);
 
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => Math.round(v).toLocaleString("uk-UA"));
@@ -170,18 +170,13 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         </div>
       </div>
 
-      {/* ореол — сила від калорій; при out — немає; завжди пульсує поки живий */}
+      {/* ореол — scale від size; пульс через CSS-клас (не inline animation) */}
       {alive ? (
         <div
-          className="fire-glow pointer-events-none absolute -bottom-1 left-1/2 h-[120px] w-[160px]"
+          className="fire-glow fire-glow-live pointer-events-none absolute -bottom-1 left-1/2 h-[120px] w-[160px]"
           style={{
             background:
               `radial-gradient(50% 60% at 50% 80%, ${fire.glow}, transparent 70%)`,
-            animation: reduce
-              ? undefined
-              : heat.dying
-                ? "fireGlow 4.2s ease-in-out infinite"
-                : "fireGlow 2.8s ease-in-out infinite",
             transform: `translateX(-50%) scale(${fireScale})`,
             transformOrigin: "50% 100%",
             opacity: 0.25 + heat.intensity * 0.7,
@@ -242,7 +237,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
           if (!reduce) setPokeKey((k) => k + 1);
         }}
       >
-        {/* полум'я — ховаємо повністю при out (інакше flame* keyframes світять крізь opacity) */}
+        {/* полум'я — ховаємо лише при out; flicker завжди через CSS-класи */}
         {alive ? (
           <div
             className="absolute inset-0"
@@ -266,88 +261,60 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
                 style={{
                   transformOrigin: "50% 100%",
                   animation:
-                    pokeKey > 0 && !flaring && !reduce && lively
+                    pokeKey > 0 && !flaring && !reduce && heat.size !== "small"
                       ? "firePoke 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
                       : undefined,
                 }}
               >
-                {/* Flicker ЗАВЖДИ поки alive — warn/повідомлення його не стопорить */}
                 <div
-                  className="flame absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
+                  className="flame flame-big absolute bottom-[12px] left-1/2 -ml-[11px] h-[64px] w-[22px]"
                   style={{
                     borderRadius: FLAME_RADIUS,
                     background: fire.big,
                     filter: "blur(.35px)",
-                    animation: reduce
-                      ? undefined
-                      : heat.dying
-                        ? "flameBig 1.35s linear infinite"
-                        : "flameBig 0.95s linear infinite",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[14px] left-1/2 -ml-[6px] h-11 w-[13px]"
+                  className="flame flame-mid absolute bottom-[14px] left-1/2 -ml-[6px] h-11 w-[13px]"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.mid,
-                    animation: reduce
-                      ? undefined
-                      : heat.dying
-                        ? "flameMid 1.05s linear infinite"
-                        : "flameMid 0.72s linear infinite",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[62px] left-1/2 -ml-[3px] h-3.5 w-1.5 rounded-full"
+                  className="flame flame-tip absolute bottom-[62px] left-1/2 -ml-[3px] h-3.5 w-1.5 rounded-full"
                   style={{
                     background: fire.tip,
                     filter: "blur(1px)",
-                    animation: reduce ? undefined : "flameTip 0.9s linear infinite",
-                    opacity: heat.dying ? heat.intensity : undefined,
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[11px] left-[36%] h-[28px] w-[11px]"
+                  className="flame flame-side absolute bottom-[11px] left-[36%] h-[28px] w-[11px]"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.side,
-                    animation: reduce
-                      ? undefined
-                      : heat.dying
-                        ? "flameSide 1.2s linear infinite"
-                        : "flameSide 0.88s linear infinite",
                     transformOrigin: "50% 100%",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[11px] left-[58%] h-[24px] w-2.5"
+                  className="flame flame-side-alt absolute bottom-[11px] left-[58%] h-[24px] w-2.5"
                   style={{
                     borderRadius: "50% 50% 46% 46% / 70% 70% 30% 30%",
                     background: fire.side,
-                    animation: reduce
-                      ? undefined
-                      : heat.dying
-                        ? "flameSide 1.4s linear .28s infinite"
-                        : "flameSide 1.05s linear .28s infinite",
                     transformOrigin: "50% 100%",
                   }}
                 />
                 <div
-                  className="flame absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
+                  className="flame flame-mid-alt absolute bottom-[13px] left-[46%] h-[38px] w-[9px]"
                   style={{
                     borderRadius: "50% 50% 45% 45% / 68% 68% 32% 32%",
                     background: fire.mid,
-                    opacity: heat.dying ? Math.max(0.35, heat.intensity * 0.75) : 0.75,
-                    animation: reduce
-                      ? undefined
-                      : heat.dying
-                        ? "flameMid 1.1s linear .15s infinite"
-                        : "flameMid 0.8s linear .15s infinite",
+                    opacity: 0.75,
                     transformOrigin: "50% 100%",
                   }}
                 />
 
-                {!reduce && lively ? (
+                {showSparks ? (
                   <>
                     <div
                       className="fire-spark absolute bottom-14 left-1/2 h-1 w-1 rounded-full"
