@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
-import { CampDeer } from "@/components/ambient/CampDeer";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { claimRitualSound, playLogToss } from "@/lib/sfx";
@@ -123,9 +122,6 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
           animation: "fireGlow 3.6s ease-in-out infinite",
         }}
       />
-
-      {/* олень біля вогнища — FSM у CampDeer (патруль + втеча без remount) */}
-      <CampDeer ritualActive={active} />
 
       {/* вогонь + дрова + каміння: єдиний стек, що спалахує на .56s */}
       <div

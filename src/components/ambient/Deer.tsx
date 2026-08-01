@@ -8,6 +8,7 @@
  */
 
 export type DeerGait = "idle" | "walk" | "run";
+export type DeerBody = "lean" | "fit" | "plump" | "ache";
 
 interface Palette {
   legFront: string;
@@ -56,6 +57,8 @@ interface DeerProps {
   scared?: boolean;
   /** Локомоція: idle = дихає/дивиться, walk/run = ноги */
   gait?: DeerGait;
+  /** Стан тіла питомця (Tamagotchi) */
+  body?: DeerBody;
 }
 
 export function Deer({
@@ -64,12 +67,22 @@ export function Deer({
   height,
   scared = false,
   gait = "walk",
+  body = "fit",
 }: DeerProps) {
   const p = variant === "camp" ? CAMP : FIELD;
   const moving = gait === "walk" || gait === "run";
   /* run — швидкий цикл ніг; walk — повільніший, з м’яким easing у CSS */
   const pace = gait === "run" ? 0.28 : gait === "walk" ? 1.15 : 0;
   const scan = gait === "idle" ? 8.2 : gait === "walk" ? 6.2 : 0;
+  const belly =
+    body === "lean"
+      ? "scale(0.86, 0.92)"
+      : body === "plump"
+        ? "scale(1.12, 1.08)"
+        : body === "ache"
+          ? "scale(1.2, 1.12)"
+          : "scale(1, 1)";
+  const eyeFill = scared || body === "ache" ? "#ff6a4a" : p.eye;
 
   return (
     <svg
@@ -125,20 +138,24 @@ export function Deer({
         />
       </g>
 
-      <path
-        d="M42 100q18-7 36 0l5 22-4 16-4-11-4 13-4-12-5 12-4-13-4 11-6-16 -2-22Z"
-        fill={p.body}
-      />
+      <g style={{ transformOrigin: "60px 118px", transform: belly }}>
+        <path
+          d="M42 100q18-7 36 0l5 22-4 16-4-11-4 13-4-12-5 12-4-13-4 11-6-16 -2-22Z"
+          fill={p.body}
+        />
+      </g>
 
       <g
         className="deer-part"
         style={
-          moving
-            ? {
-                transformOrigin: "80% 8%",
-                animation: `armSway ${pace}s ease-in-out infinite`,
-              }
-            : { transformOrigin: "80% 8%" }
+          body === "ache"
+            ? { transformOrigin: "80% 8%", transform: "rotate(28deg)" }
+            : moving
+              ? {
+                  transformOrigin: "80% 8%",
+                  animation: `armSway ${pace}s ease-in-out infinite`,
+                }
+              : { transformOrigin: "80% 8%" }
         }
       >
         <path
@@ -158,12 +175,14 @@ export function Deer({
       <g
         className="deer-part"
         style={
-          moving
-            ? {
-                transformOrigin: "20% 8%",
-                animation: `armSway ${pace}s ease-in-out ${pace / 2}s infinite`,
-              }
-            : { transformOrigin: "20% 8%" }
+          body === "ache"
+            ? { transformOrigin: "20% 8%", transform: "rotate(-28deg)" }
+            : moving
+              ? {
+                  transformOrigin: "20% 8%",
+                  animation: `armSway ${pace}s ease-in-out ${pace / 2}s infinite`,
+                }
+              : { transformOrigin: "20% 8%" }
         }
       >
         <path
@@ -214,10 +233,28 @@ export function Deer({
               : undefined
           }
         >
-          <circle className="deer-eye" cx="47" cy="68" r="12.5" fill={p.eye} />
-          <circle className="deer-eye" cx="73" cy="68" r="12.5" fill={p.eye} />
+          <circle className="deer-eye" cx="47" cy="68" r="12.5" fill={eyeFill} />
+          <circle className="deer-eye" cx="73" cy="68" r="12.5" fill={eyeFill} />
           <circle cx="47" cy="68" r="5" fill="#0f0904" />
           <circle cx="73" cy="68" r="5" fill="#0f0904" />
+          {body === "ache" ? (
+            <>
+              <path
+                d="M40 58 Q47 54 54 58"
+                stroke="#0f0904"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+              />
+              <path
+                d="M66 58 Q73 54 80 58"
+                stroke="#0f0904"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+              />
+            </>
+          ) : null}
         </g>
         <rect
           x="52"

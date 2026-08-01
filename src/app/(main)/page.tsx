@@ -10,6 +10,7 @@ import { EpicCard } from "@/components/EpicCard";
 import { DietAdvice } from "@/components/DietAdvice";
 import { MacroTiles } from "@/components/MacroTiles";
 import { QuestChip } from "@/components/QuestChip";
+import { ThemePet } from "@/components/pet/ThemePet";
 import { ThemeAspirationHint } from "@/components/ThemeAspirationHint";
 import { WeeklyQuestsCard } from "@/components/WeeklyQuestsCard";
 import { WeightGoalCard } from "@/components/WeightGoalCard";
@@ -102,6 +103,13 @@ export function OverviewTab() {
             goal={user.goal}
           />
         )}
+
+        {today ? (
+          <ThemePet
+            consumed={today.totalCalories}
+            target={user.targetCalories}
+          />
+        ) : null}
 
         {today ? (
           <MacroTiles
