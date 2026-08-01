@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   animate,
   motion,
@@ -8,7 +9,6 @@ import {
   useReducedMotion,
   type AnimationPlaybackControls,
 } from "framer-motion";
-import { Deer, type DeerGait } from "@/components/ambient/Deer";
 import { playDeerStartle } from "@/lib/sfx";
 
 const EASE_SOFT = [0.22, 1, 0.36, 1] as const;
@@ -17,20 +17,83 @@ function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
+/** Палітра camp-оленя — лише голова. */
+const P = {
+  head: "#2a1a0f",
+  ear: "#b5717d",
+  antler: "#080503",
+  eye: "#ffe9a8",
+  muzzleStroke: "#5c3f2c",
+  nose: "#1d1108",
+  snout: "#080503",
+} as const;
+
 /**
- * Другий олень при переборі калорій: час від часу виринає з самого краю
- * екрана — дуже великий (~пів героя), наляканий, пробігає/виглядає і йде.
+ * Чисто голова оленя: viewBox обрізаний під роги+морду (з повного 120×170).
+ * Страшний погляд при переборі.
+ */
+function DeerHeadSvg({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="12 6 96 108"
+      className={className}
+      aria-hidden
+      style={{ animation: "deerCurious 4.2s ease-in-out infinite" }}
+    >
+      <g
+        className="deer-part deer-scared"
+        style={{
+          transformOrigin: "50% 70%",
+          animation: "headScan 5.4s cubic-bezier(0.33, 1, 0.68, 1) infinite",
+        }}
+      >
+        <g stroke={P.antler} strokeWidth={6} strokeLinecap="round" fill="none">
+          <path d="M45 50C41 36 35 26 25 14" />
+          <path d="M34 28L20 24M30 19L27 6M40 39L27 38" />
+          <path d="M75 50C79 36 85 26 95 14" />
+          <path d="M86 28l14-4M90 19l3-13M80 39l13-1" />
+        </g>
+        <path d="M31 56q-9-8-5-19q11 4 13 16z" fill={P.head} />
+        <path d="M33 55q-5-5-3-11q6 3 7 10z" fill={P.ear} />
+        <path d="M89 56q9-8 5-19q-11 4-13 16z" fill={P.head} />
+        <path d="M87 55q5-5 3-11q-6 3-7 10z" fill={P.ear} />
+        <ellipse cx="60" cy="72" rx="27" ry="26" fill={P.head} />
+        <path d="M50 88h20v10q0 9-10 9t-10-9z" fill={P.head} />
+        <g style={{ animation: "eyeFlare 8s ease-in-out infinite" }}>
+          <circle className="deer-eye" cx="47" cy="68" r="12.5" fill={P.eye} />
+          <circle className="deer-eye" cx="73" cy="68" r="12.5" fill={P.eye} />
+          <circle cx="47" cy="68" r="5" fill="#0f0904" />
+          <circle cx="73" cy="68" r="5" fill="#0f0904" />
+        </g>
+        <rect
+          x="52"
+          y="86"
+          width="16"
+          height="26"
+          rx="8"
+          fill={P.snout}
+          stroke={P.muzzleStroke}
+          strokeWidth="2"
+        />
+        <ellipse cx="60" cy="86" rx="7" ry="5" fill={P.nose} />
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * При переборі: голова оленя виглядає З‑ЗА КРАЮ САМОГО ЕКРАНА (як з рамки
+ * айфона) — fixed overlay на весь viewport, ~пів екрана, не в герої додатку.
  */
 export function CampOverageGiantDeer({ active }: { active: boolean }) {
   const reduce = useReducedMotion();
   const x = useMotionValue(0);
   const opacity = useMotionValue(0);
-  const scaleX = useMotionValue(1);
-  const [gait, setGait] = useState<DeerGait>("idle");
-  const [visible, setVisible] = useState(false);
+  const [side, setSide] = useState<"left" | "right">("left");
+  const [show, setShow] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
   const ctrls = useRef<AnimationPlaybackControls[]>([]);
   const gen = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const stopCtrls = () => {
     for (const c of ctrls.current) c.stop();
@@ -43,11 +106,14 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
   };
 
   useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
     if (reduce || !active) {
       stopCtrls();
       opacity.set(0);
-      setVisible(false);
-      setGait("idle");
+      setShow(false);
       return;
     }
 
@@ -61,74 +127,59 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
         ctrls.current.push({ stop: () => window.clearTimeout(t) } as AnimationPlaybackControls);
       });
 
-    const widthOf = () => containerRef.current?.offsetWidth ?? 320;
-
     const run = async () => {
-      // Перша поява не миттєва — хай перебір «повисить» кілька секунд
-      await sleep(rand(2800, 5200));
+      await sleep(rand(900, 1800));
 
       while (alive()) {
-        const w = widthOf();
         const fromLeft = Math.random() < 0.5;
-        // За краєм екрана → трохи в кадр, потім назад
-        const off = fromLeft ? -Math.round(w * 0.42) : Math.round(w * 0.72);
-        const peek = fromLeft ? Math.round(w * 0.02) : Math.round(w * 0.38);
-        const exit = off;
+        setSide(fromLeft ? "left" : "right");
 
-        scaleX.set(fromLeft ? 1 : -1);
+        // За межею viewport → в кадр лише частина голови (~45vw peek)
+        const off = fromLeft ? "-58vw" : "58vw";
+        const peek = fromLeft ? "-8vw" : "8vw";
+
         x.set(off);
         opacity.set(0);
-        setVisible(true);
-        setGait("run");
+        setShow(true);
         playDeerStartle();
 
         track(animate(opacity, 1, { duration: 0.35, ease: [...EASE_SOFT] }));
         await track(
           animate(x, peek, {
-            duration: rand(1.1, 1.7),
-            ease: [0.2, 0.85, 0.25, 1],
+            duration: rand(0.85, 1.25),
+            ease: [0.18, 0.9, 0.22, 1],
           }),
         );
         if (!alive()) break;
 
-        // Коротко «виглядає» з краю
-        setGait("idle");
-        await sleep(rand(400, 900));
+        // Дивиться з‑за «рамки» телефону
+        await sleep(rand(1600, 2800));
         if (!alive()) break;
 
-        // Інколи пробігає глибше до середини, потім тікає
-        if (Math.random() < 0.45) {
-          setGait("run");
-          const deeper = fromLeft ? Math.round(w * 0.18) : Math.round(w * 0.22);
-          scaleX.set(fromLeft ? 1 : -1);
+        // Інколи трохи глибше заглядає
+        if (Math.random() < 0.5) {
+          const deeper = fromLeft ? "2vw" : "-2vw";
           await track(
             animate(x, deeper, {
-              duration: rand(0.55, 0.9),
-              ease: [0.25, 0.9, 0.3, 1],
+              duration: rand(0.45, 0.7),
+              ease: [...EASE_SOFT],
             }),
           );
           if (!alive()) break;
-          await sleep(rand(200, 450));
+          await sleep(rand(600, 1100));
         }
 
-        // Тікає назад за край
-        setGait("run");
-        scaleX.set(fromLeft ? -1 : 1);
         await track(
-          animate(x, exit, {
-            duration: rand(0.7, 1.15),
-            ease: [0.4, 0.05, 0.6, 1],
+          animate(x, off, {
+            duration: rand(0.55, 0.9),
+            ease: [0.45, 0.05, 0.55, 0.95],
           }),
         );
         if (!alive()) break;
+        await track(animate(opacity, 0, { duration: 0.2 }));
+        setShow(false);
 
-        track(animate(opacity, 0, { duration: 0.25 }));
-        await sleep(280);
-        setVisible(false);
-        setGait("idle");
-
-        // Пауза між появами
-        await sleep(rand(6000, 14000));
+        await sleep(rand(4000, 8000));
       }
     };
 
@@ -140,32 +191,32 @@ export function CampOverageGiantDeer({ active }: { active: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, reduce]);
 
-  if (reduce || !active) return null;
+  if (reduce || !active || !portalReady) return null;
 
-  return (
+  return createPortal(
     <div
-      ref={containerRef}
-      className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-[180] overflow-hidden"
       aria-hidden
     >
-      {visible ? (
+      {show ? (
         <motion.div
-          className="ambient-mob absolute bottom-[-8px] left-0"
-          style={{ x, opacity }}
+          className="absolute top-[16vh] will-change-transform"
+          style={{
+            x,
+            opacity,
+            [side === "left" ? "left" : "right"]: 0,
+            // Дзеркало з правого краю — морда дивиться в екран
+            scaleX: side === "right" ? -1 : 1,
+            width: "52vw",
+            maxWidth: 280,
+            filter: "drop-shadow(0 12px 28px rgba(0,0,0,.55))",
+          }}
         >
-          <motion.div style={{ scaleX, transformOrigin: "50% 100%" }}>
-            {/* ~пів висоти героя (250px) — виглядає з самого краю екрана */}
-            <Deer
-              variant="camp"
-              width={118}
-              height={168}
-              scared
-              gait={gait}
-              curious={gait === "idle"}
-            />
-          </motion.div>
+          {/* ~пів висоти екрана — тільки голова */}
+          <DeerHeadSvg className="h-[48vh] w-full max-h-[360px]" />
         </motion.div>
       ) : null}
-    </div>
+    </div>,
+    document.body,
   );
 }
