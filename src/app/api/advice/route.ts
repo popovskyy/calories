@@ -14,9 +14,11 @@ import {
   generateDayAdvice,
   generateWeekAdvice,
   type AdviceMood,
+  type WeekJourneyContext,
 } from "@/lib/gemini-advice";
 import { AiError } from "@/lib/ai-error";
 import { GOAL_LABELS, calcMacroTargets, isGoal } from "@/lib/calories";
+import { computeStreak } from "@/lib/streak";
 import type { AdviceResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -220,6 +222,11 @@ async function handleWeekly(
       goal: true,
       weight: true,
       targetCalories: true,
+      startWeight: true,
+      targetWeight: true,
+      startWeightDate: true,
+      maxStreak: true,
+      totalInTargetDays: true,
       meals: {
         where: { date: { in: days }, status: { not: "cancelled" } },
         orderBy: { createdAt: "asc" },
@@ -255,6 +262,50 @@ async function handleWeekly(
       kind: "weekly",
     } satisfies AdviceResponse);
   }
+
+  const [{ streak }, loggedDayGroups, recentWeights, priorRows] =
+    await Promise.all([
+      computeStreak(userId),
+      prisma.mealLog.groupBy({
+        by: ["date"],
+        where: { userId, status: { not: "cancelled" } },
+      }),
+      prisma.weightLog.findMany({
+        where: { userId },
+        orderBy: { date: "desc" },
+        take: 6,
+        select: { date: true, weight: true },
+      }),
+      prisma.weeklyAdvice.findMany({
+        where: { userId, weekStart: { lt: weekStart } },
+        orderBy: { weekStart: "desc" },
+        take: 3,
+        select: {
+          weekStart: true,
+          headline: true,
+          mood: true,
+          tip: true,
+        },
+      }),
+    ]);
+
+  const journey: WeekJourneyContext = {
+    currentWeight: user.weight,
+    startWeight: user.startWeight,
+    targetWeight: user.targetWeight,
+    startWeightDate: user.startWeightDate,
+    streak,
+    maxStreak: user.maxStreak,
+    inTargetDays: user.totalInTargetDays,
+    daysLoggedTotal: loggedDayGroups.length,
+    recentWeights,
+    priorWeeks: priorRows.map((p) => ({
+      weekStart: p.weekStart,
+      headline: p.headline,
+      mood: toMood(p.mood),
+      tip: p.tip,
+    })),
+  };
 
   const byDay = new Map<
     string,
@@ -321,6 +372,7 @@ async function handleWeekly(
       goalLabel: GOAL_LABELS[goal],
       name: user.name,
       weekLabel,
+      journey,
     });
 
     const row = {
