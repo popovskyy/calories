@@ -295,11 +295,14 @@ function SimpleBalanceBlock({
           Сьогодні — окремо від підсумку тижня і навмисно без вердикту
           "дефіцит/профіцит": день ще триває, і ця цифра сама собою
           зміниться до вечора.
+
+          Показуємо NET (totalCalories = з'їдено − спалено), а не брутто: у
+          середньому вище, в кільці й у плашці "Залишилось" усюди net, тож
+          брутто тут читалося б як розбіжність у цифрах на тренувальний день.
         */}
         {todayHasFood ? (
           <p className="mt-1 text-[13px] tabular-nums text-[var(--color-muted3)]">
-            Сьогодні {(todayRow!.consumedCalories ?? todayRow!.totalCalories).toLocaleString("uk-UA")}{" "}
-            ккал · день триває
+            Сьогодні {todayRow!.totalCalories.toLocaleString("uk-UA")} ккал · день триває
           </p>
         ) : null}
       </div>

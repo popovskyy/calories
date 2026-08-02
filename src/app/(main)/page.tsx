@@ -298,8 +298,9 @@ function WeekAvgLine({
     return (
       <div className="mt-0.5 space-y-0.5 text-[13px] tabular-nums text-[var(--color-muted2)]">
         <p>
+          {/* net (з'їдено − спалено) — як і "середнє" в основній гілці нижче */}
           {todayHasFood
-            ? `сьогодні ${(today.consumedCalories ?? today.totalCalories).toLocaleString("uk-UA")} · день триває`
+            ? `сьогодні ${today.totalCalories.toLocaleString("uk-UA")} · день триває`
             : "тиждень щойно почався"}
         </p>
         <p className="text-[12px] text-[var(--color-muted3)]">{normsLine}</p>
