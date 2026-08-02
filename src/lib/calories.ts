@@ -291,6 +291,42 @@ export function classifyLedgerStance(input: {
 }
 
 /** Короткий український ярлик для промптів і UI. */
+/**
+ * Короткий ярлик для UI — без пояснювальної дужки.
+ *
+ * `stanceLabelUk` нижче пишеться для ПРОМПТА: там дужка «(є, але слабший за
+ * план / були перебори)» потрібна, щоб модель не сплутала м'який дефіцит зі
+ * зривом. На картці ж вона читається як службова нотація зі слешем, тож
+ * інтерфейс отримує свою, коротшу форму.
+ */
+export function stanceShortUk(stance: CalorieStance, goal: Goal): string {
+  if (goal === "maintain") {
+    switch (stance) {
+      case "on_plan":
+        return "біля норми підтримки";
+      case "surplus":
+        return "профіцит над підтримкою";
+      case "deep":
+        return "помітний недобір";
+      default:
+        return "біля підтримки";
+    }
+  }
+  switch (stance) {
+    case "on_plan":
+      return "дефіцит у плані";
+    case "shallow":
+      return "м'який дефіцит, слабший за план";
+    case "deep":
+      return "глибший дефіцит за план";
+    case "maintenance":
+      return "майже без дефіциту";
+    case "surplus":
+      return "профіцит над підтримкою";
+  }
+}
+
+/** Розгорнутий ярлик для промптів ШІ — з підказкою, як трактувати темп. */
 export function stanceLabelUk(stance: CalorieStance, goal: Goal): string {
   if (goal === "maintain") {
     switch (stance) {

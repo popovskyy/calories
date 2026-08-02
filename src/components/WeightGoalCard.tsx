@@ -15,7 +15,7 @@ import {
   useWeightHistory,
 } from "@/hooks/useQueries";
 import { shortDate, todayYMD } from "@/lib/date";
-import { KCAL_PER_KG, isGoal, stanceLabelUk, type Goal } from "@/lib/calories";
+import { KCAL_PER_KG, isGoal, stanceShortUk, type Goal } from "@/lib/calories";
 import { weekFilledStats, type WeekFilledStats } from "@/lib/week-stats";
 import type { DashboardDay, ForecastResponse } from "@/lib/types";
 
@@ -158,7 +158,7 @@ export function WeightGoalCard() {
         />
       ) : null}
 
-      <CalorieTrackRow forecast={data} goal={goal} />
+      <CalorieTrackRow forecast={data} goal={goal} goalDir={goalDir} />
 
       <SimpleBalanceBlock
         weekStats={weekStats}
@@ -184,15 +184,19 @@ export function WeightGoalCard() {
 function CalorieTrackRow({
   forecast,
   goal,
+  goalDir,
 }: {
   forecast: ForecastResponse;
   goal: Goal;
+  /** −1 — ціль схуднути, +1 — набрати, 0 — тримати вагу. */
+  goalDir: number;
 }) {
   const {
     expectedWeight,
     currentWeight,
     calorieStance,
     loggedDays,
+    totalDays,
     skippedDays,
     trendKgPerWeek,
   } = forecast;
@@ -202,6 +206,12 @@ function CalorieTrackRow({
   }
 
   const gap = Math.round((currentWeight - expectedWeight) * 10) / 10;
+  /**
+   * Розбіжність трактуємо відносно НАПРЯМКУ цілі, а не «мінус = добре».
+   * При цілі набрати вагу «легший, ніж обіцяє журнал» — це відставання,
+   * хоча знак той самий, що й у випередженні на схудненні.
+   */
+  const ahead = goalDir !== 0 && Math.sign(gap) === Math.sign(goalDir);
 
   return (
     <div className="flex flex-col gap-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-3">
@@ -213,21 +223,29 @@ function CalorieTrackRow({
       </p>
       {Math.abs(gap) >= 0.4 ? (
         <p className="text-[13px] leading-snug text-[var(--color-muted2)]">
-          {gap > 0
-            ? "Ваги йдуть повільніше за калорії — частіше недозапис або затримка води."
-            : "Ваги випереджають калорійний трек — схоже, руху більше, ніж у журналі."}
+          {goalDir === 0
+            ? `Ваги й калорійний трек розходяться на ${Math.abs(gap).toFixed(1).replace(".", ",")} кг.`
+            : ahead
+              ? "Ваги випереджають калорійний трек — схоже, руху більше, ніж у журналі."
+              : "Ваги відстають від калорійного треку — частіше недозапис або затримка води."}
         </p>
       ) : null}
       <p className="text-[13px] tabular-nums text-[var(--color-muted2)]">
         {calorieStance !== "unknown"
-          ? `Темп журналу: ${stanceLabelUk(calorieStance, goal)}`
+          ? `Темп журналу: ${stanceShortUk(calorieStance, goal)}`
           : "Темп журналу: замало записів"}
         {trendKgPerWeek != null
           ? ` · ваги ${trendKgPerWeek > 0 ? "+" : "−"}${Math.abs(trendKgPerWeek).toFixed(2).replace(".", ",")} кг/тиж`
           : ""}
       </p>
+      {/*
+        Скільки днів реально стоїть за цифрою «журнал обіцяє»: незаписані дні
+        рахуються як «їв рівно підтримку», тож 6 днів із 30 — це зовсім не те
+        саме, що 6 із 7, хоча цифра вгорі виглядає однаково впевнено.
+      */}
       <p className="text-[12px] text-[var(--color-muted3)]">
         {loggedDays} {pluralDays(loggedDays)} у розрахунку
+        {totalDays > loggedDays ? ` з ${totalDays} від старту цілі` : ""}
         {skippedDays > 0
           ? ` · ${skippedDays} ${pluralDays(skippedDays)} відкинуто як недозаписані`
           : ""}
