@@ -170,12 +170,36 @@ export const QUEST_POOL: QuestTemplate[] = [
   },
 ];
 
-function seededPick(weekStart: string, count: number): QuestTemplate[] {
+/**
+ * mulberry32 — маленький seeded PRNG із пристойним розподілом.
+ *
+ * Попередня формула shuffle була `j = (idx * 17 + i * 31) % (i + 1)`. Оскільки
+ * `i ≡ −1 (mod i+1)`, вона згорталась до `j = (17·idx − 31) mod (i+1)`, тобто
+ * до ОДНОГО числа, поділеного з остачею на різні модулі. Останні свопи (i=1..3),
+ * які й формують початок масиву, майже не рухались — а `picked` бере саме
+ * звідти. Наслідок: за 2 роки sniper_5 випадав 60 разів, а protein_5 і
+ * marathon_150 — по 4. Половина пулу була мертвим контентом.
+ */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Детермінований набір квестів на тиждень. Експортовано заради тестів:
+ * чесність ротації на око не перевіряється — саме так баг вище й прожив.
+ */
+export function seededPick(weekStart: string, count: number): QuestTemplate[] {
   const idx = weekIndex(weekStart);
+  const rand = mulberry32(idx * 2654435761);
   const order = [...QUEST_POOL];
-  // Детермінований shuffle
   for (let i = order.length - 1; i > 0; i--) {
-    const j = (idx * 17 + i * 31) % (i + 1);
+    const j = Math.floor(rand() * (i + 1));
     [order[i], order[j]] = [order[j]!, order[i]!];
   }
   // Завжди хоча б один «в цілі»

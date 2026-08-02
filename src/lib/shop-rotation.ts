@@ -32,6 +32,16 @@ export interface StallSlot {
 
 const SALE_RATE = 0.75;
 
+/**
+ * Крок ротації — ЗАВЖДИ 1 (плюс сталий зсув на слот).
+ *
+ * Раніше слоти брали `idx * 3`, `idx * 5 + 1`, `idx * 7 + 2`. Коли множник має
+ * спільний дільник із довжиною списку, вибірка згортається: у списку з 3
+ * предметів `(idx * 3) % 3 === 0` завжди, тож слот знижки два роки поспіль
+ * показував один і той самий щит. Крок 1 взаємно простий із будь-якою
+ * довжиною, тому покриває весь каталог незалежно від того, скільки в ньому
+ * позицій зараз і скільки стане завтра.
+ */
 function rotate<T>(list: T[], idx: number): T {
   return list[((idx % list.length) + list.length) % list.length]!;
 }
@@ -53,7 +63,7 @@ export function getWeeklyStock(weekStart: string): StallSlot[] {
   const slots: StallSlot[] = [];
 
   // 1. Спорядження зі знижкою −25%
-  const item = rotate(saleableItems(), idx * 3);
+  const item = rotate(saleableItems(), idx);
   const salePrice = Math.round(item.price * SALE_RATE);
   slots.push({
     kind: "item_sale",
@@ -67,7 +77,7 @@ export function getWeeklyStock(weekStart: string): StallSlot[] {
   });
 
   // 2. Косметика тижня
-  const cos = rotate(rotatableCosmetics(), idx * 5 + 1);
+  const cos = rotate(rotatableCosmetics(), idx + 1);
   slots.push({
     kind: "cosmetic",
     refId: cos.id,
@@ -95,7 +105,7 @@ export function getWeeklyStock(weekStart: string): StallSlot[] {
 
   // 4. Набір тижня: другий предмет зі знижкою, відмінний від першого
   const pool = saleableItems().filter((i) => i.id !== item.id);
-  const bundleItem = rotate(pool, idx * 7 + 2);
+  const bundleItem = rotate(pool, idx + 2);
   slots.push({
     kind: "bundle",
     refId: bundleItem.id,
