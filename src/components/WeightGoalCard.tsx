@@ -307,11 +307,11 @@ function SimpleBalanceBlock({
             Тиждень щойно почався
           </p>
         )}
+        {/* Кількість днів уже названа в рядку балансу вище — не дублюємо. */}
         {avgNetKcal != null && loggedDays > 0 ? (
           <p className="mt-1 text-[13px] tabular-nums text-[var(--color-muted2)]">
             середнє {avgNetKcal.toLocaleString("uk-UA")} · ціль{" "}
-            {target.toLocaleString("uk-UA")} ккал/день · {loggedDays}{" "}
-            {pluralDays(loggedDays)} закритих
+            {target.toLocaleString("uk-UA")} ккал/день
           </p>
         ) : null}
         {/*
@@ -368,23 +368,34 @@ export function noTrendReason(f: ForecastResponse): string {
     : "тренд ще формується";
 }
 
-function formatTargetBalance(
+/**
+ * Баланс проти ДЕННОЇ ЦІЛІ — свідомо без слів «профіцит» і «дефіцит».
+ *
+ * Ці два слова в застосунку означають відношення до ПІДТРИМКИ: саме на цьому
+ * стоїть уся градація темпу (див. classifyLedgerStance і блок «дві шкали» в
+ * промптах ШІ). Людина, яка їсть трохи над денною ціллю, але помітно під
+ * підтримкою, — у м'якому дефіциті й худне; назвати це «профіцитом» означало
+ * б злякати її саме тим словом, від плутанини з яким решта коду боронить.
+ * Тому тут — нейтральне «над / під денною ціллю».
+ */
+export function formatTargetBalance(
   vsTarget: number | null | undefined,
   target: number | null | undefined,
   logged: number,
 ): string | null {
   if (vsTarget == null || logged <= 0) return null;
   const abs = Math.abs(vsTarget);
+  const days = closedDaysUk(logged);
   const near =
     Math.abs(vsTarget) <
     Math.max(80, Math.round((target ?? 2000) * 0.02) * logged);
   if (near) {
-    return `Біля денної цілі за ${logged} закритих ${pluralDays(logged)}`;
+    return `Біля денної цілі за ${days}`;
   }
   if (vsTarget > 0) {
-    return `Профіцит ≈ +${abs.toLocaleString("uk-UA")} ккал над денною ціллю · ${logged} закритих ${pluralDays(logged)}`;
+    return `Над денною ціллю ≈ +${abs.toLocaleString("uk-UA")} ккал · ${days}`;
   }
-  return `Дефіцит ≈ −${abs.toLocaleString("uk-UA")} ккал від денної цілі · ${logged} закритих ${pluralDays(logged)}`;
+  return `Під денною ціллю ≈ −${abs.toLocaleString("uk-UA")} ккал · ${days}`;
 }
 
 /** Швидке зважування: одне поле і кнопка — без відкриття форми профілю. */
@@ -490,6 +501,23 @@ function Tile({
 function fmtKg(v: number | null | undefined): string {
   if (v == null) return "—";
   return `${v.toFixed(1).replace(".", ",")} кг`;
+}
+
+/**
+ * «1 закритий день» / «3 закриті дні» / «6 закритих днів».
+ *
+ * Прикметник мусить узгоджуватись разом із іменником: якщо схиляти лише
+ * «день», виходить «1 закритих день». Після 2–4 українська бере називний
+ * множини («три закриті дні»), а не родовий, тому це не те саме, що 5+.
+ */
+export function closedDaysUk(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} закритий день`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return `${n} закриті дні`;
+  }
+  return `${n} закритих днів`;
 }
 
 function pluralDays(n: number): string {
