@@ -143,8 +143,17 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize = digits >= 5 ? "text-[42px]" : digits >= 4 ? "text-[52px]" : "text-[62px]";
 
+  /*
+   * overflow-y саме `clip`, а не `hidden`. За CSS Overflow 3, якщо одна вісь
+   * `visible`, а друга — не `visible` і не `clip`, то `visible` обчислюється в
+   * `auto`. Пара visible+hidden робила з героя контейнер горизонтального
+   * скролу, бо олень заходить за правий край колонки (left-10 + x до 315 +
+   * ширина 58×scale ≈ 426px проти ~384px контенту). `clip` із цього правила
+   * виведено, тож overflow-x лишається справді visible, а сторінку від з'їзду
+   * вбік страхує body { overflow-x: hidden }.
+   */
   return (
-    <div className="relative my-1 h-[250px] w-full shrink-0 overflow-x-visible overflow-y-hidden">
+    <div className="relative my-1 h-[250px] w-full shrink-0 overflow-x-visible overflow-y-clip">
       {/* цифри — найвищий шар */}
       <div className="pointer-events-none absolute inset-x-0 top-2.5 z-[3] flex flex-col items-center gap-px">
         <motion.div

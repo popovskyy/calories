@@ -388,6 +388,8 @@ export interface QuestStatusDTO {
   rewardCoins: number;
   progress: number;
   done: boolean;
+  /** Прогрес уже повний, але день ще не закрився — монета чекає вечора. */
+  pendingClose: boolean;
   claimed: boolean;
   /** Квест замінено ре-ролом. */
   rerolled: boolean;

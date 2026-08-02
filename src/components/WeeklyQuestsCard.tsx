@@ -139,7 +139,17 @@ export function WeeklyQuestsCard() {
                   </div>
                   <span className="text-[12px] tabular-nums text-[var(--color-muted3)]">
                     {quest.progress}/{quest.target}
-                    {quest.claimed ? " · ✓" : quest.done ? " · чекає на закриття дня" : ""}
+                    {/*
+                      quest.done тепер рахується за ЗАКРИТИМИ днями (без
+                      сьогодні), тож галочка вже не блимає вранці й не
+                      зникає після вечері. pendingClose — саме той стан
+                      "живий прогрес повний, а закритий підсумок ще ні".
+                    */}
+                    {quest.claimed
+                      ? " · ✓"
+                      : quest.pendingClose
+                        ? " · чекає на закриття дня"
+                        : ""}
                   </span>
                 </div>
               </li>

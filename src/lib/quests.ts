@@ -328,7 +328,7 @@ async function weekSnapshots(
   return snaps;
 }
 
-function progressFor(
+export function progressFor(
   kind: QuestKind,
   target: number,
   snaps: DaySnap[],
@@ -389,6 +389,50 @@ function progressFor(
   }
 }
 
+export interface QuestOutcome {
+  /** Живий прогрес — з сьогоднішнім днем, для прогрес-бару. */
+  progress: number;
+  /**
+   * Готовий підсумок квеста. Для FINAL_DAY_KINDS рахується лише за
+   * ЗАКРИТИМИ днями (без сьогодні) — так само, як монета за нього.
+   */
+  done: boolean;
+  /**
+   * Живі дані вже кажуть «готово», але закритий підсумок ще ні: прогрес-бар
+   * повний, а монета чекає вечора. Для монотонних квестів (лічильник, що
+   * тільки росте) це неможливо — живе й закрите тут завжди збігаються.
+   */
+  pendingClose: boolean;
+}
+
+/**
+ * Єдине правило: чи виконано квест — і чи ще тільки «на вигляд».
+ *
+ * Для точних квестів (FINAL_DAY_KINDS) прогрес-бар живе з сьогоднішнім днем,
+ * а факт виконання — ні: інакше ранкові 400 ккал при цілі week_balance дали б
+ * галочку о 9:00, яка зникає після вечері. Раніше `done`, що йшло в DTO,
+ * завжди рахувалось з живих snaps, тож саме так і відбувалось — платіж уже
+ * був правильний (`payable` брав finalSnaps), а картка показувала неправду.
+ */
+export function questOutcome(
+  kind: QuestKind,
+  target: number,
+  snaps: DaySnap[],
+  finalSnaps: DaySnap[],
+  weekStart: string,
+): QuestOutcome {
+  const live = progressFor(kind, target, snaps, weekStart);
+  if (!FINAL_DAY_KINDS.has(kind)) {
+    return { progress: live.progress, done: live.done, pendingClose: false };
+  }
+  const closed = progressFor(kind, target, finalSnaps, weekStart);
+  return {
+    progress: live.progress,
+    done: closed.done,
+    pendingClose: live.done && !closed.done,
+  };
+}
+
 export interface QuestStatusDTO {
   id: string;
   weekStart: string;
@@ -400,6 +444,8 @@ export interface QuestStatusDTO {
   rewardCoins: number;
   progress: number;
   done: boolean;
+  /** Прогрес уже повний, але день ще не закрився — монета чекає вечора. */
+  pendingClose: boolean;
   claimed: boolean;
   /** Квест замінено ре-ролом — назад уже не повернути. */
   rerolled: boolean;
@@ -532,14 +578,17 @@ export async function listQuestStatus(
   for (const [i, q] of quests.entries()) {
     const kind = q.kind as QuestKind;
     const key = keys[i]!;
-    // Прогрес показуємо «живий» (з сьогоднішнім днем), платимо — за закритими.
-    const { progress, done } = progressFor(kind, q.target, snaps, ws);
+    // Прогрес показуємо «живий» (з сьогоднішнім днем), платимо і "done" в DTO
+    // рахуємо — за закритими: одне правило на обидва місця, questOutcome.
+    const { progress, done, pendingClose } = questOutcome(
+      kind,
+      q.target,
+      snaps,
+      finalSnaps,
+      ws,
+    );
     // target <= 0 зробив би квест «виконаним» одразу — не платимо за таке.
-    const payable =
-      q.target > 0 &&
-      (FINAL_DAY_KINDS.has(kind)
-        ? progressFor(kind, q.target, finalSnaps, ws).done
-        : done);
+    const payable = q.target > 0 && done;
 
     let claimed = claimedKeys.has(key);
 
@@ -559,6 +608,7 @@ export async function listQuestStatus(
       rewardCoins: q.rewardCoins,
       progress: Math.min(progress, q.target),
       done,
+      pendingClose,
       claimed,
       rerolled: q.rerolled ?? false,
     });

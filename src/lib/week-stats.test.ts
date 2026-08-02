@@ -3,6 +3,8 @@ import type { DashboardDay } from "@/lib/types";
 import { weekFilledStats } from "@/lib/week-stats";
 
 const TARGET = 2000;
+/** Усі фікстури нижче — до цієї дати; вона сама в жодному тесті не закрита. */
+const TODAY = "2026-08-10";
 
 function day(over: Partial<DashboardDay> & { date: string }): DashboardDay {
   return {
@@ -17,12 +19,21 @@ function day(over: Partial<DashboardDay> & { date: string }): DashboardDay {
   } as DashboardDay;
 }
 
-/** Ці цифри показує картка цілі — «середнє» тут ділиться на дні З ЇЖЕЮ. */
+/**
+ * Ці цифри показує картка цілі — «середнє» тут ділиться на ЗАКРИТІ дні з
+ * їжею (до `today`). Сьогодні свідомо виключений: інакше ранковий запис на
+ * 400 ккал при цілі 1900 виглядав би як «−1500 від цілі» замість ще не
+ * дописаної цифри, яка сама собою зміниться до вечора.
+ */
 describe("weekFilledStats", () => {
   it("порожній тиждень — null, а не нулі", () => {
-    expect(weekFilledStats([], TARGET)).toBeNull();
+    expect(weekFilledStats([], TARGET, TODAY)).toBeNull();
     expect(
-      weekFilledStats([day({ date: "2026-08-03" }), day({ date: "2026-08-04" })], TARGET),
+      weekFilledStats(
+        [day({ date: "2026-08-03" }), day({ date: "2026-08-04" })],
+        TARGET,
+        TODAY,
+      ),
     ).toBeNull();
   });
 
@@ -33,7 +44,7 @@ describe("weekFilledStats", () => {
       day({ date: "2026-08-05", consumedCalories: 1900, totalCalories: 1900 }),
       day({ date: "2026-08-06" }),
     ];
-    const s = weekFilledStats(days, TARGET)!;
+    const s = weekFilledStats(days, TARGET, TODAY)!;
     expect(s.loggedDays).toBe(2);
     expect(s.avgNetKcal).toBe(2000);
     expect(s.sumNetKcal).toBe(4000);
@@ -46,12 +57,14 @@ describe("weekFilledStats", () => {
       day({ date: "2026-08-05", consumedCalories: 2100, totalCalories: 2100 }),
     ];
     // 4400 з'їдено проти 4000 бюджету за два дні → +400, а не −1600 за три.
-    expect(weekFilledStats(days, TARGET)!.balanceVsTargetKcal).toBe(400);
+    expect(weekFilledStats(days, TARGET, TODAY)!.balanceVsTargetKcal).toBe(400);
   });
 
   it("дефіцит дає відʼємний баланс", () => {
-    const days = [day({ date: "2026-08-03", consumedCalories: 1700, totalCalories: 1700 })];
-    expect(weekFilledStats(days, TARGET)!.balanceVsTargetKcal).toBe(-300);
+    const days = [
+      day({ date: "2026-08-03", consumedCalories: 1700, totalCalories: 1700 }),
+    ];
+    expect(weekFilledStats(days, TARGET, TODAY)!.balanceVsTargetKcal).toBe(-300);
   });
 
   it("день, з'їдений у нуль активністю, усе одно рахується заповненим", () => {
@@ -65,7 +78,7 @@ describe("weekFilledStats", () => {
         totalCalories: 0,
       }),
     ];
-    const s = weekFilledStats(days, TARGET)!;
+    const s = weekFilledStats(days, TARGET, TODAY)!;
     expect(s.loggedDays).toBe(1);
     expect(s.avgNetKcal).toBe(0);
   });
@@ -79,6 +92,31 @@ describe("weekFilledStats", () => {
         totalCalories: -400,
       }),
     ];
-    expect(weekFilledStats(days, TARGET)!.sumNetKcal).toBe(-400);
+    expect(weekFilledStats(days, TARGET, TODAY)!.sumNetKcal).toBe(-400);
+  });
+
+  /**
+   * Регресія на скаргу користувача: «зранку написав що зʼїв 400 калорій, а
+   * воно думає що дефіцит 1500 сьогодні — день же ще не закрився».
+   */
+  it("сьогоднішній ранковий запис не створює тижневий дефіцит", () => {
+    const days = [day({ date: TODAY, consumedCalories: 400, totalCalories: 400 })];
+    expect(weekFilledStats(days, TARGET, TODAY)).toBeNull();
+  });
+
+  it("сьогодні не входить ні в середнє, ні в суму разом із закритими днями", () => {
+    const days = [
+      day({ date: "2026-08-09", consumedCalories: 1900, totalCalories: 1900 }),
+      day({ date: TODAY, consumedCalories: 400, totalCalories: 400 }),
+    ];
+    const s = weekFilledStats(days, TARGET, TODAY)!;
+    expect(s.loggedDays).toBe(1);
+    expect(s.sumNetKcal).toBe(1900);
+    expect(s.avgNetKcal).toBe(1900);
+  });
+
+  it("дата, старша за today (минулий тиждень через ?date=), рахується як закрита", () => {
+    const days = [day({ date: "2026-08-03", consumedCalories: 1900, totalCalories: 1900 })];
+    expect(weekFilledStats(days, TARGET, "2026-08-04")!.loggedDays).toBe(1);
   });
 });

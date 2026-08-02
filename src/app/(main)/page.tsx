@@ -76,7 +76,8 @@ export function OverviewTab() {
   if (isLoading || !user) return <DashboardSkeleton />;
 
   const today = dash.data?.today;
-  const over = (today?.difference ?? 0) < 0;
+  const diff = today?.difference ?? 0;
+  const over = diff < 0;
   const macroTargets = calcMacroTargets(user.targetCalories, user.weight);
 
   const openQuests = () => {
@@ -106,6 +107,12 @@ export function OverviewTab() {
       <section className="mcard flex flex-col items-center gap-3 p-[26px_20px_22px] shadow-[var(--shadow-card-lg)]">
         <div className="flex w-full items-center justify-between">
           <span className="lbl">Сьогодні · {humanDate(todayYMD())}</span>
+          {/*
+            День ще триває, тож "Дефіцит" тут був би вердиктом, якого ще нема:
+            зранку з одним записом на 400 ккал він же не дефіцит на день, а
+            просто ще не з'їдена решта. Перебір — інша річ, його вже не
+            відкотити, тож він і лишається вердиктом.
+          */}
           {today ? (
             over ? (
               <span
@@ -119,7 +126,9 @@ export function OverviewTab() {
               </span>
             ) : (
               <span className="rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,var(--color-accent)_22%,transparent)] px-3 py-1.5 text-[14px] font-semibold text-[var(--color-accent-300)]">
-                Дефіцит
+                {diff === 0
+                  ? "Рівно в ціль"
+                  : `Залишилось ${diff.toLocaleString("uk-UA")}`}
               </span>
             )
           ) : null}
@@ -212,6 +221,7 @@ export function OverviewTab() {
                     {dash.data ? (
                       <WeekAvgLine
                         days={dash.data.days}
+                        today={dash.data.today}
                         target={user.targetCalories}
                         maintenance={calcMaintenanceCalories({
                           birthYear: user.birthYear,
@@ -246,20 +256,48 @@ export function OverviewTab() {
   );
 }
 
-/** Середнє + норми: підтримка (без дефіциту), ціль дефіциту, факт середнє. */
+/**
+ * Середнє + норми: підтримка (без дефіциту), ціль дефіциту, факт середнє.
+ * Рахується лише за ЗАКРИТИМИ днями (weekFilledStats відрізає сьогодні) —
+ * інакше ранковий запис на 400 ккал виглядав би як "−1500 від цілі" замість
+ * ще не дописаної цифри. Сьогодні показуємо окремим живим рядком.
+ */
 function WeekAvgLine({
   days,
+  today,
   target,
   maintenance,
   goal,
 }: {
   days: DashboardDay[];
+  today: DashboardDay;
   target: number;
   maintenance: number;
   goal: Goal;
 }) {
-  const stats = weekFilledStats(days, target);
-  if (!stats) return null;
+  const stats = weekFilledStats(days, target, todayYMD());
+
+  const normsLine =
+    goal === "deficit"
+      ? `підтримка ${maintenance.toLocaleString("uk-UA")} · дефіцит ${target.toLocaleString("uk-UA")}`
+      : `підтримка ${maintenance.toLocaleString("uk-UA")}`;
+
+  const todayHasFood =
+    (today.consumedCalories ?? 0) > 0 || today.totalCalories > 0;
+
+  if (!stats) {
+    return (
+      <div className="mt-0.5 space-y-0.5 text-[13px] tabular-nums text-[var(--color-muted2)]">
+        <p>
+          {todayHasFood
+            ? `сьогодні ${(today.consumedCalories ?? today.totalCalories).toLocaleString("uk-UA")} · день триває`
+            : "тиждень щойно почався"}
+        </p>
+        <p className="text-[12px] text-[var(--color-muted3)]">{normsLine}</p>
+      </div>
+    );
+  }
+
   const { avgNetKcal: avg, loggedDays } = stats;
   const delta = avg - target;
   const deltaLabel =
@@ -269,16 +307,11 @@ function WeekAvgLine({
         ? `+${delta.toLocaleString("uk-UA")} до цілі`
         : `−${Math.abs(delta).toLocaleString("uk-UA")} від цілі`;
 
-  const normsLine =
-    goal === "deficit"
-      ? `підтримка ${maintenance.toLocaleString("uk-UA")} · дефіцит ${target.toLocaleString("uk-UA")}`
-      : `підтримка ${maintenance.toLocaleString("uk-UA")}`;
-
   return (
     <div className="mt-0.5 space-y-0.5 text-[13px] tabular-nums text-[var(--color-muted2)]">
       <p>
         середнє {avg.toLocaleString("uk-UA")} · {loggedDays}{" "}
-        {pluralDaysUk(loggedDays)} · {deltaLabel}
+        {pluralDaysUk(loggedDays)} закритих · {deltaLabel}
       </p>
       <p className="text-[12px] text-[var(--color-muted3)]">{normsLine}</p>
     </div>

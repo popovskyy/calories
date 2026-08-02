@@ -14,10 +14,10 @@ import {
   useLogWeight,
   useWeightHistory,
 } from "@/hooks/useQueries";
-import { shortDate } from "@/lib/date";
+import { shortDate, todayYMD } from "@/lib/date";
 import { KCAL_PER_KG, isGoal, stanceLabelUk, type Goal } from "@/lib/calories";
 import { weekFilledStats, type WeekFilledStats } from "@/lib/week-stats";
-import type { ForecastResponse } from "@/lib/types";
+import type { DashboardDay, ForecastResponse } from "@/lib/types";
 
 export function WeightGoalCard() {
   const { user } = useCurrentUser();
@@ -72,7 +72,7 @@ export function WeightGoalCard() {
   const goal: Goal = isGoal(rawGoal) ? rawGoal : "maintain";
   const weekStats =
     dash.data && target > 0
-      ? weekFilledStats(dash.data.days, target)
+      ? weekFilledStats(dash.data.days, target, todayYMD())
       : null;
 
   // Прогрес зі знаком: рух У БІК цілі. Раніше брався модуль, тож набір ваги
@@ -165,6 +165,7 @@ export function WeightGoalCard() {
         target={target}
         remainingKg={remainingKg}
         forecast={data}
+        todayRow={dash.data?.today ?? null}
       />
 
       <p className="text-[11px] text-[var(--color-muted3)]">
@@ -244,11 +245,14 @@ function SimpleBalanceBlock({
   target,
   remainingKg,
   forecast,
+  todayRow,
 }: {
   weekStats: WeekFilledStats | null;
   target: number;
   remainingKg: number;
   forecast: ForecastResponse;
+  /** Сьогоднішній рядок дашборду — показуємо окремо, не в підсумку тижня. */
+  todayRow: DashboardDay | null;
 }) {
   const { daysLeft, paceStatus, projectedDate } = forecast;
   const loggedDays = weekStats?.loggedDays ?? 0;
@@ -260,6 +264,10 @@ function SimpleBalanceBlock({
     target,
     loggedDays,
   );
+
+  const todayHasFood =
+    todayRow != null &&
+    ((todayRow.consumedCalories ?? 0) > 0 || todayRow.totalCalories > 0);
 
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-3">
@@ -273,14 +281,25 @@ function SimpleBalanceBlock({
           </p>
         ) : (
           <p className="mt-0.5 text-[13px] text-[var(--color-muted2)]">
-            Немає днів із записами їжі
+            Тиждень щойно почався
           </p>
         )}
         {avgNetKcal != null && loggedDays > 0 ? (
           <p className="mt-1 text-[13px] tabular-nums text-[var(--color-muted2)]">
             середнє {avgNetKcal.toLocaleString("uk-UA")} · ціль{" "}
             {target.toLocaleString("uk-UA")} ккал/день · {loggedDays}{" "}
-            {pluralDays(loggedDays)} із записами
+            {pluralDays(loggedDays)} закритих
+          </p>
+        ) : null}
+        {/*
+          Сьогодні — окремо від підсумку тижня і навмисно без вердикту
+          "дефіцит/профіцит": день ще триває, і ця цифра сама собою
+          зміниться до вечора.
+        */}
+        {todayHasFood ? (
+          <p className="mt-1 text-[13px] tabular-nums text-[var(--color-muted3)]">
+            Сьогодні {(todayRow!.consumedCalories ?? todayRow!.totalCalories).toLocaleString("uk-UA")}{" "}
+            ккал · день триває
           </p>
         ) : null}
       </div>
@@ -314,12 +333,12 @@ function formatTargetBalance(
     Math.abs(vsTarget) <
     Math.max(80, Math.round((target ?? 2000) * 0.02) * logged);
   if (near) {
-    return `Біля денної цілі за ${logged} ${pluralDays(logged)} із записами`;
+    return `Біля денної цілі за ${logged} закритих ${pluralDays(logged)}`;
   }
   if (vsTarget > 0) {
-    return `Профіцит ≈ +${abs.toLocaleString("uk-UA")} ккал над денною ціллю · ${logged} ${pluralDays(logged)} із записами`;
+    return `Профіцит ≈ +${abs.toLocaleString("uk-UA")} ккал над денною ціллю · ${logged} закритих ${pluralDays(logged)}`;
   }
-  return `Дефіцит ≈ −${abs.toLocaleString("uk-UA")} ккал від денної цілі · ${logged} ${pluralDays(logged)} із записами`;
+  return `Дефіцит ≈ −${abs.toLocaleString("uk-UA")} ккал від денної цілі · ${logged} закритих ${pluralDays(logged)}`;
 }
 
 /** Швидке зважування: одне поле і кнопка — без відкриття форми профілю. */

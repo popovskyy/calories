@@ -45,7 +45,7 @@ export function QuestChip({ onOpen }: { onOpen: () => void }) {
           </span>
           <span className="shrink-0 text-[12px] tabular-nums text-[var(--color-muted3)]">
             {pick.progress}/{pick.target}
-            {pick.claimed ? " ✓" : pick.done ? " · чекає" : ""}
+            {pick.claimed ? " ✓" : pick.pendingClose ? " · чекає" : ""}
           </span>
         </div>
         <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[var(--color-tile)]">
@@ -60,11 +60,11 @@ export function QuestChip({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-/** Незавершений з найбільшим прогресом; інакше — перший, що чекає claim; інакше null. */
+/** Незавершений з найбільшим прогресом; інакше — перший, що чекає закриття дня; інакше null. */
 function pickFeaturedQuest(quests: QuestStatusDTO[]): QuestStatusDTO | null {
   const active = quests.filter((q) => !q.claimed);
   if (active.length === 0) return null;
-  const waiting = active.find((q) => q.done);
+  const waiting = active.find((q) => q.pendingClose);
   if (waiting) return waiting;
   return active.reduce((best, q) => {
     const bp = best.target > 0 ? best.progress / best.target : 0;
