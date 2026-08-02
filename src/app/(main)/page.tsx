@@ -105,8 +105,10 @@ export function OverviewTab() {
 
       {/* Кільце прогресу — герой першого viewport */}
       <section className="mcard flex flex-col items-center gap-3 p-[26px_20px_22px] shadow-[var(--shadow-card-lg)]">
-        <div className="flex w-full items-center justify-between">
-          <span className="lbl">Сьогодні · {humanDate(todayYMD())}</span>
+        <div className="flex w-full items-center justify-between gap-2">
+          <span className="lbl min-w-0 truncate whitespace-nowrap">
+            Сьогодні · {humanDate(todayYMD())}
+          </span>
           {/*
             День ще триває, тож "Дефіцит" тут був би вердиктом, якого ще нема:
             зранку з одним записом на 400 ккал він же не дефіцит на день, а
@@ -116,7 +118,7 @@ export function OverviewTab() {
           {today ? (
             over ? (
               <span
-                className="rounded-[var(--radius-pill)] px-3 py-1.5 text-[14px] font-semibold"
+                className="shrink-0 whitespace-nowrap rounded-[var(--radius-pill)] px-2.5 py-1 text-[13px] font-semibold"
                 style={{
                   background: "color-mix(in srgb, var(--color-red) 20%, transparent)",
                   color: "var(--color-red)",
@@ -125,10 +127,17 @@ export function OverviewTab() {
                 Перебір
               </span>
             ) : (
-              <span className="rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,var(--color-accent)_22%,transparent)] px-3 py-1.5 text-[14px] font-semibold text-[var(--color-accent-300)]">
-                {diff === 0
-                  ? "Рівно в ціль"
-                  : `Залишилось ${diff.toLocaleString("uk-UA")}`}
+              <span className="inline-flex shrink-0 items-baseline gap-1 whitespace-nowrap rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,var(--color-accent)_22%,transparent)] px-2.5 py-1 text-[13px] font-semibold text-[var(--color-accent-300)]">
+                {diff === 0 ? (
+                  "Рівно в ціль"
+                ) : (
+                  <>
+                    <span className="font-medium opacity-80">Залишилось</span>
+                    <span className="tabular-nums">
+                      {diff.toLocaleString("uk-UA")}
+                    </span>
+                  </>
+                )}
               </span>
             )
           ) : null}
