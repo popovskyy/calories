@@ -19,6 +19,7 @@ import { useCurrentUser, useDashboard, useEpics } from "@/hooks/useQueries";
 import { calcMacroTargets, calcMaintenanceCalories } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
 import { cn } from "@/lib/cn";
+import { liveDayTone, toneBg, toneColor } from "@/lib/status-tone";
 import { weekFilledStats } from "@/lib/week-stats";
 import type { DashboardDay } from "@/lib/types";
 import type { Goal } from "@/lib/calories";
@@ -79,6 +80,21 @@ export function OverviewTab() {
   const diff = today?.difference ?? 0;
   const over = diff < 0;
   const macroTargets = calcMacroTargets(user.targetCalories, user.weight);
+  const maintenance = calcMaintenanceCalories({
+    birthYear: user.birthYear,
+    birthMonth: user.birthMonth,
+    sex: user.sex,
+    weightKg: user.weight,
+    heightCm: user.height,
+  });
+  /*
+   * Плашка була бінарна: або «Перебір», або ні. Але між денною ціллю і
+   * підтримкою дефіцит ще є — це «на межі», а не зрив, і фарбувати його
+   * червоним нечесно. Тепер три стани, ті самі межі, що й у стовпчику дня.
+   */
+  const todayTone = today
+    ? liveDayTone(today.totalCalories, user.targetCalories, maintenance, user.goal)
+    : "neutral";
 
   const openQuests = () => {
     setMoreOpen(true);
@@ -116,30 +132,31 @@ export function OverviewTab() {
             відкотити, тож він і лишається вердиктом.
           */}
           {today ? (
-            over ? (
-              <span
-                className="shrink-0 whitespace-nowrap rounded-[var(--radius-pill)] px-2.5 py-1 text-[13px] font-semibold"
-                style={{
-                  background: "color-mix(in srgb, var(--color-red) 20%, transparent)",
-                  color: "var(--color-red)",
-                }}
-              >
-                Перебір
-              </span>
-            ) : (
-              <span className="inline-flex shrink-0 items-baseline gap-1 whitespace-nowrap rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,var(--color-accent)_22%,transparent)] px-2.5 py-1 text-[13px] font-semibold text-[var(--color-accent-300)]">
-                {diff === 0 ? (
-                  "Рівно в ціль"
-                ) : (
-                  <>
-                    <span className="font-medium opacity-80">Залишилось</span>
-                    <span className="tabular-nums">
-                      {diff.toLocaleString("uk-UA")}
-                    </span>
-                  </>
-                )}
-              </span>
-            )
+            <span
+              className="inline-flex shrink-0 items-baseline gap-1 whitespace-nowrap rounded-[var(--radius-pill)] px-2.5 py-1 text-[13px] font-semibold"
+              style={{
+                background: toneBg(todayTone, 20),
+                color: toneColor(todayTone),
+              }}
+            >
+              {over ? (
+                <>
+                  <span className="font-medium opacity-80">Перебір</span>
+                  <span className="tabular-nums">
+                    {Math.abs(diff).toLocaleString("uk-UA")}
+                  </span>
+                </>
+              ) : diff === 0 ? (
+                "Рівно в ціль"
+              ) : (
+                <>
+                  <span className="font-medium opacity-80">Залишилось</span>
+                  <span className="tabular-nums">
+                    {diff.toLocaleString("uk-UA")}
+                  </span>
+                </>
+              )}
+            </span>
           ) : null}
         </div>
 
@@ -151,6 +168,7 @@ export function OverviewTab() {
           )
         ) : (
           <CalorieHero
+            maintenance={maintenance}
             consumed={today.totalCalories}
             target={user.targetCalories}
             frame={user.frame}

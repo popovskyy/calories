@@ -10,6 +10,7 @@ import { CampTree } from "@/components/ambient/CampTree";
 import type { HeroProps } from "@/components/hero/CalorieHero";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 import { heroHeatFromCalories } from "@/lib/hero-heat";
+import { liveDayTone, toneColor } from "@/lib/status-tone";
 import { claimRitualSound, playFireBurst, playFireSizzle, playLogToss } from "@/lib/sfx";
 import { haptic } from "@/lib/haptics";
 import { useAppStore } from "@/store/useAppStore";
@@ -58,7 +59,7 @@ const FIRE = {
  * Окремо — ambient-дерево: рубаєш → кидаєш колоди → легкий бонус до полум'я,
  * якщо вогонь ще не згасає від перебору калорій.
  */
-export function Campfire({ consumed, target, frame }: HeroProps) {
+export function Campfire({ consumed, target, frame, goal, maintenance }: HeroProps) {
   const reduce = useReducedMotion();
   const remaining = target - consumed;
   const over = remaining < 0;
@@ -157,7 +158,7 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
       {/* цифри — найвищий шар */}
       <div className="pointer-events-none absolute inset-x-0 top-2.5 z-[3] flex flex-col items-center gap-px">
         <motion.div
-          className={`${numSize} leading-none text-white`}
+          className={`num-hero ${numSize} leading-none text-white`}
           style={{
             fontFamily: "var(--font-display)",
             textShadow: `0 0 26px ${fire.halo}`,
@@ -170,7 +171,11 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         </div>
         <div
           className="text-[13px] font-black"
-          style={{ color: over ? "var(--color-red)" : "var(--color-green)" }}
+          style={{
+            color: toneColor(
+              liveDayTone(consumed, target, maintenance ?? null, goal ?? "maintain"),
+            ),
+          }}
         >
           {over
             ? `Перебір ${Math.abs(remaining).toLocaleString("uk-UA")}`

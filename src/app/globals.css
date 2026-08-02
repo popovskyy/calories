@@ -26,9 +26,17 @@
   --color-accent-600: #5d5294;
   --color-accent-800: #423a6a;
 
-  /* Status */
+  /*
+   * Status — три стани, не два: зелений «у нормі», бурштиновий «на межі»,
+   * червоний «зірвано». Бурштиновий досі жив лише як хардкод усередині
+   * WeeklyChart, хоча тип DayStatus від початку має "amber", а на дефіциті
+   * ціла зона між денною ціллю і підтримкою — це саме «на межі»: дефіцит ще
+   * є, але слабший за план. Без токена цей стан не було чим намалювати.
+   */
   --color-green: #6bbf8a;
   --color-green-600: #4f9d6e;
+  --color-amber: #e0b56b;
+  --color-amber-600: #c4943f;
   --color-red: #e0808c;
   --color-red-600: #c05f6c;
 
@@ -82,8 +90,17 @@
 
   /* Font */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  /* Ролі: display — заголовки, лейбли, числа; body — усе інше */
-  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /*
+   * Ролі: display — заголовки, лейбли, числа; body — усе інше.
+   *
+   * Раніше обидві ролі вказували на Inter, тож роль існувала лише на папері:
+   * герой на 62px і дрібний підпис на 12px малювались однаково. Display тепер
+   * Unbounded — він і задуманий для великих кеглів. Body лишається Inter
+   * свідомо: тут щільні таблиці чисел і довгі українські рядки, де важить
+   * читабельність, а не характер.
+   */
+  --font-display: var(--font-unbounded), var(--font-inter), ui-sans-serif,
+    system-ui, sans-serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   /* Type scale — 4 кроки + title/hero */
@@ -130,6 +147,8 @@ html[data-theme="forest"] {
 
   --color-green: #57d97e;
   --color-green-600: #2c8c4c;
+  --color-amber: #ffb347;
+  --color-amber-600: #d98a26;
   --color-red: #ff7a5e;
   --color-red-600: #b8352a;
 
@@ -266,6 +285,8 @@ html[data-theme="minecraft"] {
 
   --color-green: #80ff20;
   --color-green-600: #4fae0d;
+  --color-amber: #fcdb05;
+  --color-amber-600: #c9a800;
   --color-red: #d63b2f;
   --color-red-600: #841f16;
 
@@ -414,6 +435,8 @@ html[data-theme="lighthouse"] {
 
   --color-green: #5ec8a0;
   --color-green-600: #3a9a74;
+  --color-amber: #ffcb6b;
+  --color-amber-600: #d99a3c;
   --color-red: #e08a7a;
   --color-red-600: #b85a4c;
 
@@ -626,6 +649,8 @@ html[data-theme="polonyna"] {
 
   --color-green: #4a8f57;
   --color-green-600: #366b41;
+  --color-amber: #e8a33d;
+  --color-amber-600: #b87a1c;
   --color-red: #c8493c;
   --color-red-600: #9e3629;
 
@@ -992,6 +1017,43 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/*
+ * Типографічні дрібниці, які видно лише разом.
+ *
+ * text-wrap: pretty прибирає «сироту» — одне слово, що звисає останнім рядком.
+ * Українські рядки тут довгі («Ваги відстають від калорійного треку — частіше
+ * недозапис або затримка води»), тож сирота траплялась постійно.
+ */
+p,
+li {
+  text-wrap: pretty;
+}
+
+/*
+ * Великий кегль display-гарнітури треба стискати: трекінг, який доречний на
+ * 12px, на 62px розсипає число на окремі цифри. Заголовки — так само.
+ */
+.page-title,
+h1,
+h2 {
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/*
+ * Головне число екрана (ккал у кільці / біля вогнища).
+ *
+ * tabular-nums — щоб при анімації лічильника цифри не «стрибали» по ширині:
+ * пропорційна одиниця вужча за нуль, і без табличних фігур число смикається
+ * на кожному кадрі. Мінусовий трекінг — бо на 60px+ типовий міжлітерний
+ * просвіт розсипає число на окремі знаки.
+ */
+.num-hero {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.03em;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--color-accent) 32%, transparent);
 }
@@ -1113,11 +1175,17 @@ html[data-theme="minecraft"] .rounded-full {
   border-radius: 0;
 }
 
+/*
+ * Мікро-лейбл. Кегль опущено з 14px до 12px разом із переходом на Unbounded:
+ * той помітно ширший за Inter, і на старому розмірі верхні лейбли почали б
+ * знову ламатись у два рядки — рівно та проблема, яку щойно правили в шапці
+ * героя. 12px × ширша гарнітура ≈ та сама довжина рядка, але вже з характером.
+ */
 .lbl {
   font-family: var(--font-display);
-  font-size: var(--text-secondary);
-  font-weight: 600;
-  letter-spacing: 0.09em;
+  font-size: var(--text-caption);
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted3);
 }

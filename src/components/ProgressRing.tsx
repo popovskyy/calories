@@ -11,6 +11,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { cn } from "@/lib/cn";
+import { liveDayTone, toneColor } from "@/lib/status-tone";
 import { DURATION_SHEET, EASE_OUT } from "@/lib/motion";
 
 const R = 108;
@@ -43,6 +44,8 @@ interface ProgressRingProps {
   target: number;
   frame?: string | null;
   goal?: Goal;
+  /** Підтримка (TDEE) — щоб відрізнити «на межі» від зриву. */
+  maintenance?: number;
   /** Playground override; у проді flare завжди увімкнений. */
   motion?: RingMotion;
   /** Колір дуги перебору; дефолт — magenta. */
@@ -75,6 +78,7 @@ export function ProgressRing({
   target,
   frame,
   goal = "maintain",
+  maintenance,
   motion: ringMotion = "flare",
   overTone = "magenta",
 }: ProgressRingProps) {
@@ -128,6 +132,9 @@ export function ProgressRing({
       a3.stop();
     };
   }, [progress, consumed, overProgress, over, offset, overOffset, count, reduce]);
+
+  /* Тон дня за тією ж шкалою, що й стовпчик у тижневому графіку. */
+  const liveTone = liveDayTone(consumed, target, maintenance ?? null, goal);
 
   const digits = String(Math.round(Math.abs(consumed))).length;
   const numSize =
@@ -331,13 +338,24 @@ export function ProgressRing({
           <div
             className="mt-1 max-w-full truncate text-[15px] font-semibold leading-tight"
             style={{
-              color: over
-                ? ot.to
-                : neon
-                  ? "#00F0FF"
-                  : flare
+              /*
+               * Перебір над ЦІЛЛЮ ще не зрив: поки net під підтримкою, дефіцит
+               * є і вага йде вниз — така зона тепер бурштинова. Справжній
+               * перебір (над підтримкою) лишає косметичний відтінок дуги
+               * `ot.to`: це куплений вибір користувача, і забирати його заради
+               * уніфікації не можна. neon — окрема арт-дирекція, не чіпаємо.
+               */
+              color: neon
+                ? over
+                  ? ot.to
+                  : "#00F0FF"
+                : !over
+                  ? flare
                     ? statusColor
-                    : "var(--color-green)",
+                    : toneColor(liveTone)
+                  : liveTone === "edge"
+                    ? toneColor("edge")
+                    : ot.to,
               textShadow:
                 neon && !over
                   ? "0 0 10px rgba(0,240,255,0.55)"

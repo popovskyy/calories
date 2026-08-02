@@ -62,22 +62,27 @@ export function WeeklyChart({ days, target }: WeeklyChartProps) {
     <ChartFrame className="h-[150px] w-full min-w-0">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 16, right: 4, bottom: 0, left: 4 }} barCategoryGap="26%">
+          {/*
+            Кольори через токени, а не хардкодом: інакше стовпчики лишалися б
+            нічними (#6bbf8a) у Minecraft і на Полонині, де палітра геть інша.
+            Саме тут бурштин і жив єдиним екземпляром до появи --color-amber.
+          */}
           <defs>
             <linearGradient id="bar-green" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#6bbf8a" />
-              <stop offset="1" stopColor="#4f9d6e" />
+              <stop offset="0" stopColor="var(--color-green)" />
+              <stop offset="1" stopColor="var(--color-green-600)" />
             </linearGradient>
             <linearGradient id="bar-red" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#e0808c" />
-              <stop offset="1" stopColor="#c05f6c" />
+              <stop offset="0" stopColor="var(--color-red)" />
+              <stop offset="1" stopColor="var(--color-red-600)" />
             </linearGradient>
             <linearGradient id="bar-amber" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#e0b56b" />
-              <stop offset="1" stopColor="#c4943f" />
+              <stop offset="0" stopColor="var(--color-amber)" />
+              <stop offset="1" stopColor="var(--color-amber-600)" />
             </linearGradient>
             <linearGradient id="bar-accent" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#b5abfc" />
-              <stop offset="1" stopColor="#796cbf" />
+              <stop offset="0" stopColor="var(--color-accent-300)" />
+              <stop offset="1" stopColor="var(--color-accent-500)" />
             </linearGradient>
           </defs>
           <XAxis

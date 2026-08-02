@@ -55,7 +55,7 @@ export function BlockHero({ consumed, target, frame }: HeroProps) {
         }}
       >
         <motion.div
-          className={`${numSize} font-extrabold leading-[0.9] text-white`}
+          className={`num-hero ${numSize} font-extrabold leading-[0.9] text-white`}
           style={{
             fontFamily: "var(--font-display)",
             textShadow: "4px 4px 0 #131316",

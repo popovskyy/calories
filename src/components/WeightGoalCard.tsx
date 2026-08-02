@@ -17,6 +17,12 @@ import {
 import { shortDate, todayYMD } from "@/lib/date";
 import { KCAL_PER_KG, isGoal, stanceShortUk, type Goal } from "@/lib/calories";
 import {
+  stanceTone,
+  toneBg,
+  toneColor,
+  type StatusTone,
+} from "@/lib/status-tone";
+import {
   MIN_TREND_SAMPLES,
   MIN_TREND_SPAN_DAYS,
 } from "@/lib/weight-trend";
@@ -101,12 +107,16 @@ export function WeightGoalCard() {
 
   let statusLabel =
     data.weighInCount >= MIN_TREND_SAMPLES ? "Тренд ще формується" : "Мало даних";
+  let paceTone: StatusTone = "neutral";
   if (paceStatus === "stalled") {
     statusLabel = "Темп не веде до цілі";
+    paceTone = "bad";
   } else if (paceStatus === "stale") {
     statusLabel = "Зважся — дані застаріли";
+    paceTone = "edge";
   } else if (paceStatus === "progressing" && projectedDate) {
     statusLabel = `Ціль ≈ ${shortDate(projectedDate)}`;
+    paceTone = "good";
   }
 
   return (
@@ -115,21 +125,15 @@ export function WeightGoalCard() {
         <span className="lbl">Ціль по вазі</span>
         <span
           className="rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-semibold"
-          // `stale` і `unknown` лишаються нейтральними: відсутність свіжих
-          // даних — це не помилка користувача, червоним її позначати нема за що.
+          /*
+           * `stale` тепер бурштиновий, а не сірий: застарілі дані — не помилка
+           * користувача, але й не «все гаразд», це стан «варто стати на ваги».
+           * Раніше кольору для цього просто не існувало — токена не було.
+           * `unknown` лишається нейтральним: там і справді нема що оцінювати.
+           */
           style={{
-            background:
-              paceStatus === "stalled"
-                ? "color-mix(in srgb, var(--color-red) 18%, transparent)"
-                : paceStatus === "progressing"
-                  ? "color-mix(in srgb, var(--color-green) 18%, transparent)"
-                  : "color-mix(in srgb, var(--color-muted3) 18%, transparent)",
-            color:
-              paceStatus === "stalled"
-                ? "var(--color-red)"
-                : paceStatus === "progressing"
-                  ? "var(--color-green)"
-                  : "var(--color-muted2)",
+            background: toneBg(paceTone),
+            color: toneColor(paceTone),
           }}
         >
           {statusLabel}
@@ -252,10 +256,18 @@ function CalorieTrackRow({
         бачила «легший, ніж обіцяє журнал» і поруч «слабший за план», читала
         це як суперечність, хоча одне про вихід, а друге про вхід.
       */}
-      <p className="text-[13px] tabular-nums text-[var(--color-muted2)]">
-        {calorieStance !== "unknown"
-          ? `Темп за їжею: ${stanceShortUk(calorieStance, goal)}`
-          : "Темп за їжею: замало записів"}
+      {/* Вердикт видно кольором, а не лише читанням: зелене — у плані,
+          бурштин — на межі, червоне — профіцит над підтримкою. */}
+      <p className="text-[13px] text-[var(--color-muted2)]">
+        Темп за їжею:{" "}
+        <span
+          className="font-semibold"
+          style={{ color: toneColor(stanceTone(calorieStance, goal)) }}
+        >
+          {calorieStance !== "unknown"
+            ? stanceShortUk(calorieStance, goal)
+            : "замало записів"}
+        </span>
       </p>
       {pacePercents ? (
         <p className="text-[13px] tabular-nums text-[var(--color-muted2)]">

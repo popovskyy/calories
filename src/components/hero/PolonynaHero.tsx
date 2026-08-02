@@ -75,7 +75,7 @@ export function PolonynaHero({ consumed, target, frame, goal = "maintain" }: Her
       {/* ── Зона тексту ── */}
       <div className="absolute inset-x-0 top-1 z-[2] flex flex-col items-center">
         <motion.div
-          className={`${numSize} font-bold leading-none text-[#33261c]`}
+          className={`num-hero ${numSize} font-bold leading-none text-[#33261c]`}
           style={{ fontFamily: "var(--font-display)" }}
         >
           {rounded}

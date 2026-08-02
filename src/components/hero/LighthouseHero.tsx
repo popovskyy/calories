@@ -119,7 +119,7 @@ export function LighthouseHero({ consumed, target, frame, goal = "maintain" }: H
       {/* ── Зона тексту: сцена сюди не заходить ── */}
       <div className="absolute inset-x-0 top-1 z-[2] flex flex-col items-center">
         <motion.div
-          className={`${numSize} font-semibold leading-none text-[#fff6e6]`}
+          className={`num-hero ${numSize} font-semibold leading-none text-[#fff6e6]`}
           style={{
             fontFamily: "var(--font-display)",
             textShadow: "0 2px 16px rgba(0,0,0,.6)",

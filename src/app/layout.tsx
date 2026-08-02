@@ -6,16 +6,38 @@ import {
   Nunito,
   Russo_One,
   Alegreya,
+  Unbounded,
 } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/PwaRegister";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme-script";
 
+/*
+ * cyrillic-ext потрібен саме для української: ґ (U+0491) лежить не в базовому
+ * `cyrillic`, а в розширеному. Без нього поодинокі «ґанок/ґудзик» падали б у
+ * системний фолбек посеред слова.
+ */
 const inter = Inter({
   variable: "--font-inter",
-  subsets: ["latin", "cyrillic"],
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
   weight: ["400", "500", "600"],
+});
+
+/*
+ * Nocturne досі мав display і body однією родиною (Inter), тобто ієрархії не
+ * було зовсім: заголовок, лейбл і величезне число героя малювались тим самим
+ * шрифтом, що й дрібний підпис. Ігрові теми свій display мають — базова була
+ * єдиною без нього.
+ *
+ * Unbounded узятий не «щоб красивіше», а за роллю: він display-first, має
+ * повну кирилицю з українськими літерами й міцні цифри — а в цьому застосунку
+ * головний елемент екрана саме число калорій на 62px.
+ */
+const unbounded = Unbounded({
+  variable: "--font-unbounded",
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
+  weight: ["500", "700"],
 });
 
 /*
@@ -120,7 +142,7 @@ export default function RootLayout({
   return (
     <html
       lang="uk"
-      className={`${inter.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable} ${dmSans.variable} ${alegreya.variable}`}
+      className={`${inter.variable} ${unbounded.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable} ${dmSans.variable} ${alegreya.variable}`}
       suppressHydrationWarning
     >
       <head>
