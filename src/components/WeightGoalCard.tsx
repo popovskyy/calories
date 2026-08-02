@@ -15,6 +15,7 @@ import {
   useWeightHistory,
 } from "@/hooks/useQueries";
 import { shortDate } from "@/lib/date";
+import { KCAL_PER_KG, isGoal, stanceLabelUk, type Goal } from "@/lib/calories";
 import { weekFilledStats, type WeekFilledStats } from "@/lib/week-stats";
 import type { ForecastResponse } from "@/lib/types";
 
@@ -61,33 +62,44 @@ export function WeightGoalCard() {
     targetWeight,
     deltaActual,
     projectedDate,
-    daysLeft,
     paceStatus,
+    maintenanceKcal,
+    targetKcal,
   } = data;
 
   const target = user?.targetCalories ?? data.targetKcal ?? 0;
+  const rawGoal = user?.goal ?? "";
+  const goal: Goal = isGoal(rawGoal) ? rawGoal : "maintain";
   const weekStats =
     dash.data && target > 0
       ? weekFilledStats(dash.data.days, target)
       : null;
 
-  const totalSpan = Math.abs((startWeight ?? 0) - (targetWeight ?? 0));
-  const done =
-    totalSpan > 0
-      ? Math.min(
-          1,
-          Math.max(0, Math.abs((startWeight ?? 0) - (currentWeight ?? 0)) / totalSpan),
-        )
-      : 1;
+  // Прогрес зі знаком: рух У БІК цілі. Раніше брався модуль, тож набір ваги
+  // при цілі схуднути теж посував смужку вперед.
+  const span = (targetWeight ?? 0) - (startWeight ?? 0);
+  const moved = (currentWeight ?? 0) - (startWeight ?? 0);
+  const done = span !== 0 ? Math.min(1, Math.max(0, moved / span)) : 1;
+  /** −1 — ціль схуднути, +1 — набрати. Задає, який напрямок «зелений». */
+  const goalDir = Math.sign(span);
 
   const remainingKg =
     startWeight != null && targetWeight != null && currentWeight != null
       ? Math.abs(currentWeight - targetWeight)
       : 0;
 
+  // Плановий темп із калорійного плану — незалежний від зважувань орієнтир
+  // для лінії плану на графіку.
+  const planRateKgPerDay =
+    maintenanceKcal != null && targetKcal != null
+      ? (targetKcal - maintenanceKcal) / KCAL_PER_KG
+      : null;
+
   let statusLabel = "Мало даних";
   if (paceStatus === "stalled") {
     statusLabel = "Темп не веде до цілі";
+  } else if (paceStatus === "stale") {
+    statusLabel = "Зважся — дані застаріли";
   } else if (paceStatus === "progressing" && projectedDate) {
     statusLabel = `Ціль ≈ ${shortDate(projectedDate)}`;
   }
@@ -98,6 +110,8 @@ export function WeightGoalCard() {
         <span className="lbl">Ціль по вазі</span>
         <span
           className="rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-semibold"
+          // `stale` і `unknown` лишаються нейтральними: відсутність свіжих
+          // даних — це не помилка користувача, червоним її позначати нема за що.
           style={{
             background:
               paceStatus === "stalled"
@@ -119,7 +133,12 @@ export function WeightGoalCard() {
 
       <div className="flex gap-2.5">
         <Tile label="Старт" value={fmtKg(startWeight)} />
-        <Tile label="Зараз" value={fmtKg(currentWeight)} delta={deltaActual} />
+        <Tile
+          label="Зараз"
+          value={fmtKg(currentWeight)}
+          delta={deltaActual}
+          goalDir={goalDir}
+        />
         <Tile label="Ціль" value={fmtKg(targetWeight)} />
       </div>
 
@@ -127,18 +146,19 @@ export function WeightGoalCard() {
 
       <WeighInRow currentWeight={currentWeight} />
 
-      {startWeight != null &&
-      startWeightDate &&
-      targetWeight != null &&
-      projectedDate ? (
+      {/* Графік не залежить від прогнозованої дати: він найпотрібніший саме
+          тоді, коли темп стоїть і дати ще немає. */}
+      {startWeight != null && startWeightDate && targetWeight != null ? (
         <WeightChart
           points={history?.items ?? []}
           startWeight={startWeight}
           startWeightDate={startWeightDate}
           targetWeight={targetWeight}
-          targetDate={projectedDate}
+          planRateKgPerDay={planRateKgPerDay}
         />
       ) : null}
+
+      <CalorieTrackRow forecast={data} goal={goal} />
 
       <SimpleBalanceBlock
         weekStats={weekStats}
@@ -151,6 +171,67 @@ export function WeightGoalCard() {
         Оцінка орієнтовна: 7700 ккал ≈ 1 кг
       </p>
     </section>
+  );
+}
+
+/**
+ * Калорійний трек від старту цілі: яку вагу «обіцяє» журнал і як вона
+ * розходиться з вагами. Раніше `computeForecast` рахував це все й нікуди не
+ * показував — а саме тут видно недозапис (ваги стоять, журнал обіцяє мінус)
+ * або затримку води (навпаки).
+ */
+function CalorieTrackRow({
+  forecast,
+  goal,
+}: {
+  forecast: ForecastResponse;
+  goal: Goal;
+}) {
+  const {
+    expectedWeight,
+    currentWeight,
+    calorieStance,
+    loggedDays,
+    skippedDays,
+    trendKgPerWeek,
+  } = forecast;
+
+  if (expectedWeight == null || currentWeight == null || loggedDays === 0) {
+    return null;
+  }
+
+  const gap = Math.round((currentWeight - expectedWeight) * 10) / 10;
+
+  return (
+    <div className="flex flex-col gap-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-3">
+      <div className="text-[12px] font-medium uppercase tracking-wide text-[var(--color-muted3)]">
+        Трек за калоріями
+      </div>
+      <p className="text-[14px] leading-snug text-[var(--color-text)]">
+        Журнал обіцяє {fmtKg(expectedWeight)} · на вагах {fmtKg(currentWeight)}
+      </p>
+      {Math.abs(gap) >= 0.4 ? (
+        <p className="text-[13px] leading-snug text-[var(--color-muted2)]">
+          {gap > 0
+            ? "Ваги йдуть повільніше за калорії — частіше недозапис або затримка води."
+            : "Ваги випереджають калорійний трек — схоже, руху більше, ніж у журналі."}
+        </p>
+      ) : null}
+      <p className="text-[13px] tabular-nums text-[var(--color-muted2)]">
+        {calorieStance !== "unknown"
+          ? `Темп журналу: ${stanceLabelUk(calorieStance, goal)}`
+          : "Темп журналу: замало записів"}
+        {trendKgPerWeek != null
+          ? ` · ваги ${trendKgPerWeek > 0 ? "+" : "−"}${Math.abs(trendKgPerWeek).toFixed(2).replace(".", ",")} кг/тиж`
+          : ""}
+      </p>
+      <p className="text-[12px] text-[var(--color-muted3)]">
+        {loggedDays} {pluralDays(loggedDays)} у розрахунку
+        {skippedDays > 0
+          ? ` · ${skippedDays} ${pluralDays(skippedDays)} відкинуто як недозаписані`
+          : ""}
+      </p>
+    </div>
   );
 }
 
@@ -304,13 +385,20 @@ function Tile({
   label,
   value,
   delta,
+  goalDir = -1,
 }: {
   label: string;
   value: string;
-  /** Зміна від старту: <0 — схудли (зелений), >0 — набрали (червоний). */
+  /** Зміна від старту в кг (<0 — схудли, >0 — набрали). */
   delta?: number | null;
+  /**
+   * Напрямок цілі: −1 схуднути, +1 набрати. Зелений — рух ДО цілі, а не
+   * «мінус на вагах»: при цілі набрати вагу набір і є прогресом.
+   */
+  goalDir?: number;
 }) {
   const showDelta = delta != null && Math.abs(delta) >= 0.05;
+  const towardGoal = delta != null && goalDir !== 0 && Math.sign(delta) === Math.sign(goalDir);
   return (
     <div className="tile flex-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-2 py-2 text-center">
       <div className="text-[12px] text-[var(--color-muted3)]">{label}</div>
@@ -321,7 +409,7 @@ function Tile({
         <div
           className="text-[12px] font-semibold tabular-nums"
           style={{
-            color: delta < 0 ? "var(--color-green)" : "var(--color-red)",
+            color: towardGoal ? "var(--color-green)" : "var(--color-red)",
           }}
         >
           {delta < 0 ? "−" : "+"}

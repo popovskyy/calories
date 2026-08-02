@@ -709,7 +709,7 @@ export function CampDeer({
 
   return (
     <motion.div
-      className="ambient-mob absolute bottom-[26px] left-10 z-[1] cursor-pointer touch-manipulation"
+      className="ambient-mob absolute bottom-[26px] left-10 z-[1] cursor-pointer touch-manipulation will-change-transform"
       style={{ x, scale, opacity }}
       aria-hidden
       onPointerDown={() => {

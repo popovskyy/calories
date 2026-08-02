@@ -259,7 +259,24 @@ export interface ForecastResponse {
   daysLeft: number | null;
   loggedDays: number;
   totalDays: number;
-  paceStatus: "progressing" | "stalled" | "unknown";
+  /**
+   * Дні з їжею, відкинуті як недозаписані (з'їдено надто мало, щоб це була
+   * правда). Не входять у loggedDays і не тягнуть expectedWeight вниз.
+   */
+  skippedDays: number;
+  /**
+   * - progressing: темп веде до цілі, є projectedDate;
+   * - stalled: темп нульовий або в бік від цілі;
+   * - stale: давно не було зважувань — темп рахувати нема на чому;
+   * - unknown: замало зважувань для тренду.
+   */
+  paceStatus: "progressing" | "stalled" | "stale" | "unknown";
+  /** Темп зважувань, кг/тиждень (<0 — схуднення). null — замало даних. */
+  trendKgPerWeek: number | null;
+  /** Дата останнього зважування (YYYY-MM-DD). */
+  lastWeighInDate: string | null;
+  /** Скільки зважувань потрапило в оцінку темпу. */
+  weighInCount: number;
   /** Підтримка (TDEE) ккал/день. */
   maintenanceKcal: number | null;
   /** Денна ціль ккал. */

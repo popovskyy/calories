@@ -2108,13 +2108,6 @@ html[data-theme="minecraft"] .rounded-full {
   0% { transform: scaleY(1) scaleX(1); opacity: 1; }
   100% { transform: scaleY(0.72) scaleX(0.88); opacity: 0; }
 }
-@keyframes treeChopShake {
-  0%,
-  100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  55% { transform: translateX(4px); }
-  80% { transform: translateX(-2px); }
-}
 /* Удар сокири: короткий відскок + стиснення */
 @keyframes treeChopHit {
   0% { transform: translateX(0) rotate(0deg) scale(1, 1); }
@@ -2440,7 +2433,6 @@ html[data-theme="minecraft"] .rounded-full {
   .camp-tree-grow,
   .camp-fir-fade,
   .camp-tree-shake,
-  .camp-tree-fall,
   .camp-axe,
   .tree-chips {
     animation: none !important;

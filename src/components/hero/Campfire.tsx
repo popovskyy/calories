@@ -216,8 +216,13 @@ export function Campfire({ consumed, target, frame }: HeroProps) {
         calorieChaos={heat.extinguished}
       />
 
-      {/* при переборі — інколи величезний олень виглядає з краю екрана */}
-      <CampOverageGiantDeer active={heat.warn || heat.extinguished} />
+      {/*
+        Величезний олень з краю екрана — фінальне покарання за згаслий вогонь,
+        а не фон при будь-якому переборі. Раніше він вмикався з heat.warn, тобто
+        з ПЕРШОЇ зайвої ккал, і далі визирав кожні ~8–14 с зі звуком: переляк,
+        що триває годинами, перестає лякати і стає шумом.
+      */}
+      <CampOverageGiantDeer active={heat.extinguished} />
 
       {/* сосни з обох боків вогнища */}
       <CampTree side="left" onLogToss={() => onTreeLogToss("left")} />

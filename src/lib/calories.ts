@@ -274,8 +274,11 @@ export function classifyLedgerStance(input: {
     return "deep";
   }
 
-  // Над підтримкою в сумі або в середньому — справжній профіцит
-  if (avgVsMaint > maintenance * 0.03 || balanceVsMaintenance > maintenance * 0.5) {
+  // Над підтримкою в сумі або в середньому — справжній профіцит.
+  // Суму нормуємо на тиждень: інакше поріг «пів дня підтримки» за 60 днів
+  // спрацьовував би від 17 ккал/день, тобто від шуму.
+  const perWeekVsMaint = balanceVsMaintenance / Math.max(1, loggedDays / 7);
+  if (avgVsMaint > maintenance * 0.03 || perWeekVsMaint > maintenance * 0.5) {
     return "surplus";
   }
   // Над денною ціллю в сумі / часто над ціллю, але ще під TDEE — м'який темп

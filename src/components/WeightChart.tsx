@@ -23,56 +23,91 @@ interface WeightChartProps {
   startWeight: number;
   startWeightDate: string;
   targetWeight: number;
-  /** Прогнозована дата досягнення цілі за поточним темпом (YYYY-MM-DD). */
-  targetDate: string;
+  /**
+   * Плановий темп із КАЛОРІЙНОГО плану: (підтримка − денна ціль) / 7700,
+   * у кг/день зі знаком (<0 — план на схуднення).
+   *
+   * Раніше сюди приходила прогнозована дата з фактичних зважувань, і лінія
+   * плану будувалась «старт → ціль за цю дату». Оскільки дата виводилась із
+   * тих самих двох точок, план математично проходив рівно через поточну вагу:
+   * тултип «від плану» завжди показував нуль. Тепер план — незалежна величина,
+   * і розбіжність між ним і вагами щось означає.
+   */
+  planRateKgPerDay: number | null;
 }
 
 interface FactPoint {
   t: number;
   date: string;
   weight: number;
-  /** Прогнозована вага на цю дату — для тултипа «на скільки випереджаю». */
-  plan: number;
+  /** Планова вага на цю дату; null — калорійного плану немає. */
+  plan: number | null;
+  /** |факт − план| у кг. */
+  planGap: number | null;
+  /** Факт попереду плану в бік цілі. */
+  aheadOfPlan: boolean;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
 const ms = (ymd: string) => fromYMD(ymd).getTime();
 
 /**
- * Графік ваги: факт від старту до сьогодні на тлі прогнозної прямої
- * старт → ціль. Вісь X — реальні дати (не індекс запису), вісь Y завжди
- * вміщує і старт, і ціль, тож напрямок кривої читається однозначно.
+ * Графік ваги: факт від старту до сьогодні на тлі планової прямої з
+ * калорійного дефіциту. Вісь X — реальні дати (не індекс запису), вісь Y
+ * завжди вміщує і старт, і ціль, тож напрямок кривої читається однозначно.
  */
 export function WeightChart({
   points,
   startWeight,
   startWeightDate,
   targetWeight,
-  targetDate,
+  planRateKgPerDay,
 }: WeightChartProps) {
   const t0 = ms(startWeightDate);
   const tToday = ms(todayYMD());
 
+  /** −1 — ціль нижча за старт (схуднення), +1 — набір. */
+  const dir = Math.sign(targetWeight - startWeight);
+  const planRate = planRateKgPerDay;
+  // План має вести САМЕ до цілі: дефіцит при цілі набрати вагу — не план.
+  const hasPlan =
+    dir !== 0 && planRate != null && planRate !== 0 && Math.sign(planRate) === dir;
+  const planDays = hasPlan
+    ? Math.abs((targetWeight - startWeight) / planRate!)
+    : null;
+  const tPlanTarget = planDays != null ? t0 + planDays * DAY : null;
+
+  const planAt = (t: number): number | null => {
+    if (!hasPlan) return null;
+    const w = startWeight + planRate! * ((t - t0) / DAY);
+    // Після дати плану лінія лягає на ціль, а не проскакує її.
+    return dir < 0 ? Math.max(targetWeight, w) : Math.min(targetWeight, w);
+  };
+
+  const toFact = (t: number, date: string, weight: number): FactPoint => {
+    const plan = planAt(t);
+    return {
+      t,
+      date,
+      weight,
+      plan,
+      planGap: plan == null ? null : Math.abs(weight - plan),
+      aheadOfPlan: plan == null ? false : (weight - plan) * dir > 0,
+    };
+  };
+
   const fact: FactPoint[] = points
     .filter((p) => p.date >= startWeightDate)
-    .map((p) => ({ t: ms(p.date), date: p.date, weight: p.weight, plan: 0 }));
+    .map((p) => toFact(ms(p.date), p.date, p.weight));
 
   // Крива завжди починається зі старту, навіть якщо запису на ту дату немає.
   if (fact[0]?.date !== startWeightDate) {
-    fact.unshift({
-      t: t0,
-      date: startWeightDate,
-      weight: startWeight,
-      plan: startWeight,
-    });
+    fact.unshift(toFact(t0, startWeightDate, startWeight));
   }
 
   const last = fact[fact.length - 1]!;
-  // Права межа: дата цілі, але не раніше за останнє зважування чи сьогодні.
-  const tEnd = Math.max(ms(targetDate), last.t, tToday, t0 + DAY);
-  const planAt = (t: number) =>
-    startWeight + ((targetWeight - startWeight) * (t - t0)) / (tEnd - t0);
-  for (const f of fact) f.plan = planAt(f.t);
+  // Права межа: дата плану, але не раніше за останнє зважування чи сьогодні.
+  const tEnd = Math.max(tPlanTarget ?? 0, last.t, tToday, t0 + DAY);
 
   const weights = fact.map((f) => f.weight);
   const lo = Math.min(targetWeight, startWeight, ...weights);
@@ -142,18 +177,20 @@ export function WeightChart({
               content={ChartTooltip}
             />
 
-            {/* Планова траєкторія старт → ціль */}
-            <ReferenceLine
-              ifOverflow="visible"
-              segment={[
-                { x: t0, y: startWeight },
-                { x: tEnd, y: targetWeight },
-              ]}
-              stroke="#9aa0b4"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              strokeOpacity={0.95}
-            />
+            {/* Планова траєкторія за калорійним дефіцитом: старт → ціль */}
+            {tPlanTarget != null ? (
+              <ReferenceLine
+                ifOverflow="visible"
+                segment={[
+                  { x: t0, y: startWeight },
+                  { x: tPlanTarget, y: targetWeight },
+                ]}
+                stroke="#9aa0b4"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                strokeOpacity={0.95}
+              />
+            ) : null}
 
             <Area
               type="linear"
@@ -236,7 +273,7 @@ export function WeightChart({
             />
             <ReferenceDot
               ifOverflow="visible"
-              x={tEnd}
+              x={tPlanTarget ?? tEnd}
               y={targetWeight}
               r={5}
               fill="#6bbf8a"
@@ -256,7 +293,9 @@ export function WeightChart({
 
       <figcaption className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--color-muted3)]">
         <LegendKey color="#c4b5fd" label="Факт" />
-        <LegendKey color="#9aa0b4" label="План до цілі" dashed />
+        {tPlanTarget != null ? (
+          <LegendKey color="#9aa0b4" label="План за калоріями" dashed />
+        ) : null}
         <LegendKey color="#6bbf8a" label="Ціль" dashed />
       </figcaption>
     </figure>
@@ -369,8 +408,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps) {
   const point = payload?.[0]?.payload as FactPoint | undefined;
   if (!active || !point) return null;
 
-  const vsPlan = Math.round((point.weight - point.plan) * 10) / 10;
-  const ahead = point.plan >= point.weight;
+  const gap = point.planGap == null ? null : Math.round(point.planGap * 10) / 10;
 
   return (
     <div className="rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12px] shadow-lg">
@@ -378,13 +416,14 @@ function ChartTooltip({ active, payload }: TooltipContentProps) {
       <div className="font-semibold tabular-nums text-[var(--color-text)]">
         {fmtNum(point.weight)} кг
       </div>
-      {Math.abs(vsPlan) >= 0.05 ? (
+      {gap == null ? null : gap >= 0.05 ? (
         <div
           className="tabular-nums"
-          style={{ color: ahead ? "var(--color-green)" : "var(--color-red)" }}
+          style={{
+            color: point.aheadOfPlan ? "var(--color-green)" : "var(--color-red)",
+          }}
         >
-          {ahead ? "−" : "+"}
-          {fmtNum(Math.abs(vsPlan))} кг {ahead ? "від плану" : "до плану"}
+          {fmtNum(gap)} кг {point.aheadOfPlan ? "попереду плану" : "позаду плану"}
         </div>
       ) : (
         <div className="text-[var(--color-muted3)]">рівно за планом</div>

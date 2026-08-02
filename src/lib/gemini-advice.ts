@@ -13,6 +13,7 @@ import {
   stanceLabelUk,
   type Goal,
 } from "@/lib/calories";
+import type { ForecastResponse } from "@/lib/types";
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
@@ -87,6 +88,19 @@ export interface WeekJourneyContext {
    * null — немає порівняння.
    */
   priorWeekAvgNet: number | null;
+  /**
+   * Готовий прогноз із `computeForecast` — щоб ШІ не вигадував темп на око
+   * і міг назвати дату цілі та розбіжність ваг із калорійним треком.
+   */
+  forecast: {
+    paceStatus: ForecastResponse["paceStatus"];
+    projectedDate: string | null;
+    daysLeft: number | null;
+    trendKgPerWeek: number | null;
+    /** Вага, яку обіцяє журнал калорій від старту цілі. */
+    expectedWeight: number | null;
+    lastWeighInDate: string | null;
+  } | null;
 }
 
 export interface WeekAdviceInput {
@@ -136,7 +150,7 @@ const SYSTEM_DAY = `Ти — елітний фітнес-дієтолог з в�
   дисципліна", "День без сюрпризів")
 - body: 1–2 речення з гумором про те, ЩО саме з'їдено — згадай конкретні страви
   з журналу, а не абстракції. Людина має впізнати свій день і посміхнутись.
-- tip: одна конкретна дія на ЗАВТРА, поданa з тим самим жартівливим тоном.
+- tip: одна конкретна дія на ЗАВТРА, подана з тим самим жартівливим тоном.
 - mood: "good" якщо все збалансовано АБО майже в нормі / ледь-ледь вийшли за
   межу після дисциплінованого дня АБО м'який дефіцит (слабший за план, але
   все ще під підтримкою), "mixed" якщо є помітний перекос у макросах чи темпі,
@@ -184,7 +198,11 @@ const SYSTEM_WEEK = `Ти — елітний фітнес-дієтолог і П
 
 0) РАМКА ШЛЯХУ — одне коротке речення про загальну картину: прогрес ваги до
    цілі (якщо є дані), стрік / дисципліна ведення журналу, або що людина
-   лише на старті. Не роздувай.
+   лише на старті. Не роздувай. Якщо в промпті є «Темп і прогноз» — бери
+   дату й темп ЗВІДТИ, не рахуй на око. Якщо там є «Розбіжність» між
+   калорійним треком і вагами — назви ймовірну причину (недозапис їжі,
+   затримка води, більше руху, ніж записано) і не роби з цього провалу:
+   це привід звірити журнал, а не привід сваритись.
 
 1) ВЕРДИКТ ПО ЦІЛІ ЗА ТИЖДЕНЬ — думай ГЛОБАЛЬНО, двома шкалами:
    Підтримка (TDEE) vs денна ціль (план, на дефіциті ≈ −15%).
@@ -333,7 +351,7 @@ ${formatStanceBlock({
     scopeLabel: "Калорійний темп дня",
   })}
 
-З'їдено дотепер:
+З'їдено за день:
 ${meals}
 
 Активність:
@@ -383,15 +401,71 @@ function formatJourneyBlock(j: WeekJourneyContext): string {
   return `Загальна картина (шлях, не деталі тижня):
 Вага: ${weightBits.join("; ")}.
 Останні зважування: ${recent}.
+${formatPaceLine(j)}
 Серія зараз: ${j.streak} дн., рекорд: ${j.maxStreak} дн.
 Днів у цілі за весь час: ${j.inTargetDays}; днів із записами їжі: ${j.daysLoggedTotal}.
 Попередні тижневі фідбеки (новіші вище):
 ${priors}`;
 }
 
+/**
+ * Темп і прогноз — готові числа, не «прикинь сам». Окремо підсвічуємо
+ * розбіжність ваг із калорійним треком: це найчастіше недозапис або вода,
+ * і саме про це варто сказати людині, а не сваритись за «застій».
+ */
+function formatPaceLine(j: WeekJourneyContext): string {
+  const f = j.forecast;
+  if (!f) return "Темп і прогноз: даних для оцінки ще немає.";
+
+  const bits: string[] = [];
+  if (f.trendKgPerWeek != null) {
+    const v = f.trendKgPerWeek;
+    bits.push(`ваги ${v > 0 ? "+" : "−"}${Math.abs(v).toFixed(2)} кг/тиж`);
+  }
+  switch (f.paceStatus) {
+    case "progressing":
+      bits.push(
+        f.projectedDate
+          ? `за цим темпом ціль ≈ ${f.projectedDate}${f.daysLeft != null ? ` (через ${f.daysLeft} дн.)` : ""}`
+          : "темп веде до цілі",
+      );
+      break;
+    case "stalled":
+      bits.push("поточний темп до цілі не веде");
+      break;
+    case "stale":
+      bits.push(
+        `давно не було зважувань${f.lastWeighInDate ? ` (останнє ${f.lastWeighInDate})` : ""} — темп рахувати нема на чому`,
+      );
+      break;
+    default:
+      bits.push("зважувань замало для оцінки темпу");
+  }
+
+  let mismatch = "";
+  if (f.expectedWeight != null && j.currentWeight != null) {
+    const gap = Math.round((j.currentWeight - f.expectedWeight) * 10) / 10;
+    if (Math.abs(gap) >= 0.5) {
+      mismatch =
+        gap > 0
+          ? `\nРозбіжність: журнал калорій обіцяє ${f.expectedWeight} кг, на вагах ${j.currentWeight} кг — ваги ВІДСТАЮТЬ на ${gap} кг. Найімовірніше недозапис їжі або затримка води, а не «нічого не працює». Скажи це спокійно й запропонуй що звірити.`
+          : `\nРозбіжність: журнал калорій обіцяє ${f.expectedWeight} кг, на вагах ${j.currentWeight} кг — ваги ВИПЕРЕДЖАЮТЬ трек на ${Math.abs(gap)} кг. Схоже, руху більше, ніж записано. Це радше добре — відзнач.`;
+    }
+  }
+
+  return `Темп і прогноз: ${bits.join("; ")}.${mismatch}`;
+}
+
 function buildWeekPrompt(input: WeekAdviceInput): string {
   const lines = input.days
     .map((d) => {
+      // День без їжі не має ккал-дельти: раніше тут друкувалось «під ціллю
+      // −2100» від нульового (або від'ємного, якщо була активність) net —
+      // ШІ отримував число, яке нічого не означає.
+      if (d.mealsCount === 0) {
+        const burnedNote = d.burned > 0 ? `, спалено ${d.burned}` : "";
+        return `- ${d.label} (${d.date}): немає записів їжі${burnedNote}`;
+      }
       const delta = d.calories - input.targetCalories;
       const deltaLabel =
         delta === 0
@@ -401,13 +475,11 @@ function buildWeekPrompt(input: WeekAdviceInput): string {
             : `під ціллю ${delta}`;
       const vsMaint = pctVsMaintenance(d.calories, input.maintenanceCalories);
       const vsMaintShort =
-        d.mealsCount === 0
-          ? "немає записів"
-          : vsMaint === 0
-            ? "≈ підтримка"
-            : vsMaint < 0
-              ? `${vsMaint}% від підтримки`
-              : `+${vsMaint}% над підтримкою`;
+        vsMaint === 0
+          ? "≈ підтримка"
+          : vsMaint < 0
+            ? `${vsMaint}% від підтримки`
+            : `+${vsMaint}% над підтримкою`;
       const hints =
         d.mealHints.length > 0
           ? ` · ${d.mealHints.slice(0, 4).join("; ")}`
@@ -573,13 +645,21 @@ async function callOpenAI(
       },
     ],
   });
-  return normalize(
-    JSON.parse(completion.choices[0]?.message?.content ?? "{}") as Record<
-      string,
-      unknown
-    >,
-    bodyMax,
-  );
+
+  // Як і в callGemini: битий JSON — це AiError зі своїм статусом, а не сирий
+  // SyntaxError, який нагорі перетворювався б на безликий 502.
+  try {
+    return normalize(
+      JSON.parse(completion.choices[0]?.message?.content ?? "{}") as Record<
+        string,
+        unknown
+      >,
+      bodyMax,
+    );
+  } catch (e) {
+    if (e instanceof AiError) throw e;
+    throw new AiError("GPT повернув некоректний JSON");
+  }
 }
 
 async function withFallback(
