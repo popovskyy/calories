@@ -16,11 +16,17 @@ import { fromYMD } from "@/lib/date";
 /** Скільки останніх зважувань беремо в регресію. */
 const MAX_SAMPLES = 30;
 /** Вікно історії — старіші зважування вже не описують поточний темп. */
-const WINDOW_DAYS = 60;
+export const TREND_WINDOW_DAYS = 60;
 /** Менше — це ще не тренд, а два випадкові числа. */
-const MIN_SAMPLES = 3;
-/** Коротший розкид дат дає нахил, зшитий із добових коливань води. */
-const MIN_SPAN_DAYS = 7;
+export const MIN_TREND_SAMPLES = 3;
+/**
+ * Коротший розкид дат дає нахил, зшитий із добових коливань води.
+ *
+ * Експортується, бо UI має пояснювати ПРИЧИНУ відсутності прогнозу: «5
+ * зважувань за 4 дні» — це не «мало зважувань», а «замало часу між ними»,
+ * і плутати ці два стани означає казати користувачу неправду про його дані.
+ */
+export const MIN_TREND_SPAN_DAYS = 7;
 /** Після стількох днів без ваги темп рахується протухлим. */
 export const WEIGH_IN_STALE_DAYS = 14;
 
@@ -87,7 +93,7 @@ export function weightTrend(
   // людини, яка не ставала на ваги місяць, вікно порожніє і темп зникає
   // мовчки. Хай краще буде явний `stale`.
   const windowed = sorted
-    .filter((p) => daysBetweenYMD(p.date, lastDate) <= WINDOW_DAYS)
+    .filter((p) => daysBetweenYMD(p.date, lastDate) <= TREND_WINDOW_DAYS)
     .slice(-MAX_SAMPLES);
 
   const first = windowed[0]!;
@@ -102,7 +108,7 @@ export function weightTrend(
     stale: staleDays > WEIGH_IN_STALE_DAYS,
   };
 
-  if (windowed.length < MIN_SAMPLES || spanDays < MIN_SPAN_DAYS) return base;
+  if (windowed.length < MIN_TREND_SAMPLES || spanDays < MIN_TREND_SPAN_DAYS) return base;
 
   // Найменші квадрати по (день від першого зважування, вага).
   const xs = windowed.map((p) => daysBetweenYMD(first.date, p.date));
@@ -119,7 +125,7 @@ export function weightTrend(
     den += dx * dx;
   }
 
-  // den === 0 неможливий при spanDays >= MIN_SPAN_DAYS, але ділити наосліп не варто.
+  // den === 0 неможливий при spanDays >= MIN_TREND_SPAN_DAYS, але ділити наосліп не варто.
   if (den === 0) return base;
 
   return { ...base, ratePerDay: num / den };

@@ -24,7 +24,11 @@ import {
   type Sex,
 } from "@/lib/calories";
 import { shiftYMD, todayYMD } from "@/lib/date";
-import { daysBetweenYMD, weightTrend } from "@/lib/weight-trend";
+import {
+  TREND_WINDOW_DAYS,
+  daysBetweenYMD,
+  weightTrend,
+} from "@/lib/weight-trend";
 import type { ForecastResponse } from "@/lib/types";
 
 const DEAD_ZONE_KG = 0.3;
@@ -102,6 +106,11 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
           goal,
         }).targetCalories;
 
+  // Найраніша дата, потрібна хоч комусь: опорам ваги — від старту цілі,
+  // тренду — на всю глибину його вікна. YMD-рядки порівнюються лексикографічно.
+  const trendFrom = shiftYMD(today, -TREND_WINDOW_DAYS);
+  const weighInsFrom = startWeightDate < trendFrom ? startWeightDate : trendFrom;
+
   const [mealGroups, activityGroups, weighIns] = await Promise.all([
     prisma.mealLog.groupBy({
       by: ["date"],
@@ -122,7 +131,10 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
       _sum: { caloriesBurned: true },
     }),
     prisma.weightLog.findMany({
-      where: { userId, date: { gte: startWeightDate } },
+      // Ширше за startWeightDate: темп ваги — фізична властивість тіла, а не
+      // цілі. Якщо ціль поставили вчора, а на ваги людина стає місяць, темп
+      // усе одно відомий; обрізання по старту цілі вдавало б, що даних нема.
+      where: { userId, date: { gte: weighInsFrom } },
       orderBy: { date: "asc" },
       select: { date: true, weight: true },
     }),
@@ -141,7 +153,9 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
   const anchors = buildWeightAnchors(
     startWeightDate,
     startWeight,
-    weighIns,
+    // Саме тут — лише від старту цілі: калорійний трек рахується від неї,
+    // і зважування «до» не мають зсувати опори всередині періоду.
+    weighIns.filter((w) => w.date >= startWeightDate),
     today,
     currentWeight,
   );
@@ -267,6 +281,7 @@ export async function computeForecast(userId: string): Promise<ForecastResponse>
     trendKgPerWeek,
     lastWeighInDate: trend.lastDate,
     weighInCount: trend.samples,
+    trendSpanDays: trend.spanDays,
     maintenanceKcal: maintenance,
     targetKcal: target,
     avgNetKcal,
@@ -343,6 +358,7 @@ function emptyForecast(): ForecastResponse {
     trendKgPerWeek: null,
     lastWeighInDate: null,
     weighInCount: 0,
+    trendSpanDays: 0,
     maintenanceKcal: null,
     targetKcal: null,
     avgNetKcal: null,

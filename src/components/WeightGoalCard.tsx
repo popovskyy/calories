@@ -16,6 +16,10 @@ import {
 } from "@/hooks/useQueries";
 import { shortDate, todayYMD } from "@/lib/date";
 import { KCAL_PER_KG, isGoal, stanceShortUk, type Goal } from "@/lib/calories";
+import {
+  MIN_TREND_SAMPLES,
+  MIN_TREND_SPAN_DAYS,
+} from "@/lib/weight-trend";
 import { weekFilledStats, type WeekFilledStats } from "@/lib/week-stats";
 import type { DashboardDay, ForecastResponse } from "@/lib/types";
 
@@ -95,7 +99,8 @@ export function WeightGoalCard() {
       ? (targetKcal - maintenanceKcal) / KCAL_PER_KG
       : null;
 
-  let statusLabel = "Мало даних";
+  let statusLabel =
+    data.weighInCount >= MIN_TREND_SAMPLES ? "Тренд ще формується" : "Мало даних";
   if (paceStatus === "stalled") {
     statusLabel = "Темп не веде до цілі";
   } else if (paceStatus === "stale") {
@@ -336,11 +341,31 @@ function SimpleBalanceBlock({
             ? `≈ ${daysLeft} ${pluralDays(daysLeft ?? 0)} · ${shortDate(projectedDate)}`
             : paceStatus === "stalled"
               ? "темп зважувань не до цілі"
-              : "мало зважувань для дати"}
+              : noTrendReason(forecast)}
         </span>
       </div>
     </div>
   );
+}
+
+/**
+ * Чому дати ще немає — конкретно, а не «мало зважувань».
+ *
+ * Раніше і `stale`, і `unknown` падали в одне «мало зважувань для дати».
+ * Людина з 5–6 зважуваннями бачила, що їх «мало», хоча насправді бракувало
+ * не кількості, а РОЗКИДУ в часі: нахил по точках за 3–4 дні — це шум води,
+ * тому регресія вимагає щонайменше MIN_TREND_SPAN_DAYS між першим і останнім.
+ */
+export function noTrendReason(f: ForecastResponse): string {
+  if (f.paceStatus === "stale") return "давно не зважувався";
+  if (f.weighInCount === 0) return "запиши вагу для дати";
+  if (f.weighInCount < MIN_TREND_SAMPLES) {
+    return `мало зважувань · ${f.weighInCount} з ${MIN_TREND_SAMPLES}`;
+  }
+  const left = Math.max(0, MIN_TREND_SPAN_DAYS - f.trendSpanDays);
+  return left > 0
+    ? `тренд ще формується · ще ${left} ${pluralDays(left)}`
+    : "тренд ще формується";
 }
 
 function formatTargetBalance(
