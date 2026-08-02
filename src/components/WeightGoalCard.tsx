@@ -204,6 +204,8 @@ function CalorieTrackRow({
     totalDays,
     skippedDays,
     trendKgPerWeek,
+    avgDeficitPct,
+    plannedDeficitPct,
   } = forecast;
 
   if (expectedWeight == null || currentWeight == null || loggedDays === 0) {
@@ -217,32 +219,52 @@ function CalorieTrackRow({
    * хоча знак той самий, що й у випередженні на схудненні.
    */
   const ahead = goalDir !== 0 && Math.sign(gap) === Math.sign(goalDir);
+  const gapKg = Math.abs(gap).toFixed(1).replace(".", ",");
+  const pacePercents = formatPacePercents(avgDeficitPct, plannedDeficitPct);
 
   return (
     <div className="flex flex-col gap-1 rounded-[var(--radius-md)] bg-[var(--color-tile)] px-3 py-3">
       <div className="text-[12px] font-medium uppercase tracking-wide text-[var(--color-muted3)]">
         Трек за калоріями
       </div>
+      {/* «мало б бути», а не «обіцяє»: це ретроспектива, а не майбутня вага. */}
       <p className="text-[14px] leading-snug text-[var(--color-text)]">
-        Журнал обіцяє {fmtKg(expectedWeight)} · на вагах {fmtKg(currentWeight)}
+        За журналом мало б бути {fmtKg(expectedWeight)} · на вагах{" "}
+        {fmtKg(currentWeight)}
       </p>
-      {Math.abs(gap) >= 0.4 ? (
-        <p className="text-[13px] leading-snug text-[var(--color-muted2)]">
-          {goalDir === 0
-            ? `Ваги й калорійний трек розходяться на ${Math.abs(gap).toFixed(1).replace(".", ",")} кг.`
+      {/*
+        Пояснення показуємо ЗАВЖДИ. Дві ваги стоять поруч, тож користувач
+        однаково відніме їх подумки — і без підпису вирішить, що це і є
+        «темп», хоча наступний рядок міряє зовсім інше (їжу, не ваги).
+      */}
+      <p className="text-[13px] leading-snug text-[var(--color-muted2)]">
+        {Math.abs(gap) < 0.4
+          ? `Ваги й журнал сходяться — різниця ${gapKg} кг у межах похибки.`
+          : goalDir === 0
+            ? `Ваги й калорійний трек розходяться на ${gapKg} кг.`
             : ahead
-              ? "Ваги випереджають калорійний трек — схоже, руху більше, ніж у журналі."
-              : "Ваги відстають від калорійного треку — частіше недозапис або затримка води."}
-        </p>
-      ) : null}
+              ? `Ваги на ${gapKg} кг попереду журналу — схоже, руху більше, ніж записано.`
+              : `Ваги на ${gapKg} кг позаду журналу — частіше недозапис або затримка води.`}
+      </p>
+      {/*
+        «Темп за їжею», а не «темп журналу»: цей рядок оцінює, СКІЛЬКИ З'ЇДЕНО
+        відносно плану, і нічого не каже про ваги. Плутанина саме тут: людина
+        бачила «легший, ніж обіцяє журнал» і поруч «слабший за план», читала
+        це як суперечність, хоча одне про вихід, а друге про вхід.
+      */}
       <p className="text-[13px] tabular-nums text-[var(--color-muted2)]">
         {calorieStance !== "unknown"
-          ? `Темп журналу: ${stanceShortUk(calorieStance, goal)}`
-          : "Темп журналу: замало записів"}
-        {trendKgPerWeek != null
-          ? ` · ваги ${trendKgPerWeek > 0 ? "+" : "−"}${Math.abs(trendKgPerWeek).toFixed(2).replace(".", ",")} кг/тиж`
-          : ""}
+          ? `Темп за їжею: ${stanceShortUk(calorieStance, goal)}`
+          : "Темп за їжею: замало записів"}
       </p>
+      {pacePercents ? (
+        <p className="text-[13px] tabular-nums text-[var(--color-muted2)]">
+          {pacePercents}
+          {trendKgPerWeek != null
+            ? ` · ваги ${trendKgPerWeek > 0 ? "+" : "−"}${Math.abs(trendKgPerWeek).toFixed(2).replace(".", ",")} кг/тиж`
+            : ""}
+        </p>
+      ) : null}
       {/*
         Скільки днів реально стоїть за цифрою «журнал обіцяє»: незаписані дні
         рахуються як «їв рівно підтримку», тож 6 днів із 30 — це зовсім не те
@@ -366,6 +388,38 @@ export function noTrendReason(f: ForecastResponse): string {
   return left > 0
     ? `тренд ще формується · ще ${left} ${pluralDays(left)}`
     : "тренд ще формується";
+}
+
+/**
+ * «факт: дефіцит 12% від підтримки · план 15%» — щоб вердикт «слабший за
+ * план» можна було звірити очима, а не приймати на віру.
+ *
+ * УВАГА на знаки: у цих двох полів вони ПРОТИЛЕЖНІ.
+ *   avgDeficitPct = (net − підтримка)/підтримка → дефіцит ВІДʼЄМНИЙ
+ *   plannedDeficitPct = (підтримка − ціль)/підтримка → дефіцит ДОДАТНИЙ
+ * Вивести їх поруч як є означало б показати «−12% / 15%», ніби вони
+ * дивляться в різні боки. Тому обидва зводимо до «дефіцит N%».
+ */
+export function formatPacePercents(
+  avgDeficitPct: number | null | undefined,
+  plannedDeficitPct: number | null | undefined,
+): string | null {
+  if (avgDeficitPct == null) return null;
+
+  const fact =
+    avgDeficitPct < 0
+      ? `дефіцит ${Math.abs(avgDeficitPct)}% від підтримки`
+      : avgDeficitPct > 0
+        ? `профіцит ${avgDeficitPct}% над підтримкою`
+        : "рівно підтримка";
+
+  // План 0% — це ціль «тримати вагу»: порівнювати нема з чим.
+  const plan =
+    plannedDeficitPct != null && plannedDeficitPct > 0
+      ? ` · план ${plannedDeficitPct}%`
+      : "";
+
+  return `факт: ${fact}${plan}`;
 }
 
 /**
