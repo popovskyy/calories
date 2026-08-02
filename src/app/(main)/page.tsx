@@ -107,7 +107,7 @@ export function OverviewTab() {
       <section className="mcard flex flex-col items-center gap-3 p-[26px_20px_22px] shadow-[var(--shadow-card-lg)]">
         <div className="flex w-full items-center justify-between gap-2">
           <span className="lbl min-w-0 truncate whitespace-nowrap">
-            Сьогодні · {humanDate(todayYMD())}
+            {humanDate(todayYMD())}
           </span>
           {/*
             День ще триває, тож "Дефіцит" тут був би вердиктом, якого ще нема:
