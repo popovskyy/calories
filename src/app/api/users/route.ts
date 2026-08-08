@@ -4,7 +4,7 @@ import { requireSession } from "@/lib/auth";
 import { calcTargetCalories } from "@/lib/calories";
 import { todayYMD } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
-import { syncArenaRewards } from "@/lib/rewards";
+import { evaluateMealRewards, syncArenaRewards } from "@/lib/rewards";
 import { assertAvatarAllowed } from "@/lib/skin-catalog";
 import { toUserDTO } from "@/lib/user-dto";
 
@@ -42,12 +42,24 @@ const updateSchema = z.object({
   targetWeight: z.number().positive().nullable().optional(),
 });
 
-/** GET — поточний користувач (+ sync вчорашньої арени після settle). */
+/** GET — поточний користувач (+ sync закритих днів / арени при відкритті). */
 export async function GET() {
   const auth = await requireSession();
   if (!auth.ok) return auth.response;
 
-  await syncArenaRewards(auth.session.userId);
+  // Закриті дні (монети + Пепа) і арена — ліниво при заході в апку,
+  // не лише після запису їжі. Інакше вчорашнє зняття покарання чекає
+  // першого логу сьогодні.
+  try {
+    await evaluateMealRewards(auth.session.userId, todayYMD());
+  } catch (e) {
+    console.error("[users] evaluateMealRewards", e);
+  }
+  try {
+    await syncArenaRewards(auth.session.userId);
+  } catch (e) {
+    console.error("[users] syncArenaRewards", e);
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: auth.session.userId },

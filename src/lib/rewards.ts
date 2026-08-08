@@ -65,8 +65,20 @@ async function settleClosedDay(
   // Peppa punishment:
   // - if closed day overshoots target by ≥ OVER_PUNISH_KCAL → next day `pepa_pig`
   // - if punishment is active AND that closed day was in-target → revert to backup
+  //
+  // Ідемпотентно per day (`peppa:YMD`): lookback щоразу переглядає 3 дні для
+  // монет, але аватар змінюємо лише ОДИН раз на закритий день. Інакше старий
+  // пережор у вікні lookback щоразу знову вмикав Пепу поверх уже заслуженого
+  // зняття за пізніший день у цілі.
   const isOverPunish = totals.net >= targetCalories + OVER_PUNISH_KCAL;
   if (!isOverPunish && !isNormal) return;
+
+  const peppaKey = `peppa:${date}`;
+  const already = await prisma.rewardClaim.findUnique({
+    where: { userId_key: { userId, key: peppaKey } },
+    select: { key: true },
+  });
+  if (already) return;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -104,6 +116,9 @@ async function settleClosedDay(
       },
     });
   }
+
+  // 0 монет — лише сторож «вже оцінили цей день для Пепи».
+  await grant(userId, peppaKey, 0, "Peppa settle", out);
 }
 
 export async function evaluateMealRewards(
