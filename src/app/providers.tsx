@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { ThemeSync } from "@/components/ThemeSync";
+import { SelectedDateSync } from "@/components/SelectedDateSync";
 import { ThemeEquipFlash } from "@/components/ThemeEquipFlash";
 import { AccessGate } from "@/components/AccessGate";
 
@@ -32,7 +33,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {signedOut ? null : <ThemeSync />}
+      {signedOut ? null : (
+        <>
+          <ThemeSync />
+          <SelectedDateSync />
+        </>
+      )}
       {children}
       {signedOut ? null : <AccessGate />}
       <ThemeEquipFlash />
