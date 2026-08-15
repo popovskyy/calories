@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   BUILTIN_MASCOT_IDS,
@@ -355,6 +356,11 @@ export function PresetMascot({
     (preset?.artKind ?? (BUILTIN_MASCOT_IDS.has(id) ? "builtin" : "file"));
   const idle = animated && !reduce;
   const asset = mascotAssetPath(id, kind);
+  const [assetFailed, setAssetFailed] = useState(false);
+  useEffect(() => {
+    setAssetFailed(false);
+  }, [id, asset]);
+  const showAsset = !!asset && !assetFailed;
   const label = nameUk ?? preset?.nameUk ?? id;
   const effectiveBg = (bg ?? preset?.bg ?? "#888") as string;
 
@@ -372,7 +378,7 @@ export function PresetMascot({
       style={{
         width: size,
         height: size,
-        background: !asset ? effectiveBg : undefined,
+        background: !showAsset ? effectiveBg : undefined,
         outline: ring,
         outlineOffset: ring ? 1 : undefined,
         boxShadow: glow,
@@ -388,7 +394,7 @@ export function PresetMascot({
           : undefined
       }
     >
-      {asset ? (
+      {showAsset ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={asset}
@@ -397,6 +403,7 @@ export function PresetMascot({
           height={size}
           draggable={false}
           className="h-full w-full rounded-full object-cover"
+          onError={() => setAssetFailed(true)}
         />
       ) : (
         <MascotArt id={id} bg={effectiveBg} />

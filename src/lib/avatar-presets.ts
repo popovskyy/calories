@@ -139,13 +139,17 @@ export function getSkin(id: string): AvatarPreset | undefined {
   return DEFAULT_SKINS.find((p) => p.id === id);
 }
 
-/** URL картинки: file → /mascots; inline → API; builtin → null. */
+/** URL картинки: file → /mascots; inline → data-URI з каталогу; builtin → null. */
 export function mascotAssetPath(
   id: string,
   artKind: SkinArtKind = BUILTIN_MASCOT_IDS.has(id) ? "builtin" : "file",
 ): string | null {
   if (artKind === "builtin") return null;
-  if (artKind === "inline") return `/api/skins/${id}/svg`;
+  if (artKind === "inline") {
+    const svg = getPreset(id)?.svg?.trim();
+    if (!svg) return null;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  }
   return `/mascots/${id}.svg`;
 }
 
