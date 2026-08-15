@@ -1,7 +1,7 @@
 # Калькулятор калорій
 
 Персональний PWA-калькулятор калорій з ШІ-аналізом їжі (Gemini + GPT fallback),
-акаунтами, журналом, ареною та стріками.
+акаунтами, журналом, вагою, стріком і трьома безкоштовними темами.
 
 Єдиний **Next.js (App Router)** застосунок: UI + API Route Handlers + Prisma.
 
@@ -22,9 +22,11 @@ CALORIES_DATABASE_URL=…?schema=calories
 CALORIES_DIRECT_URL=…&schema=calories
 AUTH_SECRET=…                          # мін. 16 символів
 GEMINI_API_KEY=…
-GEMINI_MODEL=gemini-3.6-flash          # баланс точність/ціна; lite дешевше, але грубіше
+GEMINI_MODEL=gemini-3.7-flash          # дефолт моделі; можна перевизначити
 GPT_API_KEY=…                          # fallback
 AI_PROVIDER=gemini                     # або openai
+E2E_USERNAME=…                         # опційно: акаунт для Playwright
+E2E_PASSWORD=…
 ```
 > Ніколи не запускайте `prisma migrate reset` / `db push --force-reset` на спільній Neon-базі.
 
@@ -44,5 +46,15 @@ npm run dev
 - Ручний ввід ккал/БЖВ на `/add`, якщо ШІ недоступний.
 - Фото стискається на клієнті перед відправкою.
 
+## Тести
+```bash
+npm test              # vitest (src/lib)
+npx playwright install chromium
+npm run test:e2e      # потрібні E2E_USERNAME / E2E_PASSWORD (апрувнутий юзер)
+npm run lint
+npm run build
+```
+
 ## Деплой (Vercel)
-Ті самі env у Production. `prisma generate` у `build` / `postinstall`. Seed на деплої не крутиться і БД не чистить.
+Ті самі env у Production. `prisma generate` у `build` / `postinstall`.
+`prisma db push` на спільну Neon — лише свідомо: схема більше не містить ігрових таблиць.

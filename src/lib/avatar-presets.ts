@@ -118,6 +118,13 @@ export function parsePresetId(avatarUrl: string | null | undefined): string | nu
   return SKIN_ID_RE.test(id) ? id : null;
 }
 
+export function isAllowedAvatarUrl(url: string | null | undefined): boolean {
+  if (url == null || url === "") return true;
+  const id = parsePresetId(url);
+  if (!id || id === "pepa_pig") return false;
+  return DEFAULT_SKINS.some((s) => s.id === id && s.enabled !== false);
+}
+
 export function isPresetAvatar(avatarUrl: string | null | undefined): boolean {
   return parsePresetId(avatarUrl) !== null;
 }

@@ -38,6 +38,34 @@ export const GOAL_LABELS: Record<Goal, string> = {
   deficit: "Дефіцит",
 };
 
+/** Зона «день у цілі»: перебір вужчий за недобір. */
+export const TARGET_OVER_TOLERANCE = 0.05;
+export const TARGET_UNDER_TOLERANCE: Record<Goal, number> = {
+  deficit: 0.24,
+  maintain: 0.24,
+};
+
+export function inTargetBand(
+  targetCalories: number,
+  goal: Goal,
+): { min: number; max: number } {
+  const under = TARGET_UNDER_TOLERANCE[goal] ?? TARGET_UNDER_TOLERANCE.maintain;
+  return {
+    min: targetCalories * (1 - under),
+    max: targetCalories * (1 + TARGET_OVER_TOLERANCE),
+  };
+}
+
+export function isInTargetFor(
+  net: number,
+  targetCalories: number,
+  goal: Goal,
+): boolean {
+  if (targetCalories <= 0) return false;
+  const { min, max } = inTargetBand(targetCalories, goal);
+  return net >= min && net <= max;
+}
+
 export const MONTH_LABELS_UK = [
   "Січень",
   "Лютий",
@@ -98,6 +126,7 @@ export function calcBmr(input: {
 
 /** TDEE = BMR × побутовий рух. Тренування додаються окремими ActivityLog. */
 export function calcTdee(bmr: number, _activityLevel?: ActivityLevel): number {
+  void _activityLevel;
   return Math.round(bmr * MAINTENANCE_ACTIVITY_FACTOR);
 }
 

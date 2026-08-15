@@ -1,11 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import {
-  DM_Sans,
   Inter,
   Handjet,
   Nunito,
   Russo_One,
-  Alegreya,
   Unbounded,
 } from "next/font/google";
 import "./globals.css";
@@ -61,21 +59,6 @@ const nunito = Nunito({
 const handjet = Handjet({
   variable: "--font-handjet",
   subsets: ["latin", "cyrillic"],
-  preload: false,
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
-  preload: false,
-});
-
-/* Полонина: тепла книжкова антиква — гуцульська оповідь, а не інтерфейс. */
-const alegreya = Alegreya({
-  variable: "--font-alegreya",
-  subsets: ["latin", "cyrillic"],
-  weight: ["500", "700"],
   preload: false,
 });
 
@@ -142,11 +125,10 @@ export default function RootLayout({
   return (
     <html
       lang="uk"
-      className={`${inter.variable} ${unbounded.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable} ${dmSans.variable} ${alegreya.variable}`}
+      className={`${inter.variable} ${unbounded.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable}`}
       suppressHydrationWarning
     >
       <head>
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
       <body>

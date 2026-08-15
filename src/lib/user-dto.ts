@@ -11,13 +11,8 @@ import {
 import { DEFAULT_THEME, isThemeId } from "@/lib/theme-catalog";
 import type { UserDTO } from "@/lib/types";
 
-type UserWithSkins = User & {
-  skins?: { skinId: string }[];
-  themes?: { themeId: string }[];
-};
-
 /** Prisma User → DTO з похідним age і типізованими enum-полями. */
-export function toUserDTO(user: UserWithSkins): UserDTO {
+export function toUserDTO(user: User): UserDTO {
   const sex: Sex = isSex(user.sex) ? user.sex : "male";
   const activityLevel: ActivityLevel = isActivityLevel(user.activityLevel)
     ? user.activityLevel
@@ -39,22 +34,12 @@ export function toUserDTO(user: UserWithSkins): UserDTO {
     height: user.height,
     age: ageFromBirth(user.birthYear, user.birthMonth),
     avatarUrl: user.avatarUrl ?? null,
-    coins: user.coins,
-    ownedSkinIds: user.skins?.map((s) => s.skinId) ?? [],
     theme,
-    ownedThemeIds: user.themes?.map((t) => t.themeId) ?? [],
-    finisher: user.finisher ?? "confetti",
-    title: user.title ?? null,
-    frame: user.frame ?? null,
-    soundpack: user.soundpack ?? "default",
-    maxStreak: user.maxStreak ?? 0,
     targetWeight: user.targetWeight ?? null,
     startWeight: user.startWeight ?? null,
     startWeightDate: user.startWeightDate ?? null,
-    remindersEnabled: user.remindersEnabled,
     approved: user.approved ?? true,
     blocked: user.blockedAt != null,
     blockReason: user.blockReason ?? null,
-    punishmentActive: user.peppaPunishBackupAvatarUrl != null,
   };
 }

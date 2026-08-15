@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { ThemeSync } from "@/components/ThemeSync";
 import { SelectedDateSync } from "@/components/SelectedDateSync";
-import { ThemeEquipFlash } from "@/components/ThemeEquipFlash";
 import { AccessGate } from "@/components/AccessGate";
 
 /** Екрани без сесії користувача — там /api/auth/me лише дав би зайвий 401. */
@@ -41,7 +40,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       )}
       {children}
       {signedOut ? null : <AccessGate />}
-      <ThemeEquipFlash />
       <Toaster
         position="top-center"
         theme="dark"

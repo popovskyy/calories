@@ -31,10 +31,6 @@ export async function POST(req: NextRequest) {
   const login = parsed.data.username.trim().toLowerCase();
   const user = await prisma.user.findUnique({
     where: { username: login },
-    include: {
-      skins: { select: { skinId: true } },
-      themes: { select: { themeId: true } },
-    },
   });
   if (!user) {
     return NextResponse.json(

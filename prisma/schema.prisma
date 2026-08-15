@@ -1,6 +1,5 @@
 // Калькулятор калорій — Prisma schema
-// Дані ізольовані в Postgres-схемі "calories" на спільній Neon-базі,
-// щоб не зачіпати таблиці іншого проєкту (див. CALORIES_DATABASE_URL у .env).
+// Дані ізольовані в Postgres-схемі "calories" на спільній Neon-базі.
 
 generator client {
   provider = "prisma-client-js"
@@ -13,199 +12,37 @@ datasource db {
 }
 
 model User {
-  id               String             @id @default(cuid())
-  username         String             @unique
-  passwordHash     String
-  name             String
-  targetCalories   Int // денна норма (обчислюється з формули, зберігається)
-  birthYear        Int                @default(1995)
-  birthMonth       Int                @default(1) // 1–12
-  sex              String             @default("male") // male | female
-  activityLevel    String             @default("moderate") // sedentary…very_active
-  goal             String             @default("maintain") // maintain | deficit
-  weight           Float              @default(70)
-  height           Float              @default(175)
-  avatarUrl        String? // preset:skinId або legacy data-URL
-  /** Backup аватара перед тимчасовим покаранням “pepa_pig”.
-   *  Якщо поле не null — покарання активне, і ручні зміни мають блокуватися.
-   *  Очищається під час відкату (коли наступний день закрито “в нормі”).
-   */
-  peppaPunishBackupAvatarUrl String?
-  coins            Int                @default(0) // внутрішня валюта за звички
-  theme            String             @default("nocturne")
-  targetWeight     Float?
-  startWeight      Float?
-  startWeightDate  String? // YYYY-MM-DD
-  remindersEnabled Boolean            @default(false)
-  /** Нові акаунти false — поки адмін не підтвердить. Існуючі лишаються true. */
-  approved         Boolean            @default(true)
-  /**
-   * Блокування — навмисно окреме поле, а не approved: false. Це різні події з
-   * різними екранами: «ще не підтвердили» чекає дії адміна на старті, а
-   * «заблокований» — це вже наслідок поведінки (закинув, не веде щоденник).
-   * null = доступ відкритий; дата = момент блокування.
-   */
-  blockedAt        DateTime?
-  /** Причина блокування — показується юзеру дослівно, тож пишеться людською мовою. */
-  blockReason      String?
-  createdAt        DateTime           @default(now())
-  // Косметика, що вдягається (id з каталогів у lib/cosmetics.ts)
-  finisher         String             @default("confetti") // анімація закриття дня
-  title            String? // титул під ніком в арені
-  frame            String? // рамка аватара
-  soundpack        String             @default("default")
-  // Денормалізовані лічильники для еволюції маскота (дешевше, ніж рахувати щоразу)
-  maxStreak        Int                @default(0)
-  totalInTargetDays Int               @default(0)
-  meals            MealLog[]
-  activities       ActivityLog[]
-  skins            UserSkin[]
-  themes           UserTheme[]
-  claims           RewardClaim[]
-  pushSubs         PushSubscription[]
-  notifications    Notification[]
-  txns             CoinTxn[]
-  items            UserItem[]
-  cosmetics        UserCosmetic[]
-  shields          StreakShield[]
-  weights          WeightLog[]
-  epics            UserEpic[]
-  advices          DailyAdvice[]
-  weeklyAdvices    WeeklyAdvice[]
+  id              String   @id @default(cuid())
+  username        String   @unique
+  passwordHash    String
+  name            String
+  targetCalories  Int
+  birthYear       Int      @default(1995)
+  birthMonth      Int      @default(1)
+  sex             String   @default("male")
+  activityLevel   String   @default("moderate")
+  goal            String   @default("maintain")
+  weight          Float    @default(70)
+  height          Float    @default(175)
+  avatarUrl       String?
+  theme           String   @default("nocturne")
+  targetWeight    Float?
+  startWeight     Float?
+  startWeightDate String?
+  approved        Boolean  @default(true)
+  blockedAt       DateTime?
+  blockReason     String?
+  createdAt       DateTime @default(now())
+  meals           MealLog[]
+  activities      ActivityLog[]
+  weights         WeightLog[]
 }
 
-/**
- * Звіт дня від ШІ — рівно один на добу, за явним запитом користувача.
- *
- * Кешуємо в БД, бо генерація коштує виклику до Gemini: без кешу кожне
- * відкриття Огляду било б у платний API. Раніше текст перегенеровувався
- * протягом дня (по mealCount / dayPart), але тепер звіт відкривається лише
- * після 18:00 (Пн–Сб) і пишеться як підсумок закритого дня — тож перша ж
- * згенерована версія лишається незмінною до завтра, а mealCount/dayPart
- * живуть як діагностика: на якому зрізі дня писався текст.
- */
-model DailyAdvice {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      String // YYYY-MM-DD
-  headline  String // короткий вердикт
-  body      String // 1–2 речення розбору
-  tip       String // що зробити далі сьогодні / завтра
-  mood      String // good | mixed | over
-  /** Скільки записів їжі було на момент генерації. */
-  mealCount Int      @default(0)
-  /** morning | day | evening — частина доби, на яку писався текст. */
-  dayPart   String   @default("evening")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@unique([userId, date])
-  @@index([userId, date])
-}
-
-/**
- * Тижневий фідбек від ШІ — один на тиждень (Пн–Нд), доступний у неділю.
- * Кеш за weekStart, щоб повторні відкриття Огляду не били в платний API.
- */
-model WeeklyAdvice {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  weekStart String // YYYY-MM-DD понеділок
-  headline  String
-  body      String
-  tip       String
-  mood      String // good | mixed | over
-  mealCount Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@unique([userId, weekStart])
-  @@index([userId, weekStart])
-}
-
-/** Тижневі квести (Пн–Нд, Kyiv). Адмін може правити або додавати свої. */
-model WeeklyQuest {
-  id          String   @id @default(cuid())
-  weekStart   String // YYYY-MM-DD понеділок
-  code        String // sniper_5 | custom_…
-  titleUk     String
-  description String
-  // in_target_days | log_days | activity_days | dual_days | no_blowout
-  // | weekend_clean | week_balance | activity_minutes | burn_total | protein_days
-  kind        String
-  target      Int // скільки днів / умов виконати
-  rewardCoins Int
-  sortOrder   Int      @default(0)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([weekStart, code])
-  @@index([weekStart, active])
-}
-
-/**
- * Інвентар витратного спорядження. Саме воно робить економіку нескінченною:
- * косметика купується раз, а щит/ре-рол/подвоювач — знову і знову.
- */
-model UserItem {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  itemId    String // shield | quest_reroll | doubler | duel_coupon | box
-  qty       Int      @default(0)
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, itemId])
-}
-
-/** Факт застосування предмета — щоб діяли добові/тижневі ліміти. */
-model ItemUse {
-  id        String   @id @default(cuid())
-  userId    String
-  itemId    String
-  date      String // YYYY-MM-DD використання
-  meta      String? // код квесту для ре-ролу тощо
-  createdAt DateTime @default(now())
-
-  @@index([userId, date])
-  @@index([userId, itemId, date])
-}
-
-/**
- * Витрачений щит: день пропущено, але серія вціліла.
- * computeStreak рахує такі дні як присутні.
- */
-model StreakShield {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      String // YYYY-MM-DD врятованого дня
-  createdAt DateTime @default(now())
-
-  @@unique([userId, date])
-}
-
-/** Куплена косметика нових типів (фінішери, титули, рамки, звук). */
-model UserCosmetic {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind       String // finisher | title | frame | soundpack
-  cosmeticId String
-  createdAt  DateTime @default(now())
-
-  @@unique([userId, kind, cosmeticId])
-}
-
-/** Історія ваги — для вагових квестів, епіків і точнішого прогнозу. */
 model WeightLog {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      String // YYYY-MM-DD
+  date      String
   weight    Float
   createdAt DateTime @default(now())
 
@@ -213,123 +50,17 @@ model WeightLog {
   @@index([userId, date])
 }
 
-/** Прогрес по епічному квесту (місяці, з проміжними вузлами). */
-model UserEpic {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  epicId       String
-  startedAt    DateTime  @default(now())
-  startDate    String // YYYY-MM-DD старту — від неї рахуємо прогрес
-  /** Кома-розділені індекси вже оплачених вузлів: "0,1" */
-  nodesClaimed String    @default("")
-  completedAt  DateTime?
-  active       Boolean   @default(true)
-
-  @@unique([userId, epicId])
-  @@index([userId, active])
-}
-
-/** Дуель тижня між двома гравцями: хто більше днів у ±5%. */
-model Duel {
-  id           String   @id @default(cuid())
-  challengerId String
-  opponentId   String
-  weekStart    String // YYYY-MM-DD понеділок
-  stake        Int
-  status       String   @default("pending") // pending | accepted | declined | settled
-  winnerId     String? // null при нічиї у зведеній дуелі
-  settledAt    DateTime?
-  createdAt    DateTime @default(now())
-
-  @@unique([challengerId, opponentId, weekStart])
-  @@index([opponentId, status])
-  @@index([weekStart, status])
-}
-
-/**
- * Каталог скінів (адмінка може міняти ціни / додавати нові).
- * artKind: builtin = малюнок у PresetMascot; file = /mascots/{id}.svg; inline = поле svg.
- */
-model SkinDef {
-  id        String   @id // slug: kiwi, deer, potter…
-  nameUk    String
-  tier      String // free | premium
-  price     Int      @default(0)
-  rarity    String   @default("common") // common|rare|epic|legendary
-  bg        String   @default("#58CC02")
-  enabled   Boolean  @default(true)
-  sortOrder Int      @default(0)
-  artKind   String   @default("file") // builtin | file | inline
-  svg       String? // inline SVG (адмінські кастомні скіни)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// Куплені преміум-скіни (skinId = preset-id, напр. "dragon")
-model UserSkin {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skinId    String
-  createdAt DateTime @default(now())
-
-  @@unique([userId, skinId])
-}
-
-// Куплені теми оформлення
-model UserTheme {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  themeId   String
-  createdAt DateTime @default(now())
-
-  @@unique([userId, themeId])
-}
-
-// Ідемпотентність нагород: кожен унікальний ключ нараховується лише раз
-model RewardClaim {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  key       String // daily_log:YMD | in_target:YMD | streak:N | arena:YMD | dc:YMD:code
-  coins     Int
-  createdAt DateTime @default(now())
-
-  @@unique([userId, key])
-}
-
-/**
- * Повна історія руху монет — і нарахування, і витрати.
- * RewardClaim лишається сторожем ідемпотентності (тільки прибуток),
- * CoinTxn — читабельний гаманець, куди потрапляють і покупки.
- */
-model CoinTxn {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  delta     Int // >0 нарахування, <0 витрата
-  kind      String // reward | quest | arena | streak | daily_card | skin | theme | item | box | duel
-  refKey    String? // ключ RewardClaim або id товару
-  label     String
-  createdAt DateTime @default(now())
-
-  @@index([userId, createdAt])
-}
-
 model MealLog {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date        String // YYYY-MM-DD
+  date        String
   description String
   calories    Int
   protein     Int
   fats        Int
   carbs       Int
   imageUrl    String?
-  /** approved (за замовч.) | cancelled (адмін скасував) */
   status      String   @default("approved")
   createdAt   DateTime @default(now())
 
@@ -337,47 +68,17 @@ model MealLog {
   @@index([status, createdAt])
 }
 
-/** Тренування / активність — ШІ оцінює спалені ккал. */
 model ActivityLog {
   id             String   @id @default(cuid())
   userId         String
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date           String // YYYY-MM-DD
+  date           String
   description    String
   caloriesBurned Int
-  durationMin    Int? // хвилини, якщо відомо
-  status         String   @default("approved") // approved | cancelled
+  durationMin    Int?
+  status         String   @default("approved")
   createdAt      DateTime @default(now())
 
   @@index([userId, date])
   @@index([status, createdAt])
-}
-
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind      String // reminder | entry_cancelled | entry_updated | system
-  title     String
-  body      String
-  url       String?
-  dedupeKey String? // "reminder:2026-07-25"; null = дублікати дозволені
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, dedupeKey])
-  @@index([userId, read, createdAt])
 }

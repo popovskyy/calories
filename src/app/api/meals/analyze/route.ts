@@ -12,7 +12,6 @@ const analyzeSchema = z
     description: z.string().optional(),
     imageBase64: z.string().optional(),
     imageMimeType: z.string().optional(),
-    apiKey: z.string().optional(),
   })
   .refine((d) => !!d.description?.trim() || !!d.imageBase64, {
     message: "Потрібен опис страви або фото",

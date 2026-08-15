@@ -1,24 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ChevronDown } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { CalorieHero } from "@/components/hero/CalorieHero";
-import { EpicCard } from "@/components/EpicCard";
-import { DietAdvice } from "@/components/DietAdvice";
 import { MacroTiles } from "@/components/MacroTiles";
-import { QuestChip } from "@/components/QuestChip";
-import { ThemeAspirationHint } from "@/components/ThemeAspirationHint";
-import { WeeklyQuestsCard } from "@/components/WeeklyQuestsCard";
 import { WeightGoalCard } from "@/components/WeightGoalCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
-import { useCurrentUser, useDashboard, useEpics } from "@/hooks/useQueries";
+import { useCurrentUser, useDashboard } from "@/hooks/useQueries";
 import { calcMacroTargets, calcMaintenanceCalories } from "@/lib/calories";
 import { humanDate, todayYMD } from "@/lib/date";
-import { cn } from "@/lib/cn";
 import { liveDayTone, toneBg, toneColor } from "@/lib/status-tone";
 import { weekFilledStats } from "@/lib/week-stats";
 import type { DashboardDay } from "@/lib/types";
@@ -32,36 +23,9 @@ const WeeklyChart = dynamic(
   },
 );
 
-/** Повільний скрол до низу сторінки, підлаштовується під зростаючу висоту accordion. */
-function scrollPageBottomSlow(durationMs = 480) {
-  const startY = window.scrollY;
-  const t0 = performance.now();
-  const easeOut = (t: number) => 1 - (1 - t) ** 3;
-
-  const tick = (now: number) => {
-    const p = Math.min(1, (now - t0) / durationMs);
-    const maxY = Math.max(
-      0,
-      document.documentElement.scrollHeight - window.innerHeight,
-    );
-    window.scrollTo(0, startY + (maxY - startY) * easeOut(p));
-    if (p < 1) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-
 export function OverviewTab() {
   const { user, isLoading, isError, refetch } = useCurrentUser();
   const dash = useDashboard();
-  const [moreOpen, setMoreOpen] = useState(false);
-  const scrollMoreRef = useRef(false);
-
-  // Скрол лише після кліку «Ще» (не коли QuestChip відкриває той самий accordion).
-  useEffect(() => {
-    if (!moreOpen || !scrollMoreRef.current) return;
-    scrollMoreRef.current = false;
-    scrollPageBottomSlow(520);
-  }, [moreOpen]);
 
   if (isError || dash.isError) {
     return (
@@ -87,50 +51,19 @@ export function OverviewTab() {
     weightKg: user.weight,
     heightCm: user.height,
   });
-  /*
-   * Плашка була бінарна: або «Перебір», або ні. Але між денною ціллю і
-   * підтримкою дефіцит ще є — це «на межі», а не зрив, і фарбувати його
-   * червоним нечесно. Тепер три стани, ті самі межі, що й у стовпчику дня.
-   */
   const todayTone = today
     ? liveDayTone(today.totalCalories, user.targetCalories, maintenance, user.goal)
     : "neutral";
-
-  const openQuests = () => {
-    setMoreOpen(true);
-    // Чекаємо, поки accordion розгорнеться, інакше scroll цілить у згорнуте.
-    window.setTimeout(() => {
-      document.getElementById("weekly-quests")?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-    }, 340);
-  };
-
-  const toggleMore = () => {
-    setMoreOpen((o) => {
-      const next = !o;
-      if (next) scrollMoreRef.current = true;
-      return next;
-    });
-  };
 
   return (
     <>
       <DashboardHeader />
 
-      {/* Кільце прогресу — герой першого viewport */}
       <section className="mcard flex flex-col items-center gap-3 p-[26px_20px_22px] shadow-[var(--shadow-card-lg)]">
         <div className="flex w-full items-center justify-between gap-2">
           <span className="lbl min-w-0 truncate whitespace-nowrap">
             {humanDate(todayYMD())}
           </span>
-          {/*
-            День ще триває, тож "Дефіцит" тут був би вердиктом, якого ще нема:
-            зранку з одним записом на 400 ккал він же не дефіцит на день, а
-            просто ще не з'їдена решта. Перебір — інша річ, його вже не
-            відкотити, тож він і лишається вердиктом.
-          */}
           {today ? (
             <span
               className="inline-flex shrink-0 items-baseline gap-1 whitespace-nowrap rounded-[var(--radius-pill)] px-2.5 py-1 text-[13px] font-semibold"
@@ -171,7 +104,6 @@ export function OverviewTab() {
             maintenance={maintenance}
             consumed={today.totalCalories}
             target={user.targetCalories}
-            frame={user.frame}
             goal={user.goal}
           />
         )}
@@ -192,103 +124,36 @@ export function OverviewTab() {
         )}
       </section>
 
-      {/*
-        Звіт дня — кнопка «Дізнатись вердикт» відкривається після 18:00 (Пн–Сб);
-        у неділю — тижневий фідбек після 15:00.
-        Стоїть одразу під кільцем: це головна вечірня дія, а вердикт ШІ по
-        сьогоднішньому дню читається як продовження цифр героя.
-      */}
-      <DietAdvice />
-
       <WeightGoalCard />
 
-      <ThemeAspirationHint />
-
-      {/* Один квест тижня видимий без dump списку на home */}
-      <QuestChip onOpen={openQuests} />
-
-      {/*
-        Квести / хроніки / графік — поза першим екраном.
-        Інакше головна читається як дашборд SaaS.
-      */}
-      <section>
-        <button
-          type="button"
-          aria-expanded={moreOpen}
-          onClick={toggleMore}
-          className="mcard flex w-full cursor-pointer items-center justify-between gap-2 px-[18px] py-3.5 text-left"
-        >
-          <span className="lbl !mb-0">Ще</span>
-          <span className="flex items-center gap-1.5 text-[14px] text-[var(--color-muted3)]">
-            квести · хроніки · графік
-            <ChevronDown
-              size={16}
-              className={cn(
-                "shrink-0 transition-transform duration-[var(--duration-sheet)]",
-                moreOpen && "rotate-180",
-              )}
-            />
-          </span>
-        </button>
-        {/* grid-rows 0fr→1fr — height-анімація без вимірювань */}
-        <div
-          className="grid transition-[grid-template-rows] duration-[var(--duration-sheet)] ease-[var(--ease-out)]"
-          style={{ gridTemplateRows: moreOpen ? "1fr" : "0fr" }}
-        >
-          <div className="overflow-hidden">
-            <div className="flex flex-col gap-4 pt-4">
-              <div id="weekly-quests">
-                <WeeklyQuestsCard />
-              </div>
-              <ActiveEpic />
-              <section className="mcard p-[18px_18px_16px]">
-                <div className="mb-3.5 flex items-baseline justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="lbl">Цей тиждень</span>
-                    {dash.data ? (
-                      <WeekAvgLine
-                        days={dash.data.days}
-                        today={dash.data.today}
-                        target={user.targetCalories}
-                        maintenance={calcMaintenanceCalories({
-                          birthYear: user.birthYear,
-                          birthMonth: user.birthMonth,
-                          sex: user.sex,
-                          weightKg: user.weight,
-                          heightCm: user.height,
-                        })}
-                        goal={user.goal}
-                      />
-                    ) : null}
-                  </div>
-                  <span className="shrink-0 text-[14px] text-[var(--color-muted3)]">
-                    ціль {user.targetCalories.toLocaleString("uk-UA")}
-                  </span>
-                </div>
-                {dash.data ? (
-                  moreOpen ? (
-                    <WeeklyChart days={dash.data.days} target={user.targetCalories} />
-                  ) : (
-                    <Skeleton className="h-[150px] w-full" />
-                  )
-                ) : (
-                  <Skeleton className="h-[150px] w-full" />
-                )}
-              </section>
-            </div>
+      <section className="mcard p-[18px_18px_16px]">
+        <div className="mb-3.5 flex items-baseline justify-between gap-3">
+          <div className="min-w-0">
+            <span className="lbl">Цей тиждень</span>
+            {dash.data ? (
+              <WeekAvgLine
+                days={dash.data.days}
+                today={dash.data.today}
+                target={user.targetCalories}
+                maintenance={maintenance}
+                goal={user.goal}
+              />
+            ) : null}
           </div>
+          <span className="shrink-0 text-[14px] text-[var(--color-muted3)]">
+            ціль {user.targetCalories.toLocaleString("uk-UA")}
+          </span>
         </div>
+        {dash.data ? (
+          <WeeklyChart days={dash.data.days} target={user.targetCalories} />
+        ) : (
+          <Skeleton className="h-[150px] w-full" />
+        )}
       </section>
     </>
   );
 }
 
-/**
- * Середнє + норми: підтримка (без дефіциту), ціль дефіциту, факт середнє.
- * Рахується лише за ЗАКРИТИМИ днями (weekFilledStats відрізає сьогодні) —
- * інакше ранковий запис на 400 ккал виглядав би як "−1500 від цілі" замість
- * ще не дописаної цифри. Сьогодні показуємо окремим живим рядком.
- */
 function WeekAvgLine({
   days,
   today,
@@ -316,7 +181,6 @@ function WeekAvgLine({
     return (
       <div className="mt-0.5 space-y-0.5 text-[13px] tabular-nums text-[var(--color-muted2)]">
         <p>
-          {/* net (з'їдено − спалено) — як і "середнє" в основній гілці нижче */}
           {todayHasFood
             ? `сьогодні ${today.totalCalories.toLocaleString("uk-UA")} · день триває`
             : "тиждень щойно почався"}
@@ -354,51 +218,6 @@ function pluralDaysUk(n: number): string {
   return "днів";
 }
 
-/**
- * Активна хроніка на дашборді.
- *
- * Показуємо рівно одну — ту, що ближча до наступного вузла. Список із шести
- * шкал на головній перетворив би довгу ціль на шум; одна шкала з підписом
- * «12 км лишилось» тягне вперед.
- */
-function ActiveEpic() {
-  const q = useEpics();
-  const epics = q.data?.epics ?? [];
-
-  const candidates = epics.filter((e) => e.started && !e.completed);
-  if (candidates.length === 0) {
-    return (
-      <section className="mcard flex items-center justify-between gap-3 p-[18px]">
-        <div className="min-w-0">
-          <span className="lbl">Хроніки</span>
-          <p className="mt-1 text-[13px] text-[var(--color-muted3)]">
-            Довгий похід на місяці. Обери свій шлях.
-          </p>
-        </div>
-        <Link href="/epics" scroll={false} className="btn btn-primary btn-sm shrink-0">
-          Обрати
-        </Link>
-      </section>
-    );
-  }
-
-  const epic = candidates.reduce((best, e) =>
-    e.remaining < best.remaining ? e : best,
-  );
-
-  return (
-    <section className="mcard flex flex-col gap-3 p-[18px]">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="lbl">Хроніка</span>
-        <Link href="/epics" scroll={false} className="text-[13px] text-[var(--color-muted3)]">
-          усі →
-        </Link>
-      </div>
-      <EpicCard epic={epic} compact />
-    </section>
-  );
-}
-
 function DashboardSkeleton() {
   return (
     <>
@@ -413,6 +232,5 @@ function DashboardSkeleton() {
 }
 
 export default function Page() {
-  return null;
+  return <OverviewTab />;
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { isInTargetFor } from "@/lib/economy";
+import { isInTargetFor } from "@/lib/calories";
 import type { Goal } from "@/lib/calories";
 import { useEffect, useId } from "react";
 import {

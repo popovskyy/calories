@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeFood, AiError, GeminiError } from "@/lib/gemini";
-import { evaluateMealRewards } from "@/lib/rewards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +61,6 @@ const saveSchema = z.object({
   hasPhoto: z.boolean().optional(),
   imageBase64: z.string().optional(),
   imageMimeType: z.string().optional(),
-  apiKey: z.string().optional(),
   calories: macros.calories.optional(),
   protein: macros.protein.optional(),
   fats: macros.fats.optional(),
@@ -100,7 +98,6 @@ export async function POST(req: NextRequest) {
         description: d.description,
         imageBase64: d.imageBase64,
         imageMimeType: d.imageMimeType,
-        apiKey: d.apiKey,
       });
       calories = ai.calories;
       protein = ai.protein;
@@ -137,8 +134,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Серверне ідемпотентне нарахування монет за звичку
-  const rewards = await evaluateMealRewards(auth.session.userId, d.date);
-
-  return NextResponse.json({ ...meal, rewards }, { status: 201 });
+  return NextResponse.json(meal, { status: 201 });
 }

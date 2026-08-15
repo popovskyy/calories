@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { calcTargetCalories } from "@/lib/calories";
 import { hashPassword } from "@/lib/auth";
-import { notifyUser } from "@/lib/push";
 import { prisma } from "@/lib/prisma";
 import { toUserDTO } from "@/lib/user-dto";
 
@@ -17,10 +16,6 @@ export async function GET() {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      skins: { select: { skinId: true } },
-      themes: { select: { themeId: true } },
-      // Останній запис їжі — без нього «блокувати того, хто не займається»
-      // перетворюється на гадання: в списку не видно, хто взагалі закинув.
       meals: {
         where: { status: { not: "cancelled" } },
         orderBy: { date: "desc" },
@@ -35,7 +30,6 @@ export async function GET() {
     sorted.map((u) => ({
       ...toUserDTO(u),
       lastEntryDate: u.meals[0]?.date ?? null,
-      peppaPunishBackupAvatarUrl: u.peppaPunishBackupAvatarUrl,
     })),
   );
 }
@@ -64,8 +58,6 @@ const updateSchema = z.object({
   height: z.number().positive().optional(),
   targetCalories: z.number().int().positive().optional(),
   avatarUrl: z.string().nullable().optional(),
-  peppaPunishBackupAvatarUrl: z.string().nullable().optional(),
-  coins: z.number().int().min(0).max(10_000_000).optional(),
   approved: z.boolean().optional(),
   /** true — призупинити доступ, false — повернути. */
   blocked: z.boolean().optional(),
@@ -92,9 +84,6 @@ export async function PATCH(req: NextRequest) {
   if (!existing) {
     return NextResponse.json({ error: "Юзера не знайдено" }, { status: 404 });
   }
-
-  const wasApproved = existing.approved;
-  const wasBlocked = existing.blockedAt != null;
 
   if (rest.username && rest.username.toLowerCase() !== existing.username) {
     const clash = await prisma.user.findUnique({
@@ -136,10 +125,6 @@ export async function PATCH(req: NextRequest) {
       ...(rest.username ? { username: rest.username.toLowerCase() } : {}),
       ...(password ? { passwordHash: await hashPassword(password) } : {}),
       ...(rest.avatarUrl !== undefined ? { avatarUrl: rest.avatarUrl } : {}),
-      ...(rest.peppaPunishBackupAvatarUrl !== undefined
-        ? { peppaPunishBackupAvatarUrl: rest.peppaPunishBackupAvatarUrl }
-        : {}),
-      ...(rest.coins !== undefined ? { coins: rest.coins } : {}),
       ...(rest.approved !== undefined ? { approved: rest.approved } : {}),
       // blockedAt — і прапорець, і дата події: розблокування чистить обидва
       // поля, щоб у базі не лишалось «привидів» старої причини.
@@ -156,70 +141,7 @@ export async function PATCH(req: NextRequest) {
         : {}),
       targetCalories,
     },
-    include: {
-      skins: { select: { skinId: true } },
-      themes: { select: { themeId: true } },
-    },
   });
-
-  // Ручна правка балансу теж має лишати слід у гаманці, інакше історія
-  // розійдеться з поточними монетами і зневіриться сама ідея реєстру.
-  if (rest.coins !== undefined && rest.coins !== existing.coins) {
-    const delta = rest.coins - existing.coins;
-    await prisma.coinTxn.create({
-      data: {
-        userId: id,
-        delta,
-        kind: "admin",
-        refKey: null,
-        label: delta > 0 ? "Нарахування адміністратора" : "Коригування адміністратора",
-      },
-    });
-  }
-
-  if (rest.coins !== undefined && rest.coins > existing.coins) {
-    const delta = rest.coins - existing.coins;
-    void notifyUser(id, {
-      kind: "system",
-      title: "Монети нараховано",
-      body: `Адмін нарахував +${delta.toLocaleString("uk-UA")} монет. Баланс: ${rest.coins.toLocaleString("uk-UA")}.`,
-      url: "/shop",
-      dedupeKey: null,
-    }).catch(console.error);
-  }
-
-  // Пуш про блокування дійде лише на вже підписані пристрої й тільки якщо
-  // юзер не в додатку — але це єдиний спосіб пояснити зникнення доступу тому,
-  // хто зараз не дивиться на екран. Сам оверлей покаже причину при вході.
-  if (rest.blocked === true && !wasBlocked) {
-    void notifyUser(id, {
-      kind: "system",
-      title: "Доступ призупинено",
-      body: rest.blockReason?.trim() || "Адмін тимчасово закрив доступ до акаунта.",
-      url: "/",
-      dedupeKey: null,
-    }).catch(console.error);
-  }
-
-  if (rest.blocked === false && wasBlocked) {
-    void notifyUser(id, {
-      kind: "system",
-      title: "Доступ відновлено",
-      body: "Акаунт знову відкритий — можна вести щоденник далі.",
-      url: "/",
-      dedupeKey: null,
-    }).catch(console.error);
-  }
-
-  if (rest.approved === true && !wasApproved) {
-    void notifyUser(id, {
-      kind: "system",
-      title: "Акаунт підтверджено",
-      body: "Адмін відкрив доступ — можна користуватись додатком.",
-      url: "/",
-      dedupeKey: null,
-    }).catch(console.error);
-  }
 
   return NextResponse.json(toUserDTO(user));
 }

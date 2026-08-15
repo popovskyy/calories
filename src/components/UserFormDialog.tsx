@@ -14,7 +14,7 @@ import {
   type Goal,
   type Sex,
 } from "@/lib/calories";
-import { isPresetAvatar, toPresetUrl } from "@/lib/avatar-presets";
+import { isPresetAvatar } from "@/lib/avatar-presets";
 import type { UserDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -61,8 +61,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
   const [form, setForm] = useState<FormState>(empty);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarDirty, setAvatarDirty] = useState(false);
-  const punishmentActive =
-    user?.punishmentActive === true || user?.avatarUrl === toPresetUrl("pepa_pig");
 
   useEffect(() => {
     if (!open || !user) return;
@@ -163,8 +161,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               setAvatarUrl(url);
               setAvatarDirty(true);
             }}
-            ownedIds={user?.ownedSkinIds ?? []}
-            disabled={punishmentActive}
           />
         </div>
 

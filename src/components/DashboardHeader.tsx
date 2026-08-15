@@ -1,34 +1,23 @@
 "use client";
 
 import { Flame } from "lucide-react";
+import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
-import { CoinsPill } from "@/components/CoinsPill";
-import { NotificationBell } from "@/components/NotificationBell";
-import { useMainTabsOptional } from "@/components/MainTabs";
 import { useCurrentUser, useStreak } from "@/hooks/useQueries";
 
 export function DashboardHeader() {
   const { user } = useCurrentUser();
   const streak = useStreak();
   const days = streak.data?.streak ?? 0;
-  const tabs = useMainTabsOptional();
 
   return (
     <div className="flex items-center justify-between gap-2">
-      <button
-        type="button"
+      <Link
+        href="/profile"
         aria-label="Профіль"
-        onClick={() => tabs?.selectTab("profile")}
         className="flex min-w-0 items-center gap-2.5 rounded-[var(--radius-pill)] bg-[var(--color-surface)] py-1.5 pl-1.5 pr-3 shadow-[var(--shadow-card)] transition-transform duration-[var(--duration-press)] active:scale-[0.97]"
       >
-        {/* frame передаємо і тут: куплену рамку власник має бачити в себе,
-            а не лише інші в арені */}
-        <Avatar
-          name={user?.name ?? "?"}
-          avatarUrl={user?.avatarUrl}
-          size={32}
-          frame={user?.frame}
-        />
+        <Avatar name={user?.name ?? "?"} avatarUrl={user?.avatarUrl} size={32} />
         <span className="min-w-0 text-left leading-tight">
           <span className="block truncate text-[16px] font-semibold text-[var(--color-text)]">
             {user?.name ?? "Профіль"}
@@ -39,7 +28,7 @@ export function DashboardHeader() {
               : "Не обрано"}
           </span>
         </span>
-      </button>
+      </Link>
 
       <div className="flex shrink-0 items-center gap-1.5">
         {days > 0 ? (
@@ -53,9 +42,6 @@ export function DashboardHeader() {
             </span>
           </div>
         ) : null}
-
-        <NotificationBell />
-        <CoinsPill />
       </div>
     </div>
   );

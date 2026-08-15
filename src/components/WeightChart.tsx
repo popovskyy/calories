@@ -14,7 +14,11 @@ import {
   type CartesianViewBox,
 } from "recharts";
 import { ChartFrame } from "@/components/ChartFrame";
-import { fromYMD, humanDate, shortDate, todayYMD } from "@/lib/date";
+import { humanDate, shortDate, todayYMD } from "@/lib/date";
+import {
+  buildWeightChartModel,
+  type WeightChartFact,
+} from "@/lib/weight-chart";
 import type { WeightPoint } from "@/lib/api";
 
 interface WeightChartProps {
@@ -36,21 +40,6 @@ interface WeightChartProps {
   planRateKgPerDay: number | null;
 }
 
-interface FactPoint {
-  t: number;
-  date: string;
-  weight: number;
-  /** Планова вага на цю дату; null — калорійного плану немає. */
-  plan: number | null;
-  /** |факт − план| у кг. */
-  planGap: number | null;
-  /** Факт попереду плану в бік цілі. */
-  aheadOfPlan: boolean;
-}
-
-const DAY = 24 * 60 * 60 * 1000;
-const ms = (ymd: string) => fromYMD(ymd).getTime();
-
 /**
  * Графік ваги: факт від старту до сьогодні на тлі планової прямої з
  * калорійного дефіциту. Вісь X — реальні дати (не індекс запису), вісь Y
@@ -63,70 +52,28 @@ export function WeightChart({
   targetWeight,
   planRateKgPerDay,
 }: WeightChartProps) {
-  const t0 = ms(startWeightDate);
-  const tToday = ms(todayYMD());
-
-  /** −1 — ціль нижча за старт (схуднення), +1 — набір. */
-  const dir = Math.sign(targetWeight - startWeight);
-  const planRate = planRateKgPerDay;
-  // План має вести САМЕ до цілі: дефіцит при цілі набрати вагу — не план.
-  const hasPlan =
-    dir !== 0 && planRate != null && planRate !== 0 && Math.sign(planRate) === dir;
-  const planDays = hasPlan
-    ? Math.abs((targetWeight - startWeight) / planRate!)
-    : null;
-  const tPlanTarget = planDays != null ? t0 + planDays * DAY : null;
-
-  const planAt = (t: number): number | null => {
-    if (!hasPlan) return null;
-    const w = startWeight + planRate! * ((t - t0) / DAY);
-    // Після дати плану лінія лягає на ціль, а не проскакує її.
-    return dir < 0 ? Math.max(targetWeight, w) : Math.min(targetWeight, w);
-  };
-
-  const toFact = (t: number, date: string, weight: number): FactPoint => {
-    const plan = planAt(t);
-    return {
-      t,
-      date,
-      weight,
-      plan,
-      planGap: plan == null ? null : Math.abs(weight - plan),
-      aheadOfPlan: plan == null ? false : (weight - plan) * dir > 0,
-    };
-  };
-
-  const fact: FactPoint[] = points
-    .filter((p) => p.date >= startWeightDate)
-    .map((p) => toFact(ms(p.date), p.date, p.weight));
-
-  // Крива завжди починається зі старту, навіть якщо запису на ту дату немає.
-  if (fact[0]?.date !== startWeightDate) {
-    fact.unshift(toFact(t0, startWeightDate, startWeight));
-  }
+  const {
+    fact,
+    t0,
+    tEnd,
+    tPlanTarget,
+    yMin,
+    yMax,
+    showNow,
+    showArea,
+    nowOnRight,
+  } = buildWeightChartModel({
+    points,
+    startWeight,
+    startWeightDate,
+    targetWeight,
+    planRateKgPerDay,
+    todayYmd: todayYMD(),
+  });
 
   const last = fact[fact.length - 1]!;
-  // Права межа: дата плану, але не раніше за останнє зважування чи сьогодні.
-  const tEnd = Math.max(tPlanTarget ?? 0, last.t, tToday, t0 + DAY);
-
-  const weights = fact.map((f) => f.weight);
-  const lo = Math.min(targetWeight, startWeight, ...weights);
-  const hi = Math.max(targetWeight, startWeight, ...weights);
-  const padY = Math.max(0.5, (hi - lo) * 0.12);
-  const yMin = Math.floor((lo - padY) * 2) / 2;
-  const yMax = Math.ceil((hi + padY) * 2) / 2;
   const yTicks = [yMin, Math.round(((yMin + yMax) / 2) * 2) / 2, yMax];
-
-  // Лише старт і кінець на осі X — «сьогодні» вже підписане прямо на кривій
-  // («Зараз»), тож третій тік лише тіснив би два інших на вузькій картці.
-  const span = tEnd - t0;
   const xTicks = [t0, tEnd];
-  const nowOnRight = (last.t - t0) / span > 0.65;
-  // Якщо зважувань ще нема, «Зараз» збігся б зі «Стартом» — не дублюємо.
-  const showNow = fact.length > 1;
-  // На старті шляху заливка стиснулась би в вузьку смужку і читалась як
-  // стовпчик — тоді лишаємо тільки лінію.
-  const showArea = (last.t - t0) / span > 0.12;
 
   return (
     <figure className="m-0 min-w-0">
@@ -405,7 +352,7 @@ function LegendKey({
 }
 
 function ChartTooltip({ active, payload }: TooltipContentProps) {
-  const point = payload?.[0]?.payload as FactPoint | undefined;
+  const point = payload?.[0]?.payload as WeightChartFact | undefined;
   if (!active || !point) return null;
 
   const gap = point.planGap == null ? null : Math.round(point.planGap * 10) / 10;

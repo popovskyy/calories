@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFICIT_FACTOR,
+  TARGET_OVER_TOLERANCE,
+  TARGET_UNDER_TOLERANCE,
   calcMacroTargets,
   calcTargetCalories,
   classifyLedgerStance,
   deficitFloor,
+  inTargetBand,
+  isInTargetFor,
   pctVsMaintenance,
   plannedDeficitPctFromTargets,
 } from "@/lib/calories";
@@ -141,6 +145,47 @@ describe("calcTargetCalories", () => {
       goal: "deficit",
     });
     expect(tiny.targetCalories).toBe(deficitFloor("female"));
+  });
+});
+
+describe("inTargetBand / isInTargetFor", () => {
+  const TARGET = 2000;
+
+  it("зона навмисно асиметрична: недобрати можна помітно, перебрати — ні", () => {
+    const band = inTargetBand(TARGET, "deficit");
+    expect(band.max - TARGET).toBeLessThan(TARGET - band.min);
+    expect(band.max).toBe(TARGET * (1 + TARGET_OVER_TOLERANCE));
+    expect(band.min).toBe(TARGET * (1 - TARGET_UNDER_TOLERANCE.deficit));
+  });
+
+  it("рівно в ціль і на обох межах — у цілі", () => {
+    const { min, max } = inTargetBand(TARGET, "deficit");
+    expect(isInTargetFor(TARGET, TARGET, "deficit")).toBe(true);
+    expect(isInTargetFor(min, TARGET, "deficit")).toBe(true);
+    expect(isInTargetFor(max, TARGET, "deficit")).toBe(true);
+  });
+
+  it("за межами — не в цілі", () => {
+    const { min, max } = inTargetBand(TARGET, "deficit");
+    expect(isInTargetFor(max + 1, TARGET, "deficit")).toBe(false);
+    expect(isInTargetFor(min - 1, TARGET, "deficit")).toBe(false);
+  });
+
+  it("чесний день на дефіциті (−15%) зараховується", () => {
+    expect(isInTargetFor(1700, TARGET, "deficit")).toBe(true);
+  });
+
+  it("перебір на ті самі 300 ккал — не зараховується", () => {
+    expect(isInTargetFor(2300, TARGET, "deficit")).toBe(false);
+  });
+
+  it("голодування не вважається успіхом", () => {
+    expect(isInTargetFor(1000, 1900, "deficit")).toBe(false);
+  });
+
+  it("нульова або відʼємна ціль ніколи не «в цілі»", () => {
+    expect(isInTargetFor(0, 0, "deficit")).toBe(false);
+    expect(isInTargetFor(1500, -100, "maintain")).toBe(false);
   });
 });
 

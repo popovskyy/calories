@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-/** Реєструє service worker один раз на клієнті (потрібно для PWA + Web Push). */
+/** Реєструє service worker один раз на клієнті (потрібно для PWA). */
 export function PwaRegister() {
   useEffect(() => {
     if (typeof window === "undefined") return;

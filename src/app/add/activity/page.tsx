@@ -98,9 +98,6 @@ export default function AddActivityPage() {
       },
       {
         onSuccess: (row) => {
-          for (const rw of row.rewards ?? []) {
-            toast.success(`+${rw.coins} монет · ${rw.label}`);
-          }
           afterSaved(row.caloriesBurned);
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Помилка"),

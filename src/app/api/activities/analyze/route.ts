@@ -10,7 +10,6 @@ export const dynamic = "force-dynamic";
 
 const schema = z.object({
   description: z.string().min(1).max(500),
-  apiKey: z.string().optional(),
 });
 
 /** POST /api/activities/analyze — лише оцінка ШІ, без збереження */
@@ -32,7 +31,6 @@ export async function POST(req: NextRequest) {
     const result = await analyzeActivity({
       description: parsed.data.description,
       weightKg: user?.weight,
-      apiKey: parsed.data.apiKey,
     });
     return NextResponse.json(result);
   } catch (err) {

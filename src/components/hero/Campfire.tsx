@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { CampDeer } from "@/components/ambient/CampDeer";
 import { CampFirGrove } from "@/components/ambient/CampFirGrove";
@@ -14,7 +14,6 @@ import { liveDayTone, toneColor } from "@/lib/status-tone";
 import { claimRitualSound, playFireBurst, playFireSizzle, playLogToss } from "@/lib/sfx";
 import { haptic } from "@/lib/haptics";
 import { useAppStore } from "@/store/useAppStore";
-import { useCurrentUser } from "@/hooks/useQueries";
 
 const FLAME_RADIUS = "50% 50% 46% 46% / 66% 66% 34% 34%";
 const TREE_TOSS_MS = 2600;
@@ -68,12 +67,6 @@ export function Campfire({ consumed, target, frame, goal, maintenance }: HeroPro
 
   const recalc = useAppStore((s) => s.recalc);
   const consumeRecalc = useAppStore((s) => s.consumeRecalc);
-  const { user } = useCurrentUser();
-  const pack = user?.soundpack ?? "default";
-  const packRef = useRef(pack);
-  useEffect(() => {
-    packRef.current = pack;
-  }, [pack]);
 
   /*
    * Стану ритуалу в React немає взагалі: увесь таймлайн (дровина .85s, спалах
@@ -117,7 +110,7 @@ export function Campfire({ consumed, target, frame, goal, maintenance }: HeroPro
     if (!recalc) return;
     const timers: number[] = [];
     if (claimRitualSound(recalc.id)) {
-      playLogToss(packRef.current);
+      playLogToss();
       // Рокіт жару, коли дровина долітає (~0.5s у logToss)
       timers.push(window.setTimeout(() => playFireBurst(), 480));
     }
@@ -134,7 +127,7 @@ export function Campfire({ consumed, target, frame, goal, maintenance }: HeroPro
   }, [treeTossKey]);
 
   const onTreeLogToss = useCallback((side: "left" | "right") => {
-    playLogToss(packRef.current);
+    playLogToss();
     window.setTimeout(() => playFireBurst(), 380);
     setLogsFed((n) => n + 1);
     setTreeTossSide(side);

@@ -4,7 +4,6 @@ import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AiError } from "@/lib/ai-error";
 import { analyzeActivity } from "@/lib/gemini-activity";
-import { evaluateMealRewards } from "@/lib/rewards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,7 +31,6 @@ const saveSchema = z.object({
   description: z.string().min(1).max(500),
   caloriesBurned: z.number().int().nonnegative().max(5000).optional(),
   durationMin: z.number().int().nonnegative().max(24 * 60).nullable().optional(),
-  apiKey: z.string().optional(),
 });
 
 /** POST /api/activities — зберегти активність (ШІ або ручні ккал) */
@@ -63,7 +61,6 @@ export async function POST(req: NextRequest) {
       const ai = await analyzeActivity({
         description: d.description,
         weightKg: user?.weight,
-        apiKey: d.apiKey,
       });
       caloriesBurned = ai.caloriesBurned;
       durationMin = ai.durationMin;
@@ -87,8 +84,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // перерахунок in_target після спалених ккал
-  const rewards = await evaluateMealRewards(auth.session.userId, d.date);
-
-  return NextResponse.json({ ...row, notes, rewards }, { status: 201 });
+  return NextResponse.json({ ...row, notes }, { status: 201 });
 }

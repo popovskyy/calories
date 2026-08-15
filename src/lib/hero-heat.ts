@@ -6,8 +6,6 @@
  * повідомлення. Ближче до +300 ще сідає. ≥ +300 — тухне.
  */
 
-import { OVER_PUNISH_KCAL } from "@/lib/economy";
-
 /** Текст «обережно…» — з першої зайвої ккал. */
 export const HERO_HEAT_WARN_OVER_KCAL = 1;
 
@@ -17,8 +15,8 @@ export const HERO_HEAT_DIM_MED_OVER_KCAL = 100;
 /** Перебір: ще менший → майже вугілля. */
 export const HERO_HEAT_DIM_SMALL_OVER_KCAL = 200;
 
-/** Повністю тухне (як Peppa). */
-export const HERO_HEAT_OUT_OVER_KCAL = OVER_PUNISH_KCAL;
+/** Повністю тухне. */
+export const HERO_HEAT_OUT_OVER_KCAL = 300;
 
 /** @deprecated alias */
 export const HERO_HEAT_DIM_OVER_KCAL = HERO_HEAT_DIM_MED_OVER_KCAL;

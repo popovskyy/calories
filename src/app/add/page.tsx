@@ -147,10 +147,7 @@ export default function AddFoodPage() {
         hasPhoto: !!image,
       },
       {
-        onSuccess: (res) => {
-          for (const rw of res.rewards) {
-            toast.success(`+${rw.coins} монет · ${rw.label}`);
-          }
+        onSuccess: () => {
           afterSaved(macros.calories);
         },
         onError: (err) =>

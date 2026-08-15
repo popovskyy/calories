@@ -13,7 +13,6 @@ import { EditMealDialog } from "@/components/EditMealDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { EmberFlash } from "@/components/hero/EmberFlash";
-import { BeamFlash } from "@/components/hero/BeamFlash";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
 import {
@@ -111,7 +110,7 @@ function LogPageInner() {
 
       <section className="mcard p-[15px_16px]">
         <EmberFlash />
-        <BeamFlash />
+        <EmberFlash />
         <div className="mb-2.5 flex items-center justify-between">
           <span className="text-[15px] text-[var(--color-muted)]">Баланс за день</span>
           <span
@@ -121,7 +120,7 @@ function LogPageInner() {
             {Math.round(pct * 100)}%
           </span>
         </div>
-        <ProgressBar value={pct} over={over} frame={user.frame} />
+        <ProgressBar value={pct} over={over} />
         <div className="mt-2 flex justify-between text-[13px] text-[var(--color-muted3)]">
           <span>Зʼїдено {consumed.toLocaleString("uk-UA")}</span>
           <span>Спалено {burned.toLocaleString("uk-UA")}</span>
@@ -343,6 +342,6 @@ function LogSkeleton() {
 }
 
 export default function Page() {
-  return null;
+  return <LogTab />;
 }
 

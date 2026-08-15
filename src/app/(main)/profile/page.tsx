@@ -1,22 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { FlaskConical, KeyRound, LogOut, Pencil, ShoppingBag } from "lucide-react";
+import { KeyRound, LogOut, Pencil } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
-import { CoinIcon } from "@/components/icons/CurrencyIcons";
-import { ReminderToggle } from "@/components/ReminderToggle";
 import { SoundSettingsCard } from "@/components/SoundSettingsCard";
 import { UserFormDialog } from "@/components/UserFormDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadError } from "@/components/ui/LoadError";
-import { useCurrentUser, useLogout, useStreak } from "@/hooks/useQueries";
+import { useCurrentUser, useLogout, useSaveUser, useStreak } from "@/hooks/useQueries";
 import { GOAL_LABELS } from "@/lib/calories";
+import { THEMES, type ThemeId } from "@/lib/theme-catalog";
+import { cn } from "@/lib/cn";
 
 export function ProfileTab() {
   const { user, isLoading, isError, refetch } = useCurrentUser();
   const logout = useLogout();
+  const save = useSaveUser();
   const streak = useStreak();
   const [formOpen, setFormOpen] = useState(false);
   const [pwdOpen, setPwdOpen] = useState(false);
@@ -43,6 +43,22 @@ export function ProfileTab() {
 
   const streakDays = streak.data?.streak ?? 0;
 
+  const pickTheme = (theme: ThemeId) => {
+    if (theme === user.theme || save.isPending) return;
+    save.mutate({
+      name: user.name,
+      birthYear: user.birthYear,
+      birthMonth: user.birthMonth,
+      sex: user.sex,
+      goal: user.goal,
+      weight: user.weight,
+      height: user.height,
+      avatarUrl: user.avatarUrl,
+      targetWeight: user.targetWeight,
+      theme,
+    });
+  };
+
   return (
     <>
       <header className="flex items-center justify-between">
@@ -59,12 +75,7 @@ export function ProfileTab() {
       </header>
 
       <div className="mcard flex items-center gap-3 p-4">
-        <Avatar
-          name={user.name}
-          avatarUrl={user.avatarUrl}
-          size={64}
-          frame={user.frame}
-        />
+        <Avatar name={user.name} avatarUrl={user.avatarUrl} size={64} />
         <div className="min-w-0 flex-1">
           <div className="text-[20px] font-semibold text-[var(--color-text)]">{user.name}</div>
           <div className="text-[15px] text-[var(--color-muted3)]">@{user.username}</div>
@@ -92,27 +103,37 @@ export function ProfileTab() {
         </button>
       </div>
 
-      <Link
-        href="/shop"
-        scroll={false}
-        className="mcard flex w-full items-center gap-3 p-4 text-left transition-[transform,background-color] duration-[var(--duration-press)] active:scale-[0.98] hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,#FFC800_15%,transparent)] text-[#FFC800]">
-          <ShoppingBag size={18} />
+      <section className="mcard p-4">
+        <span className="lbl">Тема</span>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {THEMES.map((t) => {
+            const active = user.theme === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => pickTheme(t.id)}
+                disabled={save.isPending}
+                className={cn(
+                  "flex flex-col items-start gap-2 rounded-[var(--radius-md)] border p-2.5 text-left transition-transform active:scale-[0.98]",
+                  active
+                    ? "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)]"
+                    : "border-[var(--color-divider)] bg-[var(--color-tile)]",
+                )}
+              >
+                <span
+                  className="h-6 w-6 rounded-full"
+                  style={{ background: t.swatch }}
+                  aria-hidden
+                />
+                <span className="text-[13px] font-semibold text-[var(--color-text)]">
+                  {t.nameUk}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[16px] font-semibold text-[var(--color-text)]">Магазин</div>
-          <div className="text-[13px] text-[var(--color-muted3)]">
-            Скіни за монети
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1 text-[15px] font-semibold text-[var(--color-text)]">
-          <CoinIcon size={16} />
-          <span className="tabular-nums">{user.coins.toLocaleString("uk-UA")}</span>
-        </div>
-      </Link>
-
-      <ReminderToggle />
+      </section>
 
       <SoundSettingsCard />
 
@@ -134,25 +155,6 @@ export function ProfileTab() {
         </div>
       </button>
 
-      {process.env.NODE_ENV === "development" ? (
-        <Link
-          href="/testpage"
-          className="mcard flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-text)_4%,transparent)]"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-pill)] bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[var(--color-accent-300)]">
-            <FlaskConical size={18} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-[16px] font-semibold text-[var(--color-text)]">
-              Testpage
-            </div>
-            <div className="text-[13px] text-[var(--color-muted3)]">
-              Dev-лаб анімацій
-            </div>
-          </div>
-        </Link>
-      ) : null}
-
       <UserFormDialog open={formOpen} onOpenChange={setFormOpen} user={user} />
       <ChangePasswordDialog open={pwdOpen} onOpenChange={setPwdOpen} />
     </>
@@ -160,6 +162,5 @@ export function ProfileTab() {
 }
 
 export default function Page() {
-  return null;
+  return <ProfileTab />;
 }
-

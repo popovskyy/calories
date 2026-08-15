@@ -191,7 +191,6 @@ export function AuthForm() {
           <AvatarPicker
             value={avatarPreset}
             onChange={setAvatarPreset}
-            freeOnly
           />
 
           <div className="flex flex-col gap-1.5">

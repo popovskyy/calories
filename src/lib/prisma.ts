@@ -10,27 +10,8 @@ function createClient() {
   });
 }
 
-/** У dev HMR інколи лишається старий клієнт без нових моделей. */
 function resolveClient(): PrismaClient {
-  const existing = globalForPrisma.prisma;
-  const ex = existing as
-    | {
-        skinDef?: { findMany?: unknown };
-        weeklyQuest?: { findMany?: unknown };
-        notification?: { findMany?: unknown };
-      }
-    | undefined;
-  if (
-    existing &&
-    typeof ex?.skinDef?.findMany === "function" &&
-    typeof ex?.weeklyQuest?.findMany === "function" &&
-    typeof ex?.notification?.findMany === "function"
-  ) {
-    return existing;
-  }
-  if (existing) {
-    void existing.$disconnect().catch(() => {});
-  }
+  if (globalForPrisma.prisma) return globalForPrisma.prisma;
   const client = createClient();
   if (process.env.NODE_ENV !== "production") {
     globalForPrisma.prisma = client;

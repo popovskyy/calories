@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
+import { isAllowedAvatarUrl } from "@/lib/avatar-presets";
 import { calcTargetCalories } from "@/lib/calories";
 import { todayYMD } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
-import { evaluateMealRewards, syncArenaRewards } from "@/lib/rewards";
-import { assertAvatarAllowed } from "@/lib/skin-catalog";
+import { isThemeId } from "@/lib/theme-catalog";
+import { setThemeCookie } from "@/lib/theme-cookie";
 import { toUserDTO } from "@/lib/user-dto";
 
 export const runtime = "nodejs";
@@ -40,39 +41,8 @@ const updateSchema = z.object({
     .nullable()
     .optional(),
   targetWeight: z.number().positive().nullable().optional(),
+  theme: z.string().optional(),
 });
-
-/** GET — поточний користувач (+ sync закритих днів / арени при відкритті). */
-export async function GET() {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.response;
-
-  // Закриті дні (монети + Пепа) і арена — ліниво при заході в апку,
-  // не лише після запису їжі. Інакше вчорашнє зняття покарання чекає
-  // першого логу сьогодні.
-  try {
-    await evaluateMealRewards(auth.session.userId, todayYMD());
-  } catch (e) {
-    console.error("[users] evaluateMealRewards", e);
-  }
-  try {
-    await syncArenaRewards(auth.session.userId);
-  } catch (e) {
-    console.error("[users] syncArenaRewards", e);
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: auth.session.userId },
-    include: {
-      skins: { select: { skinId: true } },
-      themes: { select: { themeId: true } },
-    },
-  });
-  if (!user) {
-    return NextResponse.json({ error: "Користувача не знайдено" }, { status: 404 });
-  }
-  return NextResponse.json(toUserDTO(user));
-}
 
 /** POST — оновити свій профіль */
 export async function POST(req: NextRequest) {
@@ -88,31 +58,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { avatarUrl, targetWeight, ...fields } = parsed.data;
+  const { avatarUrl, targetWeight, theme, ...fields } = parsed.data;
 
-  if (avatarUrl !== undefined) {
-    const punishmentActive = await prisma.user.findUnique({
-      where: { id: auth.session.userId },
-      select: { peppaPunishBackupAvatarUrl: true },
-    });
-    if (punishmentActive?.peppaPunishBackupAvatarUrl != null) {
-      return NextResponse.json(
-        { error: "Скін змінювати не можна під час покарання" },
-        { status: 403 },
-      );
-    }
-
-    const gate = await assertAvatarAllowed(auth.session.userId, avatarUrl);
-    if (!gate.ok) {
-      return NextResponse.json({ error: gate.error }, { status: 403 });
-    }
-  }
-
-  // Якщо змінили ціль по вазі — скидаємо startWeight і startWeightDate
   const existing = await prisma.user.findUnique({
     where: { id: auth.session.userId },
-    select: { targetWeight: true, weight: true },
+    select: { targetWeight: true, weight: true, avatarUrl: true },
   });
+
+  // Старий пресет (напр. покарання) можна лишити, але новий обрати лише з дозволених.
+  if (
+    avatarUrl !== undefined &&
+    !isAllowedAvatarUrl(avatarUrl) &&
+    avatarUrl !== (existing?.avatarUrl ?? null)
+  ) {
+    return NextResponse.json({ error: "Невірний аватар" }, { status: 400 });
+  }
+  if (theme !== undefined && !isThemeId(theme)) {
+    return NextResponse.json({ error: "Невідома тема" }, { status: 400 });
+  }
 
   const { targetCalories } = calcTargetCalories({
     birthYear: fields.birthYear,
@@ -138,20 +101,17 @@ export async function POST(req: NextRequest) {
     where: { id: auth.session.userId },
     data: {
       ...fields,
-      activityLevel: "sedentary",
       targetCalories,
       ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+      ...(theme !== undefined ? { theme } : {}),
       ...goalData,
-    },
-    include: {
-      skins: { select: { skinId: true } },
-      themes: { select: { themeId: true } },
     },
   });
 
-  // Історія ваги: одна точка на день, останнє значення перемагає.
-  // Без неї ваговий епік і виявлення плато не мають на що спертись,
-  // а прогноз бачить лише одне поточне число.
+  if (theme !== undefined) {
+    await setThemeCookie(theme);
+  }
+
   await prisma.weightLog.upsert({
     where: { userId_date: { userId: auth.session.userId, date: todayYMD() } },
     create: { userId: auth.session.userId, date: todayYMD(), weight: fields.weight },

@@ -1,22 +1,12 @@
 import type {
   ActivityDTO,
-  AdviceResponse,
   AnalyzeActivityResult,
   AnalyzeResult,
-  ArenaResponse,
-  CoinTxnDTO,
   DashboardResponse,
-  EpicsResponse,
   ForecastResponse,
-  GrantedReward,
   MealDTO,
-  NotificationDTO,
-  QuestsResponse,
   RecentActivityDTO,
   RecentMealDTO,
-  ReliefStatus,
-  SaveMealResult,
-  ShopResponse,
   StreakResponse,
   UserDTO,
 } from "./types";
@@ -41,7 +31,6 @@ async function req<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// --- Auth ---
 export interface LoginInput {
   username: string;
   password: string;
@@ -84,7 +73,6 @@ export const changePassword = (input: ChangePasswordInput) =>
     body: JSON.stringify(input),
   });
 
-// --- Profile ---
 export interface UserInput {
   name: string;
   birthYear: number;
@@ -96,11 +84,11 @@ export interface UserInput {
   height: number;
   avatarUrl?: string | null;
   targetWeight?: number | null;
+  theme?: string;
 }
 export const saveUser = (input: UserInput) =>
   req<UserDTO>("/api/users", { method: "POST", body: JSON.stringify(input) });
 
-// --- Meals ---
 export const getMeals = (date: string) =>
   req<MealDTO[]>(`/api/meals?date=${encodeURIComponent(date)}`);
 
@@ -114,7 +102,6 @@ export interface AnalyzeInput {
   description?: string;
   imageBase64?: string;
   imageMimeType?: string;
-  apiKey?: string;
 }
 export const analyzeMeal = (input: AnalyzeInput) =>
   req<AnalyzeResult>("/api/meals/analyze", {
@@ -132,7 +119,7 @@ export interface SaveMealInput extends AnalyzeInput {
   hasPhoto?: boolean;
 }
 export const saveMeal = (input: SaveMealInput) =>
-  req<SaveMealResult>("/api/meals", { method: "POST", body: JSON.stringify(input) });
+  req<MealDTO>("/api/meals", { method: "POST", body: JSON.stringify(input) });
 
 export const deleteMeal = (id: string) =>
   req<{ ok: true }>(`/api/meals/${id}`, { method: "DELETE" });
@@ -152,11 +139,10 @@ export const updateMeal = ({ id, ...body }: UpdateMealInput) =>
     body: JSON.stringify(body),
   });
 
-// --- Activities ---
 export const getActivities = (date: string) =>
   req<ActivityDTO[]>(`/api/activities?date=${encodeURIComponent(date)}`);
 
-export const analyzeActivityApi = (input: { description: string; apiKey?: string }) =>
+export const analyzeActivityApi = (input: { description: string }) =>
   req<AnalyzeActivityResult>("/api/activities/analyze", {
     method: "POST",
     body: JSON.stringify(input),
@@ -167,10 +153,9 @@ export interface SaveActivityInput {
   description: string;
   caloriesBurned?: number;
   durationMin?: number | null;
-  apiKey?: string;
 }
 export const saveActivity = (input: SaveActivityInput) =>
-  req<ActivityDTO & { notes?: string[]; rewards?: GrantedReward[] }>("/api/activities", {
+  req<ActivityDTO & { notes?: string[] }>("/api/activities", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -178,7 +163,6 @@ export const saveActivity = (input: SaveActivityInput) =>
 export const deleteActivity = (id: string) =>
   req<{ ok: true }>(`/api/activities/${id}`, { method: "DELETE" });
 
-// --- Stats ---
 export const getDashboard = (date?: string) =>
   req<DashboardResponse>(
     `/api/stats/dashboard${date ? `?date=${encodeURIComponent(date)}` : ""}`,
@@ -186,106 +170,6 @@ export const getDashboard = (date?: string) =>
 
 export const getStreak = () => req<StreakResponse>("/api/stats/streak");
 
-export const getArena = () => req<ArenaResponse>("/api/arena");
-
-export const getQuests = (week?: string) =>
-  req<QuestsResponse>(
-    `/api/quests${week ? `?week=${encodeURIComponent(week)}` : ""}`,
-  );
-
-// --- Shop ---
-export const getShop = () => req<ShopResponse>("/api/shop");
-
-export const buySkin = (skinId: string) =>
-  req<ShopResponse>("/api/shop/buy", {
-    method: "POST",
-    body: JSON.stringify({ skinId }),
-  });
-
-export const equipSkin = (skinId: string) =>
-  req<UserDTO>("/api/shop/equip", {
-    method: "POST",
-    body: JSON.stringify({ skinId }),
-  });
-
-export const buyTheme = (themeId: string) =>
-  req<ShopResponse>("/api/shop/theme/buy", {
-    method: "POST",
-    body: JSON.stringify({ themeId }),
-  });
-
-export const equipTheme = (themeId: string) =>
-  req<UserDTO>("/api/shop/theme/equip", {
-    method: "POST",
-    body: JSON.stringify({ themeId }),
-  });
-
-// --- Спорядження ---
-export const buyItem = (itemId: string, fromStall = false) =>
-  req<ShopResponse>("/api/items/buy", {
-    method: "POST",
-    body: JSON.stringify({ itemId, fromStall }),
-  });
-
-export interface UseItemResult {
-  shop: ShopResponse;
-  granted: GrantedReward[];
-  /** Що випало зі скриньки (тільки для box). */
-  boxLabel: string | null;
-  used: string;
-}
-
-export const consumeItem = (itemId: string, meta?: string) =>
-  req<UseItemResult>("/api/items/use", {
-    method: "POST",
-    body: JSON.stringify({ itemId, meta }),
-  });
-
-export const rerollQuest = (code: string) =>
-  req<QuestsResponse>("/api/quests/reroll", {
-    method: "POST",
-    body: JSON.stringify({ code }),
-  });
-
-// --- Косметика ---
-export type CosmeticKind = "finisher" | "title" | "frame" | "soundpack";
-
-export const buyCosmetic = (kind: CosmeticKind, cosmeticId: string) =>
-  req<ShopResponse>("/api/cosmetics/buy", {
-    method: "POST",
-    body: JSON.stringify({ kind, cosmeticId }),
-  });
-
-export const equipCosmetic = (kind: CosmeticKind, cosmeticId: string | null) =>
-  req<ShopResponse>("/api/cosmetics/equip", {
-    method: "POST",
-    body: JSON.stringify({ kind, cosmeticId }),
-  });
-
-// --- Хроніки ---
-export const getEpics = () => req<EpicsResponse>("/api/epics");
-
-export const startEpicApi = (epicId: string) =>
-  req<EpicsResponse>("/api/epics", {
-    method: "POST",
-    body: JSON.stringify({ epicId }),
-  });
-
-/** Дружній штурхан з арени (ліміт: раз на годину на пару). */
-export const nudgeUser = (userId: string) =>
-  req<{ ok: boolean }>("/api/arena/nudge", {
-    method: "POST",
-    body: JSON.stringify({ userId }),
-  });
-
-export const getRelief = () => req<ReliefStatus>("/api/wallet/relief");
-
-export const claimReliefApi = () =>
-  req<{ granted: GrantedReward[]; status: ReliefStatus }>("/api/wallet/relief", {
-    method: "POST",
-  });
-
-// --- Вага ---
 export interface WeightPoint {
   date: string;
   weight: number;
@@ -294,61 +178,10 @@ export interface WeightPoint {
 export const getWeightHistory = () =>
   req<{ items: WeightPoint[] }>("/api/weight");
 
-/** Швидке зважування: оновлює вагу, норму калорій і точку історії за сьогодні. */
 export const logWeight = (weight: number) =>
   req<{ ok: boolean; date: string; weight: number }>("/api/weight", {
     method: "POST",
     body: JSON.stringify({ weight }),
   });
 
-// --- Гаманець ---
-export const getWallet = (limit = 60) =>
-  req<{ coins: number; txns: CoinTxnDTO[] }>(`/api/wallet?limit=${limit}`);
-
-// --- Forecast ---
 export const getForecast = () => req<ForecastResponse>("/api/stats/forecast");
-
-// --- Щоденний звіт ---
-export const getAdvice = (force = false) =>
-  req<AdviceResponse>(force ? "/api/advice?force=1" : "/api/advice");
-
-// --- Notifications ---
-export interface NotificationsResponse {
-  items: NotificationDTO[];
-  unreadCount: number;
-}
-
-export const getNotifications = () =>
-  req<NotificationsResponse>("/api/notifications");
-
-export const markNotificationsRead = (payload: { all?: boolean; ids?: string[] }) =>
-  req<{ ok: true }>("/api/notifications", {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
-
-// --- Push ---
-export interface PushSubscribeInput {
-  endpoint: string;
-  keys: { p256dh: string; auth: string };
-  userAgent?: string;
-}
-
-export const pushSubscribe = (input: PushSubscribeInput) =>
-  req<{ ok: true }>("/api/push/subscribe", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-
-export const pushUnsubscribe = (endpoint?: string) =>
-  req<{ ok: true }>("/api/push/subscribe", {
-    method: "DELETE",
-    body: JSON.stringify({ endpoint }),
-  });
-
-export const getPushStatus = () =>
-  req<{
-    publicKey: string | null;
-    subscribed: boolean;
-    remindersEnabled: boolean;
-  }>("/api/push/subscribe");

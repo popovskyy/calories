@@ -8,7 +8,7 @@ import {
 import { calcTargetCalories } from "@/lib/calories";
 import { todayYMD } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
-import { assertAvatarAllowed } from "@/lib/skin-catalog";
+import { isAllowedAvatarUrl } from "@/lib/avatar-presets";
 import { setThemeCookie } from "@/lib/theme-cookie";
 import { toUserDTO } from "@/lib/user-dto";
 
@@ -68,10 +68,8 @@ export async function POST(req: NextRequest) {
   }
 
   const finalAvatar = avatarUrl ?? null;
-
-  const gate = await assertAvatarAllowed(null, finalAvatar);
-  if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: 403 });
+  if (!isAllowedAvatarUrl(finalAvatar)) {
+    return NextResponse.json({ error: "Невірний аватар" }, { status: 400 });
   }
 
   const { targetCalories } = calcTargetCalories({
@@ -103,10 +101,6 @@ export async function POST(req: NextRequest) {
       startWeight: profile.weight,
       startWeightDate: today,
       approved: false,
-    },
-    include: {
-      skins: { select: { skinId: true } },
-      themes: { select: { themeId: true } },
     },
   });
 

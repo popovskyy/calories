@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { claimRitualSound, playLogToss } from "@/lib/sfx";
 import { useAppStore } from "@/store/useAppStore";
-import { useCurrentUser } from "@/hooks/useQueries";
 import { useThemeId } from "@/hooks/useThemeId";
 
 /**
@@ -17,15 +16,11 @@ import { useThemeId } from "@/hooks/useThemeId";
  */
 export function EmberFlash() {
   const recalc = useAppStore((s) => s.recalc);
-  const { user } = useCurrentUser();
-  const pack = user?.soundpack ?? "default";
-  const packRef = useRef(pack);
-  packRef.current = pack;
   const forest = useThemeId() === "forest";
 
   useEffect(() => {
     if (!forest || !recalc) return;
-    if (claimRitualSound(recalc.id)) playLogToss(packRef.current);
+    if (claimRitualSound(recalc.id)) playLogToss();
   }, [recalc, forest]);
 
   if (!forest || !recalc) return null;

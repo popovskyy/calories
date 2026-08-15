@@ -15,60 +15,9 @@ export function AmbientLayer() {
 
   if (theme === "forest") return <ForestAmbient />;
   if (theme === "minecraft") return <MinecraftAmbient />;
-  if (theme === "lighthouse") return <LighthouseAmbient />;
-  if (theme === "polonyna") return <PolonynaAmbient />;
   return <NocturneAmbient />;
 }
 
-/**
- * Полонина: ранкове світло згори, туман у долині й самотній орел.
- * Вівці живуть у героєві — тут лише повітря, щоб фон не сперечався з ним.
- */
-function PolonynaAmbient() {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-      {/* косе ранкове проміння */}
-      <div
-        className="absolute -right-10 -top-24 h-[260px] w-[260px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(255,180,84,.22), rgba(255,180,84,0) 70%)",
-          animation: "plSunPulse 9s ease-in-out infinite",
-        }}
-      />
-      {/* смуги туману в долині */}
-      <div
-        className="pl-fog absolute inset-x-0 bottom-[120px] h-[70px]"
-        style={{
-          background:
-            "linear-gradient(180deg, transparent, rgba(253,243,230,.5) 45%, transparent)",
-        }}
-      />
-      <div
-        className="pl-fog absolute inset-x-0 bottom-[186px] h-[46px]"
-        style={{
-          background:
-            "linear-gradient(180deg, transparent, rgba(253,243,230,.34) 50%, transparent)",
-          animationDelay: "-14s",
-        }}
-      />
-      {/* орел високо над хребтом */}
-      <svg
-        className="ambient-mob absolute left-0 top-[16%] h-3 w-6 text-[#5c4a3a]"
-        viewBox="0 0 24 12"
-        style={{ animation: "plEagle 26s linear infinite" }}
-      >
-        <path
-          d="M1 7 q5 -6 11 -1 q6 -5 11 1"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    </div>
-  );
-}
 
 function NocturneAmbient() {
   return (
@@ -103,50 +52,6 @@ function NocturneAmbient() {
   );
 }
 
-function LighthouseAmbient() {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-      <div
-        className="absolute left-1/2 top-[-10%] h-[140%] w-[48%]"
-        style={{
-          transform: "translateX(-50%)",
-          background:
-            "conic-gradient(from 200deg at 50% 0%, transparent 0deg, rgba(255,179,92,.12) 18deg, transparent 42deg)",
-          animation: "lighthouseBeam 14s linear infinite",
-          transformOrigin: "50% 0%",
-        }}
-      />
-      <div
-        className="absolute -left-[15%] -right-[15%] top-[40%] h-[180px]"
-        style={{
-          background:
-            "radial-gradient(55% 50% at 50% 50%, rgba(216,226,234,.06), transparent 70%)",
-          animation: "fog 32s ease-in-out infinite",
-        }}
-      />
-      <div
-        className="absolute bottom-[100px] right-[18%]"
-        style={{ animation: "gullDrift 22s ease-in-out infinite" }}
-      >
-        <svg width="28" height="12" viewBox="0 0 28 12" fill="none" aria-hidden>
-          <path
-            d="M1 8c4-6 8-6 13-1 5-5 9-5 13 1"
-            stroke="rgba(216,226,234,.35)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      </div>
-      <div
-        className="absolute inset-x-0 bottom-[78px] h-[130px]"
-        style={{
-          background:
-            "radial-gradient(70% 100% at 50% 100%, rgba(255,179,92,.1), transparent 70%)",
-        }}
-      />
-    </div>
-  );
-}
 
 function ForestAmbient() {
   return (

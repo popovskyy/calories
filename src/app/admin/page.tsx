@@ -7,27 +7,20 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/Avatar";
 import { AdminEditor } from "@/components/admin/AdminEditor";
 import { AdminEntriesPanel } from "@/components/admin/AdminEntriesPanel";
-import { AdminQuestsPanel } from "@/components/admin/AdminQuestsPanel";
-import { AdminSkinsPanel } from "@/components/admin/AdminSkinsPanel";
 import { Field, inputClass } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { GOAL_LABELS, type Goal, type Sex } from "@/lib/calories";
-import { DEFAULT_SKINS, toPresetUrl } from "@/lib/avatar-presets";
 import { fromYMD, humanDate, todayYMD } from "@/lib/date";
 import type { AdminUserDTO } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
-type Tab = "users" | "skins" | "quests" | "entries";
+type Tab = "users" | "entries";
 
 const TABS: ReadonlyArray<readonly [Tab, string]> = [
   ["users", "Користувачі"],
-  ["skins", "Скіни / ціни"],
-  ["quests", "Квести"],
   ["entries", "Модерація"],
 ];
-
-const BUILTIN_SKINS = DEFAULT_SKINS.filter((s) => s.artKind === "builtin");
 
 export default function AdminPage() {
   const router = useRouter();
@@ -103,8 +96,6 @@ export default function AdminPage() {
           height: draft.height,
           targetCalories: draft.targetCalories,
           avatarUrl: draft.avatarUrl,
-            peppaPunishBackupAvatarUrl: draft.peppaPunishBackupAvatarUrl,
-          coins: draft.coins,
           approved: draft.approved,
           recalcTarget: false,
         }),
@@ -240,16 +231,10 @@ export default function AdminPage() {
     selected ? (users.find((u) => u.id === selected.id)?.lastEntryDate ?? null) : null,
   );
 
-  const draftPunishmentActive = draft.peppaPunishBackupAvatarUrl != null;
-
   const subtitle =
     tab === "users"
       ? `${users.length} користувачів`
-      : tab === "skins"
-        ? "Каталог скінів і ціни"
-        : tab === "quests"
-          ? "Квести тижня"
-          : "Модерація їжі / активності";
+      : "Модерація їжі / активності";
 
   return (
     <div className="page-scroll">
@@ -309,11 +294,7 @@ export default function AdminPage() {
 
       {/* pb-32 — нижні кнопки збереження ніколи не впираються в край екрана */}
       <div className="mx-auto w-full max-w-5xl px-4 pb-32 pt-4">
-        {tab === "skins" ? (
-          <AdminSkinsPanel />
-        ) : tab === "quests" ? (
-          <AdminQuestsPanel />
-        ) : tab === "entries" ? (
+        {tab === "entries" ? (
           <AdminEntriesPanel />
         ) : (
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -364,9 +345,6 @@ export default function AdminPage() {
                               </span>
                             )}
                             <IdleTag lastEntryDate={u.lastEntryDate} />
-                            <span className="tag tag-accent tabular-nums">
-                              {u.coins} монет
-                            </span>
                             <span className="tag tag-outline tabular-nums">
                               {u.targetCalories.toLocaleString("uk-UA")} ккал
                             </span>
@@ -395,7 +373,7 @@ export default function AdminPage() {
             >
               {!selected ? (
                 <p className="text-[15px] text-[var(--color-muted3)]">
-                  Обери користувача зі списку, щоб редагувати профіль, монети й норму.
+                  Обери користувача зі списку, щоб редагувати профіль і норму.
                 </p>
               ) : (
                 <form
@@ -413,54 +391,6 @@ export default function AdminPage() {
                         id: {selected.id.slice(0, 10)}…
                       </div>
                     </div>
-                  </div>
-
-                  <div className="mt-1 flex flex-col gap-2 rounded-[var(--radius-md)] border-l-[3px] border-[var(--color-red)] bg-[var(--color-tile)] p-3">
-                    <span className="lbl !mb-0">Покарання</span>
-                    {draftPunishmentActive ? (
-                      <div className="flex items-center gap-3 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-2">
-                        <Avatar
-                          name={draft.name || "?"}
-                          avatarUrl={toPresetUrl("pepa_pig")}
-                          size={32}
-                          animated={false}
-                        />
-                        <div className="min-w-0">
-                          <div className="truncate text-[13px] font-semibold text-[var(--color-text)]">
-                            Зараз носить: Свинка Пепа
-                          </div>
-                          <div className="truncate text-[12px] text-[var(--color-muted3)]">
-                            Скін покарання фіксований: `pepa_pig`
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <label className="flex items-center gap-2 text-[14px]">
-                      <input
-                        type="checkbox"
-                        checked={draftPunishmentActive}
-                        onChange={(e) => {
-                          const on = e.target.checked;
-                          setDraft((d) => {
-                            if (on) {
-                              return {
-                                ...d,
-                                peppaPunishBackupAvatarUrl:
-                                  d.peppaPunishBackupAvatarUrl ?? (d.avatarUrl ?? null),
-                                avatarUrl: toPresetUrl("pepa_pig"),
-                              };
-                            }
-                            return {
-                              ...d,
-                              avatarUrl: d.peppaPunishBackupAvatarUrl ?? null,
-                              peppaPunishBackupAvatarUrl: null,
-                            };
-                          });
-                        }}
-                      />
-                      Покарання активне
-                    </label>
                   </div>
 
                   <Field label="Ім'я">
@@ -481,34 +411,6 @@ export default function AdminPage() {
                       required
                     />
                   </Field>
-                  <Field label="Монети">
-                    <input
-                      className={inputClass}
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      value={draft.coins ?? 0}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, coins: parseInt(e.target.value, 10) || 0 }))
-                      }
-                    />
-                  </Field>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[50, 100, 250, 500].map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        className="btn btn-ghost btn-sm border border-[var(--color-divider)] px-0"
-                        onClick={() => setDraft((d) => ({ ...d, coins: (d.coins ?? 0) + n }))}
-                      >
-                        +{n}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="-mt-1 text-[12px] text-[var(--color-muted3)]">
-                    Натисни +N, потім «Зберегти» — нарахує монети юзеру.
-                  </p>
-
                   <Field label="Новий пароль" hint="Порожньо = не міняти">
                     <input
                       className={inputClass}

@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
     "localhost",
     "127.0.0.1",
   ],
-  serverExternalPackages: ["web-push"],
 };
 
 export default nextConfig;
