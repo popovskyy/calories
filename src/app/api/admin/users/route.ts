@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { calcTargetCalories } from "@/lib/calories";
 import { hashPassword } from "@/lib/auth";
+import { normalizeAvatarUrl } from "@/lib/avatar-presets";
 import { prisma } from "@/lib/prisma";
 import { toUserDTO } from "@/lib/user-dto";
 
@@ -124,7 +125,9 @@ export async function PATCH(req: NextRequest) {
       ...next,
       ...(rest.username ? { username: rest.username.toLowerCase() } : {}),
       ...(password ? { passwordHash: await hashPassword(password) } : {}),
-      ...(rest.avatarUrl !== undefined ? { avatarUrl: rest.avatarUrl } : {}),
+      avatarUrl: normalizeAvatarUrl(
+        rest.avatarUrl !== undefined ? rest.avatarUrl : existing.avatarUrl,
+      ),
       ...(rest.approved !== undefined ? { approved: rest.approved } : {}),
       // blockedAt — і прапорець, і дата події: розблокування чистить обидва
       // поля, щоб у базі не лишалось «привидів» старої причини.

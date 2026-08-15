@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_AVATAR_ID,
+  isAllowedAvatarUrl,
   mascotAssetPath,
+  normalizeAvatarUrl,
   parsePresetId,
   toPresetUrl,
 } from "@/lib/avatar-presets";
@@ -8,7 +11,6 @@ import {
 describe("аватари", () => {
   it("парсить preset:id", () => {
     expect(parsePresetId(toPresetUrl("kiwi"))).toBe("kiwi");
-    expect(parsePresetId(toPresetUrl("pepa_pig"))).toBe("pepa_pig");
     expect(parsePresetId("/mascots/fish.svg")).toBeNull();
   });
 
@@ -20,10 +22,9 @@ describe("аватари", () => {
     expect(mascotAssetPath("fish", "file")).toBe("/mascots/fish.svg");
   });
 
-  it("inline (Пепа) не ходить у видалений /api/skins, а вбудовує SVG", () => {
-    const src = mascotAssetPath("pepa_pig", "inline");
-    expect(src).toMatch(/^data:image\/svg\+xml/);
-    expect(src).not.toContain("/api/skins");
-    expect(decodeURIComponent(src!.split(",")[1] ?? "")).toContain("<svg");
+  it("прибрану Пепу замінює на дефолт і не дозволяє обрати", () => {
+    expect(normalizeAvatarUrl("preset:pepa_pig")).toBe(toPresetUrl(DEFAULT_AVATAR_ID));
+    expect(isAllowedAvatarUrl("preset:pepa_pig")).toBe(false);
+    expect(isAllowedAvatarUrl("preset:kiwi")).toBe(true);
   });
 });

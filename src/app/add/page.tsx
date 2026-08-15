@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronLeft,
   Camera,
@@ -49,7 +49,6 @@ export default function AddFoodPage() {
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [celebrateInTarget, setCelebrateInTarget] = useState(false);
-  const [celebrateOver, setCelebrateOver] = useState(false);
 
   const analyze = useAnalyzeMeal();
   const save = useSaveMeal();
@@ -95,9 +94,7 @@ export default function AddFoodPage() {
       const nextTotal = prev + savedCalories;
       const inTarget =
         target > 0 && Math.abs(nextTotal - target) <= target * 0.05;
-      const over = target > 0 && nextTotal > target && !inTarget;
       setCelebrateInTarget(inTarget);
-      setCelebrateOver(over);
       setCelebrate(true);
     },
     [dash.data?.today, user?.targetCalories],
@@ -238,101 +235,112 @@ export default function AddFoodPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => cameraRef.current?.click()}
-            className="flex min-h-11 flex-col items-center gap-1.5 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-accent)_35%,var(--color-divider))] bg-[var(--color-tile)] px-3 py-3 text-[var(--color-text)] shadow-[var(--shadow-card)] transition-[transform,background-color] active:scale-[0.97]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-accent)_14%,var(--color-surface))] text-[var(--color-accent)]">
-              <Camera size={20} strokeWidth={2} />
-            </span>
-            <span className="text-[14px] font-semibold leading-none">Фото</span>
-            <span className="text-[11px] text-[var(--color-muted3)]">
-              Зняти камерою
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => uploadRef.current?.click()}
-            className="flex min-h-11 flex-col items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-tile)] px-3 py-3 text-[var(--color-text)] shadow-[var(--shadow-card)] transition-[transform,background-color] active:scale-[0.97]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface)] text-[var(--color-muted)]">
-              <Upload size={20} strokeWidth={2} />
-            </span>
-            <span className="text-[14px] font-semibold leading-none">Файл</span>
-            <span className="text-[11px] text-[var(--color-muted3)]">
-              З галереї
-            </span>
-          </button>
-          <input
-            ref={cameraRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            hidden
-            onChange={(e) => void onFile(e)}
-          />
-          <input
-            ref={uploadRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => void onFile(e)}
-          />
-        </div>
-
-        <div className="rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-surface)]">
-          <div className="flex items-center justify-between gap-2 px-3.5 py-3 text-[14px] font-semibold text-[var(--color-text)]">
-            Описати текстом
-            <span className="text-[12px] font-normal text-[var(--color-muted3)]">
-              за бажанням
-            </span>
-          </div>
-          <div className="border-t border-[var(--color-divider)] px-3.5 pb-3.5 pt-2">
-            <textarea
-              ref={descriptionRef}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="2 яйця, 100 г авокадо, шматок цільнозернового хліба"
-              className={`${inputClass} min-h-[110px] resize-none`}
-            />
-          </div>
-        </div>
-
-        {/* Під час аналізу фото вже показує сканер — тут воно було б удруге */}
-        {image && !analyze.isPending ? (
-          <div className="relative shrink-0 overflow-hidden rounded-[var(--radius-md)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={image.preview}
-              alt="Фото страви"
-              className="max-h-52 w-full object-cover"
-            />
-            <button
-              type="button"
-              onClick={() => setImage(null)}
-              aria-label="Прибрати фото"
-              className="icon-btn absolute right-2 top-2 bg-black/60 text-white hover:bg-black/70 hover:text-white"
-            >
-              <X size={15} />
-            </button>
-          </div>
-        ) : null}
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          onChange={(e) => void onFile(e)}
+        />
+        <input
+          ref={uploadRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => void onFile(e)}
+        />
 
         <AnimatePresence mode="wait" initial={false}>
           {analyze.isPending ? (
             <MealAnalyzeLoader key="loading" preview={image?.preview} />
-          ) : result ? (
-            <AiResultCard
-              key="result"
-              result={result}
-              source={image ? "фото" : "опису"}
-            />
-          ) : null}
+          ) : (
+            <motion.div
+              key="inputs"
+              className="flex flex-col gap-4"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => cameraRef.current?.click()}
+                  className="flex min-h-11 flex-col items-center gap-1.5 rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--color-accent)_35%,var(--color-divider))] bg-[var(--color-tile)] px-3 py-3 text-[var(--color-text)] shadow-[var(--shadow-card)] transition-[transform,background-color] active:scale-[0.97]"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-accent)_14%,var(--color-surface))] text-[var(--color-accent)]">
+                    <Camera size={20} strokeWidth={2} />
+                  </span>
+                  <span className="text-[14px] font-semibold leading-none">Фото</span>
+                  <span className="text-[11px] text-[var(--color-muted3)]">
+                    Зняти камерою
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => uploadRef.current?.click()}
+                  className="flex min-h-11 flex-col items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-tile)] px-3 py-3 text-[var(--color-text)] shadow-[var(--shadow-card)] transition-[transform,background-color] active:scale-[0.97]"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface)] text-[var(--color-muted)]">
+                    <Upload size={20} strokeWidth={2} />
+                  </span>
+                  <span className="text-[14px] font-semibold leading-none">Файл</span>
+                  <span className="text-[11px] text-[var(--color-muted3)]">
+                    З галереї
+                  </span>
+                </button>
+              </div>
+
+              <div className="rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-surface)]">
+                <div className="flex items-center justify-between gap-2 px-3.5 py-3 text-[14px] font-semibold text-[var(--color-text)]">
+                  Описати текстом
+                  <span className="text-[12px] font-normal text-[var(--color-muted3)]">
+                    за бажанням
+                  </span>
+                </div>
+                <div className="border-t border-[var(--color-divider)] px-3.5 pb-3.5 pt-2">
+                  <textarea
+                    ref={descriptionRef}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="2 яйця, 100 г авокадо, шматок цільнозернового хліба"
+                    className={`${inputClass} min-h-[110px] resize-none`}
+                  />
+                </div>
+              </div>
+
+              {image ? (
+                <div className="relative shrink-0 overflow-hidden rounded-[var(--radius-md)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.preview}
+                    alt="Фото страви"
+                    className="max-h-52 w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImage(null)}
+                    aria-label="Прибрати фото"
+                    className="icon-btn absolute right-2 top-2 bg-black/60 text-white hover:bg-black/70 hover:text-white"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ) : null}
+
+              {result ? (
+                <AiResultCard
+                  result={result}
+                  source={image ? "фото" : "опису"}
+                />
+              ) : null}
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
+      {!analyze.isPending ? (
       <div className="flex flex-col gap-2 border-t border-[var(--color-divider)] bg-[var(--color-bg)] px-[18px] pb-[calc(env(safe-area-inset-bottom,0px)+20px)] pt-3.5 sticky bottom-0 z-10">
         {result ? (
           <>
@@ -375,14 +383,13 @@ export default function AddFoodPage() {
           </button>
         )}
       </div>
+      ) : null}
 
       <SaveCelebrate
         open={celebrate}
         inTarget={celebrateInTarget}
-        over={celebrateOver}
         onDone={() => {
           setCelebrate(false);
-          setCelebrateOver(false);
           toast.success("Додано в журнал");
           router.replace("/log");
         }}

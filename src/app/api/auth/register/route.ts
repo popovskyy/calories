@@ -8,7 +8,7 @@ import {
 import { calcTargetCalories } from "@/lib/calories";
 import { todayYMD } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
-import { isAllowedAvatarUrl } from "@/lib/avatar-presets";
+import { isAllowedAvatarUrl, normalizeAvatarUrl } from "@/lib/avatar-presets";
 import { setThemeCookie } from "@/lib/theme-cookie";
 import { toUserDTO } from "@/lib/user-dto";
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const finalAvatar = avatarUrl ?? null;
+  const finalAvatar = normalizeAvatarUrl(avatarUrl ?? null);
   if (!isAllowedAvatarUrl(finalAvatar)) {
     return NextResponse.json({ error: "Невірний аватар" }, { status: 400 });
   }

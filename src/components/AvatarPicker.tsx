@@ -10,7 +10,7 @@ import {
 } from "@/lib/avatar-presets";
 import { cn } from "@/lib/cn";
 
-const PICKABLE = DEFAULT_SKINS.filter((s) => s.id !== "pepa_pig" && s.enabled !== false);
+const PICKABLE = DEFAULT_SKINS.filter((s) => s.enabled !== false);
 
 export function AvatarPicker({
   value,

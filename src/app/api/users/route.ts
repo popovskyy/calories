@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
-import { isAllowedAvatarUrl } from "@/lib/avatar-presets";
+import { isAllowedAvatarUrl, normalizeAvatarUrl } from "@/lib/avatar-presets";
 import { calcTargetCalories } from "@/lib/calories";
 import { todayYMD } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
@@ -65,12 +65,11 @@ export async function POST(req: NextRequest) {
     select: { targetWeight: true, weight: true, avatarUrl: true },
   });
 
-  // Старий пресет (напр. покарання) можна лишити, але новий обрати лише з дозволених.
-  if (
-    avatarUrl !== undefined &&
-    !isAllowedAvatarUrl(avatarUrl) &&
-    avatarUrl !== (existing?.avatarUrl ?? null)
-  ) {
+  const nextAvatar =
+    avatarUrl !== undefined
+      ? normalizeAvatarUrl(avatarUrl)
+      : normalizeAvatarUrl(existing?.avatarUrl ?? null);
+  if (nextAvatar !== undefined && !isAllowedAvatarUrl(nextAvatar)) {
     return NextResponse.json({ error: "Невірний аватар" }, { status: 400 });
   }
   if (theme !== undefined && !isThemeId(theme)) {
@@ -102,7 +101,7 @@ export async function POST(req: NextRequest) {
     data: {
       ...fields,
       targetCalories,
-      ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+      ...(nextAvatar !== undefined ? { avatarUrl: nextAvatar } : {}),
       ...(theme !== undefined ? { theme } : {}),
       ...goalData,
     },

@@ -20,8 +20,7 @@ export type BuiltinMascotId =
   | "frog"
   | "penguin"
   | "chick"
-  | "raccoon"
-  | "pepa_pig";
+  | "raccoon";
 
 /** @deprecated використовуйте string skin id; залишено для сумісності типів */
 export type AvatarPresetId = string;
@@ -51,28 +50,6 @@ export const DEFAULT_SKINS: AvatarPreset[] = [
   { id: "penguin", nameUk: "Пінгвін", bg: "#1CB0F6", tier: "free", price: 0, rarity: "common", artKind: "builtin", sortOrder: 80 },
   { id: "chick", nameUk: "Курча", bg: "#FFC800", tier: "free", price: 0, rarity: "common", artKind: "builtin", sortOrder: 90 },
   { id: "raccoon", nameUk: "Єнот", bg: "#AFAFAF", tier: "free", price: 0, rarity: "common", artKind: "builtin", sortOrder: 100 },
-  {
-    id: "pepa_pig",
-    nameUk: "Свинка Пепа",
-    bg: "#FFB6D9",
-    tier: "free",
-    price: 0,
-    rarity: "common",
-    // Для покарань адмін може заливати svg у БД — тому defaults трактуємо як inline.
-    // Не доступний у магазині лишається через enabled:false.
-    artKind: "inline",
-    sortOrder: 105,
-    enabled: false,
-    // Фолбек, щоб навіть без адмінського svg не було «порожньо».
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <circle cx="128" cy="128" r="120" fill="#FFB6D9"/>
-  <ellipse cx="128" cy="122" rx="52" ry="46" fill="#FF86D0"/>
-  <circle cx="105" cy="120" r="9" fill="#1a1a1a"/>
-  <circle cx="151" cy="120" r="9" fill="#1a1a1a"/>
-  <ellipse cx="128" cy="150" rx="24" ry="14" fill="#FFD1E8"/>
-  <circle cx="128" cy="150" r="6" fill="#FF5AA8"/>
-</svg>`,
-  },
   { id: "ronaldo", nameUk: "Cristiano Ronaldo", bg: "#046A38", tier: "premium", price: 450, rarity: "epic", artKind: "file", sortOrder: 300 },
   { id: "messi", nameUk: "Lionel Messi", bg: "#74C0FC", tier: "premium", price: 450, rarity: "epic", artKind: "file", sortOrder: 310 },
   { id: "yamal", nameUk: "Lamine Yamal", bg: "#C60B1E", tier: "premium", price: 400, rarity: "epic", artKind: "file", sortOrder: 320 },
@@ -108,6 +85,10 @@ export function rarityStyle(rarity: Rarity): RarityStyle {
   return RARITY[rarity];
 }
 
+export const DEFAULT_AVATAR_ID = "kiwi";
+
+const RETIRED_AVATAR_IDS = new Set(["pepa_pig"]);
+
 export function toPresetUrl(id: string): string {
   return `${PRESET_PREFIX}${id}`;
 }
@@ -118,10 +99,18 @@ export function parsePresetId(avatarUrl: string | null | undefined): string | nu
   return SKIN_ID_RE.test(id) ? id : null;
 }
 
+/** Старі покарання (Пепа) → звичайний дефолт. */
+export function normalizeAvatarUrl(url: string | null | undefined): string | null {
+  if (url == null || url === "") return url ?? null;
+  const id = parsePresetId(url);
+  if (id && RETIRED_AVATAR_IDS.has(id)) return toPresetUrl(DEFAULT_AVATAR_ID);
+  return url;
+}
+
 export function isAllowedAvatarUrl(url: string | null | undefined): boolean {
   if (url == null || url === "") return true;
   const id = parsePresetId(url);
-  if (!id || id === "pepa_pig") return false;
+  if (!id || RETIRED_AVATAR_IDS.has(id)) return false;
   return DEFAULT_SKINS.some((s) => s.id === id && s.enabled !== false);
 }
 

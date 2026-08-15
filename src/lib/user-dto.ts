@@ -8,6 +8,7 @@ import {
   type Goal,
   type Sex,
 } from "@/lib/calories";
+import { normalizeAvatarUrl } from "@/lib/avatar-presets";
 import { DEFAULT_THEME, isThemeId } from "@/lib/theme-catalog";
 import type { UserDTO } from "@/lib/types";
 
@@ -33,7 +34,7 @@ export function toUserDTO(user: User): UserDTO {
     weight: user.weight,
     height: user.height,
     age: ageFromBirth(user.birthYear, user.birthMonth),
-    avatarUrl: user.avatarUrl ?? null,
+    avatarUrl: normalizeAvatarUrl(user.avatarUrl ?? null),
     theme,
     targetWeight: user.targetWeight ?? null,
     startWeight: user.startWeight ?? null,

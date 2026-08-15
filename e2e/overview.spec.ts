@@ -7,10 +7,10 @@ test("огляд: герой і макроси, без квестів і мон�
 
   const headerAvatar = page.getByRole("link", { name: "Профіль" }).locator("img, svg");
   await expect(headerAvatar.first()).toBeVisible();
-  const pepa = page.getByRole("link", { name: "Профіль" }).locator("img");
-  if (await pepa.count()) {
-    await expect(pepa).toHaveAttribute("src", /^(data:image\/svg\+xml|\/mascots\/)/);
-    await expect(pepa).not.toHaveAttribute("src", /\/api\/skins\//);
+  const fileAvatar = page.getByRole("link", { name: "Профіль" }).locator("img");
+  if (await fileAvatar.count()) {
+    await expect(fileAvatar).toHaveAttribute("src", /^(data:image\/svg\+xml|\/mascots\/)/);
+    await expect(fileAvatar).not.toHaveAttribute("src", /\/api\/skins\//);
   }
 
   await expect(page.getByText("Білки")).toBeVisible();
