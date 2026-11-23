@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Oswald } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/PwaRegister";
@@ -9,6 +9,13 @@ const inter = Inter({
   // cyrillic-ext — для «ґ» (U+0491), якої немає в базовому cyrillic
   subsets: ["latin", "cyrillic", "cyrillic-ext"],
   weight: ["400", "500", "600", "700", "800"],
+});
+
+/** Дисплейний шрифт для цифр і заголовків: вузький, спортивний, з кирилицею. Inter лишається для тексту. */
+const oswald = Oswald({
+  variable: "--font-oswald",
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
+  weight: ["500", "600", "700"],
 });
 
 const jetbrains = JetBrains_Mono({
@@ -49,7 +56,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B0D10",
+  themeColor: "#0C111C",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
@@ -60,12 +67,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="uk" className={`${inter.variable} ${jetbrains.variable}`}>
+    <html lang="uk" className={`${inter.variable} ${jetbrains.variable} ${oswald.variable}`}>
       <body className="flex min-h-dvh items-start justify-center sm:items-center sm:p-4">
         <Providers>
           {/* Мобільний контейнер: на iPhone — на весь екран, на десктопі — «телефон» 402×844 */}
-          <div id="app-frame" className="relative flex h-dvh w-full flex-col overflow-hidden bg-graphite sm:h-[min(844px,calc(100dvh-2rem))] sm:w-[402px] sm:rounded-[46px] sm:border-[6px] sm:border-[#1e232d] sm:shadow-[0_25px_80px_rgba(0,0,0,0.85)]">
+          <div id="app-frame" className="relative flex h-dvh w-full flex-col overflow-hidden bg-graphite bg-[radial-gradient(130%_50%_at_50%_-6%,rgba(43,144,254,0.17),transparent_62%)] sm:h-[min(844px,calc(100dvh-2rem))] sm:w-[402px] sm:rounded-[46px] sm:border-[6px] sm:border-[#1e232d] sm:shadow-[0_25px_80px_rgba(0,0,0,0.85)]">
             {children}
+            {/* «Заряджання» екрана під час затиску: яскравість = прогрес (див. HoldToCompleteButton) */}
+            <div id="charge-glow" className="charge-glow" aria-hidden />
           </div>
         </Providers>
         <PwaRegister />

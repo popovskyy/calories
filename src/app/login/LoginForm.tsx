@@ -35,10 +35,10 @@ export function LoginForm() {
   return (
     <form onSubmit={submit} className="w-full space-y-4">
       <div className="mb-6 flex flex-col items-center text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-surface-2 text-volt shadow-[0_0_40px_rgba(163,230,53,0.15)]">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-surface-2 text-volt shadow-[0_0_48px_rgba(43,144,254,0.35)]">
           <Zap className="h-8 w-8" strokeWidth={2.2} />
         </div>
-        <h1 className="mt-4 text-xl font-bold tracking-tight text-white">Tactical Fit</h1>
+        <h1 className="font-display mt-4 text-4xl font-semibold tracking-wider text-white">Tactical Fit</h1>
         <p className="mt-1 text-xs text-gray-400">AI Домашній Тренер</p>
       </div>
 
@@ -60,7 +60,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-2xl bg-volt py-3.5 text-sm font-bold text-black transition active:scale-[0.98] disabled:opacity-50"
+        className="w-full rounded-2xl btn-primary py-3.5 text-sm font-bold transition active:scale-[0.98] disabled:opacity-50"
       >
         {busy ? "Входжу…" : "Увійти"}
       </button>

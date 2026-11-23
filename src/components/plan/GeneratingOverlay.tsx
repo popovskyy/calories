@@ -26,7 +26,7 @@ export function GeneratingOverlay({ title }: { title: string }) {
       className="animate-fade-in absolute inset-0 z-30 flex flex-col items-center justify-center gap-5 bg-graphite/90 px-8 text-center backdrop-blur-sm"
     >
       <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white/10 bg-surface">
-        <div className="animate-scan absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-volt to-transparent shadow-[0_0_14px_#A3E635]" />
+        <div className="animate-scan absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-volt to-transparent shadow-[0_0_14px_#2B90FE]" />
       </div>
       <div>
         <div className="font-mono text-[11px] tracking-widest text-volt uppercase">{title}</div>

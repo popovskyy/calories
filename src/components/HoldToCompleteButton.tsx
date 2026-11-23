@@ -53,7 +53,7 @@ export function HoldToCompleteButton({
   variant = "ring",
   label,
   doneLabel,
-  accent = "#A3E635",
+  accent = "#2B90FE",
   size = "lg",
   disabled = false,
   className,
@@ -61,6 +61,8 @@ export function HoldToCompleteButton({
   const btnRef = useRef<HTMLButtonElement>(null);
   const ringRef = useRef<SVGCircleElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
+  /** Світіння по краях екрана (#charge-glow у layout): яскравість = прогрес утримання. */
+  const glowRef = useRef<HTMLElement | null>(null);
 
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
@@ -77,6 +79,7 @@ export function HoldToCompleteButton({
       // Притискання: ring — до 0.88, bar — до 0.97 (широкий елемент не має «стрибати»)
       const squeeze = variant === "ring" ? 0.12 : 0.03;
       if (btn) btn.style.transform = p > 0 ? `scale(${1 - squeeze * p})` : "";
+      glowRef.current?.style.setProperty("--charge", String(p));
     },
     [variant],
   );
@@ -116,6 +119,15 @@ export function HoldToCompleteButton({
     }
     paint(1);
     if (btn) btn.style.transform = "";
+    // Розряд: зарядка гасне, по краях спалахує зелений «виконано»
+    const glow = glowRef.current;
+    if (glow) {
+      glow.style.setProperty("--charge", "0");
+      glow.dataset.burst = "false";
+      void glow.offsetWidth;
+      glow.dataset.burst = "true";
+      setTimeout(() => delete glow.dataset.burst, 900);
+    }
     vibrate(HAPTIC.complete);
     onComplete();
   }, [onComplete, paint, stopRaf]);
@@ -124,6 +136,7 @@ export function HoldToCompleteButton({
     if (disabled || completed || holdingRef.current) return;
     holdingRef.current = true;
     startRef.current = performance.now();
+    glowRef.current = document.getElementById("charge-glow");
     const btn = btnRef.current;
     if (btn) {
       btn.dataset.holding = "true";
@@ -149,7 +162,13 @@ export function HoldToCompleteButton({
   }, [completed, disabled, finish, holdMs, paint]);
 
   // Розмонтування посеред утримання не має лишати rAF-цикл
-  useEffect(() => () => stopRaf(), [stopRaf]);
+  useEffect(
+    () => () => {
+      stopRaf();
+      glowRef.current?.style.setProperty("--charge", "0");
+    },
+    [stopRaf],
+  );
 
   // Якщо стан змінили ззовні (скасування) — прибираємо залишки інлайн-стилів
   useEffect(() => {
@@ -237,7 +256,7 @@ export function HoldToCompleteButton({
             ref={fillRef}
             aria-hidden
             className="absolute inset-0 origin-left rounded-[inherit]"
-            style={{ transform: `scaleX(${completed ? 1 : 0})`, background: completed ? "rgba(16,185,129,0.18)" : `${accent}40` }}
+            style={{ transform: `scaleX(${completed ? 1 : 0})`, background: completed ? "rgba(76,232,146,0.2)" : `${accent}40` }}
           />
           <span className="relative z-10 flex items-center justify-center gap-2.5">
             {/* Фіксований слот 20×20: «порожній чекбокс» у спокої → галочка після завершення */}
@@ -260,7 +279,7 @@ export function HoldToCompleteButton({
               cy="24"
               r={R}
               fill="none"
-              stroke={completed ? "#10B981" : accent}
+              stroke={completed ? "#4CE892" : accent}
               strokeWidth="2.8"
               strokeLinecap="round"
               strokeDasharray={CIRC}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Dumbbell, Info, Sparkles, Zap } from "lucide-react";
 import { addDays, defaultWeekStart, formatDateLong, formatWeekRange, relativeDayLabel, weekdayIndex, WEEKDAY_LONG } from "@/lib/dates";
@@ -15,6 +15,7 @@ import {
   useProfile,
   useToggleLog,
 } from "@/hooks/queries";
+import { Celebration } from "@/components/Celebration";
 import { HoldToCompleteButton } from "@/components/HoldToCompleteButton";
 import { AdaptSheet } from "@/components/plan/AdaptSheet";
 import { DayCard } from "@/components/plan/DayCard";
@@ -59,6 +60,19 @@ function PlanContent({ today }: { today: string }) {
   const dayFinished = day?.workoutCompletedAt != null;
   const done = new Set(day?.completedExerciseIds ?? []);
 
+  // Салют лише коли користувач САМ завершив тренування (false → true для того ж дня),
+  // а не при завантаженні вже завершеного дня чи перемиканні між днями.
+  const [celebrate, setCelebrate] = useState(0);
+  const prevFinish = useRef<{ id: string; finished: boolean } | null>(null);
+  const celebrateDayId = day?.id ?? null;
+  useEffect(() => {
+    const prev = prevFinish.current;
+    if (prev && celebrateDayId && prev.id === celebrateDayId && !prev.finished && dayFinished) {
+      setCelebrate((n) => n + 1);
+    }
+    prevFinish.current = celebrateDayId ? { id: celebrateDayId, finished: dayFinished } : null;
+  }, [celebrateDayId, dayFinished]);
+
   const shiftWeek = (delta: number) => {
     setWeekStart((w) => addDays(w, delta * 7));
     setPicked(null);
@@ -84,7 +98,7 @@ function PlanContent({ today }: { today: string }) {
             <span className="inline-block h-2 w-2 rounded-full bg-volt" />
             <span className="font-mono text-[11px] tracking-wider text-gray-400 uppercase">{headerEyebrow}</span>
           </div>
-          <h1 className="mt-0.5 text-xl font-bold tracking-tight text-white">{formatDateLong(headerDate)}</h1>
+          <h1 className="font-display mt-0.5 text-[26px] leading-tight font-semibold tracking-wide whitespace-nowrap text-white">{formatDateLong(headerDate)}</h1>
           <p className="mt-0.5 font-mono text-[11px] text-gray-500 tabular-nums">
             {p ? `${p.age} р. · ${p.heightCm} см · ${p.weightKg} кг` : <span className="inline-block h-3 w-32 rounded skeleton" />}
           </p>
@@ -247,6 +261,13 @@ function PlanContent({ today }: { today: string }) {
           generate.mutate(note);
         }}
       />
+      {celebrate > 0 && day && (
+        <Celebration
+          key={celebrate}
+          title="Тренування зараховано"
+          subtitle={`${done.size}/${day.exercises.length} вправ · ~${day.caloriesEst} ккал`}
+        />
+      )}
       {generate.isPending && <GeneratingOverlay title="Тренер складає план" />}
     </section>
   );
@@ -272,7 +293,7 @@ function EmptyPlan({ weekLabel, noEquipment, onGenerate }: { weekLabel: string; 
       )}
       <button
         onClick={onGenerate}
-        className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-volt px-5 py-3 text-sm font-bold text-black active:scale-95"
+        className="mt-4 inline-flex items-center gap-2 rounded-2xl btn-primary px-5 py-3 text-sm font-bold active:scale-95"
       >
         <Sparkles className="h-4 w-4" />
         Згенерувати тиждень

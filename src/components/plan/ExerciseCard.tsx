@@ -63,7 +63,7 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, o
         done
           ? "border-mint/25 bg-mint/[0.05]"
           : highlight
-            ? "border-volt/40 bg-surface shadow-[0_8px_30px_-12px_rgba(163,230,53,0.3)]"
+            ? "border-volt/40 bg-surface shadow-[0_8px_30px_-12px_rgba(43,144,254,0.45)]"
             : "border-white/[0.08] bg-surface",
       )}
     >
@@ -75,7 +75,7 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, o
             <span>
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1 pb-1.5">
                 {highlight && (
-                  <span className="rounded bg-volt px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider text-black">ДАЛІ</span>
+                  <span className="rounded bg-volt px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider text-white">ДАЛІ</span>
                 )}
                 {ex.equipment && (
                   <span className={cn("rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold", accent.bg, accent.text)}>

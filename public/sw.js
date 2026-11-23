@@ -10,10 +10,10 @@ const PRECACHE = ["/manifest.webmanifest", "/icon.svg", "/icons/icon-192.png", "
 const OFFLINE_HTML = `<!doctype html><html lang="uk"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Немає зв’язку</title>
-<style>html,body{height:100%;margin:0;background:#0b0d10;color:#f3f4f6;font-family:-apple-system,system-ui,sans-serif}
+<style>html,body{height:100%;margin:0;background:#0c111c;color:#f3f4f6;font-family:-apple-system,system-ui,sans-serif}
 body{display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
 h1{font-size:18px;margin:0 0 8px}p{font-size:13px;color:#9ca3af;margin:0 0 20px}
-button{background:#a3e635;color:#000;border:0;border-radius:12px;padding:10px 18px;font-weight:700;font-size:13px}</style></head>
+button{background:linear-gradient(149deg,#41c6ff,#1a64fc);color:#fff;border:0;border-radius:12px;padding:10px 18px;font-weight:700;font-size:13px}</style></head>
 <body><div><h1>Немає зв’язку</h1><p>Тренування й прогрес потребують інтернету.</p>
 <button onclick="location.reload()">Спробувати ще</button></div></body></html>`;
 

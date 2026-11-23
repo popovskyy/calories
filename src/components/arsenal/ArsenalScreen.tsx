@@ -28,7 +28,7 @@ export function ArsenalScreen() {
     <section className="animate-day-enter space-y-4">
       <div>
         <span className="font-mono text-[11px] tracking-wider text-volt uppercase">Gemini Vision Sync</span>
-        <h1 className="mt-0.5 text-lg font-bold text-white">Мій домашній арсенал</h1>
+        <h1 className="font-display mt-0.5 text-3xl leading-tight font-semibold tracking-wide text-white">Мій домашній арсенал</h1>
         <p className="mt-0.5 text-xs text-gray-400">
           AI будує план виключно під активне обладнання
           {equipment.isSuccess && items.length > 0 && ` · активно ${activeCount} з ${items.length}`}

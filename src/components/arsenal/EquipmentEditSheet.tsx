@@ -101,7 +101,7 @@ function EditForm({ item, onClose }: { item: EquipmentDTO; onClose: () => void }
       <button
         onClick={save}
         disabled={patch.isPending || name.trim().length < 2}
-        className="w-full rounded-2xl bg-volt py-3.5 text-sm font-bold text-black active:scale-[0.98] disabled:opacity-50"
+        className="w-full rounded-2xl btn-primary py-3.5 text-sm font-bold active:scale-[0.98] disabled:opacity-50"
       >
         {patch.isPending ? "Зберігаю…" : "Зберегти"}
       </button>

@@ -27,8 +27,8 @@ const MODES: { mode: AdaptMode; title: string; desc: string; badge: string; hove
     title: "Втомлений / Легке відновлення",
     desc: "Мобіліті, палка, мати, легке кардіо · пульс ~125",
     badge: "LIGHT",
-    hover: "hover:border-iris/50",
-    badgeCls: "text-iris",
+    hover: "hover:border-blush/50",
+    badgeCls: "text-blush",
   },
 ];
 

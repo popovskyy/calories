@@ -5,17 +5,19 @@
    graphite-поверхні + «електричний» lime; amber = кардіо, iris = мобіліті, mint = виконано
    ============================================================ */
 @theme {
-  --color-graphite: #0b0d10;
-  --color-surface: #14181f;
-  --color-surface-2: #1a1f29;
+  --color-graphite: #0c111c;
+  --color-surface: #121a29;
+  --color-surface-2: #192232;
 
-  --color-volt: #a3e635; /* силові, головний акцент */
-  --color-ember: #f97316; /* кардіо */
-  --color-iris: #818cf8; /* мобіліті */
-  --color-mint: #10b981; /* виконано */
+  --color-volt: #2b90fe; /* головний: силові, дії */
+  --color-ember: #ff5b1f; /* кардіо */
+  --color-blush: #ff69b4; /* мобіліті */
+  --color-mint: #4ce892; /* виконано */
+  --color-gold: #ffd700; /* свято: завершене тренування */
 
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", monospace;
+  --font-display: var(--font-oswald), var(--font-inter), sans-serif;
 
   --animate-day-enter: day-enter 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-sheet-up: sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -76,7 +78,7 @@ input, textarea, select { -webkit-user-select: text; user-select: text; font: in
 .accordion > * { overflow: hidden; min-height: 0; }
 
 .skeleton {
-  background: linear-gradient(90deg, #14181f 25%, #1f2633 50%, #14181f 75%);
+  background: linear-gradient(90deg, #121a29 25%, #1b263a 50%, #121a29 75%);
   background-size: 200% 100%;
   animation: var(--animate-shimmer);
 }
@@ -96,7 +98,7 @@ input[type="range"].weight-range::-webkit-slider-thumb {
   height: 22px;
   border-radius: 50%;
   background: var(--color-volt);
-  box-shadow: 0 0 10px rgba(163, 230, 53, 0.45);
+  box-shadow: 0 0 10px rgba(43, 144, 254, 0.55);
 }
 input[type="range"].weight-range::-moz-range-thumb {
   width: 22px;
@@ -104,7 +106,7 @@ input[type="range"].weight-range::-moz-range-thumb {
   border: 0;
   border-radius: 50%;
   background: var(--color-volt);
-  box-shadow: 0 0 10px rgba(163, 230, 53, 0.45);
+  box-shadow: 0 0 10px rgba(43, 144, 254, 0.55);
 }
 
 /* ============================================================
@@ -144,8 +146,8 @@ input[type="range"].weight-range::-moz-range-thumb {
 .hold-btn[data-done="true"] .hold-idle-glyph { opacity: 0; transform: scale(0.4) rotate(45deg); }
 
 @keyframes hold-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
-  100% { box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(76, 232, 146, 0.6); }
+  100% { box-shadow: 0 0 0 18px rgba(76, 232, 146, 0); }
 }
 .hold-btn[data-pulse="true"] { animation: hold-pulse 0.7s ease-out 1; }
 
@@ -153,4 +155,69 @@ input[type="range"].weight-range::-moz-range-thumb {
 @media (prefers-reduced-motion: reduce) {
   .hold-btn[data-pulse="true"] { animation: none; }
   .animate-day-enter, .animate-sheet-up, .animate-fade-in { animation: none !important; }
+}
+
+/* ---------- Основна кнопка: градієнт електричного синього + світіння ---------- */
+.btn-primary {
+  background: linear-gradient(149deg, #41c6ff 8%, #1a64fc 80%);
+  color: #fff;
+  box-shadow: 0 10px 26px -10px rgba(43, 144, 254, 0.75);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary:disabled {
+  background: var(--color-surface-2);
+  color: #677a9d;
+  box-shadow: none;
+  filter: none;
+}
+
+/* ---------- «Заряджання» екрана під час затиску ---------- */
+.charge-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  border-radius: inherit;
+  box-shadow: inset 0 0 90px 12px rgba(43, 144, 254, 0.8);
+  opacity: calc(var(--charge, 0) * 0.95);
+  transition: opacity 0.12s linear;
+}
+/* Розряд при 100%: зелений спалах, що розходиться від країв */
+.charge-glow[data-burst="true"] { animation: charge-burst 0.8s ease-out 1 both; }
+@keyframes charge-burst {
+  0% { opacity: 1; box-shadow: inset 0 0 70px 12px rgba(76, 232, 146, 0.9); }
+  100% { opacity: 0; box-shadow: inset 0 0 200px 70px rgba(76, 232, 146, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .charge-glow { display: none; }
+}
+
+/* ---------- Салют після завершення тренування ---------- */
+@keyframes confetti-fly {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(0.6); opacity: 0; }
+}
+.confetti-piece {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: var(--w);
+  height: var(--h);
+  border-radius: 2px;
+  background: var(--c);
+  animation: confetti-fly var(--t) cubic-bezier(0.18, 0.7, 0.3, 1) both;
+}
+@keyframes finish-title {
+  0% { opacity: 0; transform: translateY(14px) scale(0.92); }
+  18% { opacity: 1; transform: translateY(0) scale(1.04); }
+  28% { transform: scale(1); }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+.finish-title { animation: finish-title 2.1s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece { display: none; }
+  .finish-title { animation: none; }
 }

@@ -18,7 +18,7 @@ export function ProfileScreen() {
     <section className="animate-day-enter space-y-4">
       <div>
         <span className="font-mono text-[11px] tracking-wider text-volt uppercase">Налаштування</span>
-        <h1 className="mt-0.5 text-lg font-bold text-white">Профіль атлета</h1>
+        <h1 className="font-display mt-0.5 text-3xl leading-tight font-semibold tracking-wide text-white">Профіль атлета</h1>
         <p className="mt-0.5 text-xs text-gray-400">Ці дані AI-тренер використовує при кожній генерації плану</p>
       </div>
 
@@ -140,7 +140,7 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
       <button
         type="submit"
         disabled={!dirty || !valid || save.isPending}
-        className="w-full rounded-2xl bg-volt py-3.5 text-sm font-bold text-black transition active:scale-[0.98] disabled:bg-surface-2 disabled:text-gray-500"
+        className="w-full rounded-2xl btn-primary py-3.5 text-sm font-bold transition active:scale-[0.98] disabled:bg-surface-2 disabled:text-gray-500"
       >
         {save.isPending ? "Зберігаю…" : dirty ? "Зберегти зміни" : "Збережено"}
       </button>

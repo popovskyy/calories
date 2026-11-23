@@ -44,7 +44,7 @@ async function renderPng(svg, size, { padded = false } = {}) {
       width: size,
       height: size,
       channels: 4,
-      background: { r: 11, g: 13, b: 16, alpha: 1 }, // #0B0D10
+      background: { r: 12, g: 17, b: 28, alpha: 1 }, // #0C111C
     },
   })
     .composite([{ input: icon, gravity: "centre" }])

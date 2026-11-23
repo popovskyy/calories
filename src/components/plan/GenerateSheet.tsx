@@ -43,7 +43,7 @@ export function GenerateSheet({ open, onOpenChange, weekLabel, hasPlan, hasProgr
           onGenerate(note);
           setNote("");
         }}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-volt py-3.5 text-sm font-bold text-black active:scale-[0.98]"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl btn-primary py-3.5 text-sm font-bold active:scale-[0.98]"
       >
         <Sparkles className="h-4 w-4" />
         Згенерувати

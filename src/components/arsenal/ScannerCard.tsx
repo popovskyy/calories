@@ -72,7 +72,7 @@ export function ScannerCard() {
 
   return (
     <div className={cn("relative overflow-hidden rounded-2xl border border-dashed bg-surface p-4 transition-colors", busy ? "border-volt/60" : "border-white/20")}>
-      {busy && <div className="animate-scan absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-volt to-cyan-400 shadow-[0_0_14px_#A3E635]" />}
+      {busy && <div className="animate-scan absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-volt to-cyan-300 shadow-[0_0_14px_#2B90FE]" />}
 
       <div className="flex items-center gap-3.5">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-surface-2 text-volt">
@@ -119,7 +119,7 @@ export function ScannerCard() {
           <button
             onClick={analyze}
             disabled={busy}
-            className="flex-1 rounded-xl bg-volt px-3 py-2.5 text-center text-xs font-bold text-black active:scale-95 disabled:opacity-50"
+            className="flex-1 rounded-xl btn-primary px-3 py-2.5 text-center text-xs font-bold active:scale-95 disabled:opacity-50"
           >
             {busy ? "Аналізую…" : `Розпізнати (${photos.length})`}
           </button>
@@ -127,7 +127,7 @@ export function ScannerCard() {
           <button
             onClick={() => galleryRef.current?.click()}
             disabled={preparing}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-volt px-3 py-2.5 text-center text-xs font-bold text-black active:scale-95 disabled:opacity-60"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl btn-primary px-3 py-2.5 text-center text-xs font-bold active:scale-95 disabled:opacity-60"
           >
             <ImagePlus className="h-4 w-4" />
             {preparing ? "Обробка…" : "Завантажити фото"}
