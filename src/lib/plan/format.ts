@@ -1,4 +1,5 @@
 import type { DayDTO, DayStatus, ExerciseDTO } from "@/lib/types";
+import { videoQueryFor, youtubeSearchUrl } from "@/lib/video/query";
 
 export function formatDuration(sec: number): string {
   if (sec < 60) return `${sec} с`;
@@ -40,11 +41,9 @@ export function dayStatus(
 }
 
 /**
- * Посилання на відео-демонстрацію. Свідомо ПОШУК на YouTube, а не конкретний ролик:
- * модель не знає реальних id відео й вигадувала б неіснуючі посилання, а пошук не ламається.
- * Запит бере англійський `videoQuery` від ШІ; для старих вправ без нього — з назви.
+ * Посилання на відео-демонстрацію — пошук на YouTube (запасний варіант, коли YOUTUBE_API_KEY не задано
+ * або конкретне відео не знайдено). Конкретні відео підбирає /api/video.
  */
 export function videoUrl(ex: { name: string; videoQuery?: string | null }): string {
-  const q = ex.videoQuery?.trim() || `${ex.name} як правильно робити`;
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  return youtubeSearchUrl(videoQueryFor(ex));
 }

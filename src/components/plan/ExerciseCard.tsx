@@ -20,6 +20,8 @@ interface Props {
   done: boolean;
   /** Перша невиконана вправа дня — підсвічується як «далі». */
   isNext?: boolean;
+  /** Є лише коли відео-API ввімкнено: тоді кнопка відкриває шторку з плеєром замість переходу на YouTube. */
+  onVideo?: (exercise: ExerciseDTO) => void;
   onComplete: () => void;
   onUndo: () => void;
 }
@@ -30,7 +32,7 @@ function inlineLoad(load: string | null): string | null {
   return /^власна вага$/i.test(load.trim()) ? null : load;
 }
 
-export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, onUndo }: Props) {
+export function ExerciseCard({ exercise: ex, done, isNext = false, onVideo, onComplete, onUndo }: Props) {
   const [open, setOpen] = useState(false);
   // Початково виконана (завантаження сторінки) — одразу стиснута; щойно виконана — з паузою.
   const [settled, setSettled] = useState(done);
@@ -112,6 +114,11 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, o
               href={videoUrl(ex)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => {
+                if (!onVideo) return; // без ключа — звичайний перехід на пошук
+                e.preventDefault();
+                onVideo(ex);
+              }}
               className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-2.5 py-1.5 text-xs font-semibold text-gray-200 transition hover:bg-white/10 active:scale-95"
             >
               <Play className="h-3 w-3 fill-red-500 text-red-500" aria-hidden />

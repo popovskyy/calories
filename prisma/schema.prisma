@@ -154,3 +154,16 @@ model WorkoutLog {
   @@index([completedAt])
   @@map("workout_logs")
 }
+
+/// Кеш пошуку відео. Один запит до YouTube Data API коштує 100 одиниць квоти (ліміт ~10 000/добу), тож результат
+/// запам'ятовується на ВАРІАНТ ЗАПИТУ, а не на вправу: «plank exercise form» шукається один раз для всіх планів.
+/// Політика YouTube API дозволяє зберігати такі дані не довше 30 днів — старіші рядки оновлюються або видаляються.
+model VideoCache {
+  /// Нормалізований запит (нижній регістр, без зайвих пробілів)
+  key        String   @id
+  /// [{ id, title, channel }] — до 5 кандидатів; «Інше відео» гортає їх без нових запитів до API
+  candidates Json
+  createdAt  DateTime @default(now())
+
+  @@map("video_cache")
+}

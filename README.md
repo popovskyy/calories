@@ -22,6 +22,7 @@ TRAINER_USERNAME=…  TRAINER_PASSWORD=…    # єдиний вхід у зас�
                                           # (без дефолтів: нічого не задано → вхід закрито)
 GEMINI_API_KEY=…
 GEMINI_MODEL=gemini-3.7-flash             # необов'язково
+YOUTUBE_API_KEY=…                         # необов'язково: з ним кнопка «Як робити — відео» відкриває конкретне відео в застосунку
 ```
 > Ніколи не запускайте `prisma migrate reset`, `prisma migrate dev` чи `db push --force-reset`:
 > база спільна з іншими проєктами. Лише `prisma migrate deploy`.
@@ -47,3 +48,14 @@ Safari → «Поділитись» → «На початковий екран»
 доки застосунок не перевстановлено.
 
 Архітектура, схема БД та рішення — у [docs/trainer-architecture.md](docs/trainer-architecture.md).
+
+## Відео-демонстрації вправ (YouTube Data API)
+Без `YOUTUBE_API_KEY` кнопка «Як робити — відео» відкриває пошук на YouTube. З ключем застосунок сам підбирає конкретне
+відео (коротке, з можливістю вбудування, `safeSearch=strict`), показує його в шторці з плеєром і кешує результат у таблиці
+`video_cache` — один пошук на унікальний запит для всіх планів.
+
+Ключ: [Google Cloud Console](https://console.cloud.google.com/) → проєкт → *APIs & Services → Library → YouTube Data API v3 → Enable* →
+*Credentials → Create credentials → API key* → у *API restrictions* лишити лише **YouTube Data API v3**. Далі додати в Vercel Production
+як `YOUTUBE_API_KEY` (і в локальний `.env`). Квота безкоштовного рівня — 10 000 одиниць/добу, пошук = 100 одиниць, тож ~100 нових запитів на добу;
+повторні запити беруться з кешу.
+> `YOUTUBE_API_BASE` — лише для тестів (імітація API); на Vercel не задавати.

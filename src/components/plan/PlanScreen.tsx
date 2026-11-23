@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Dumbbell, Info, Sparkles, Zap } from "lucide
 import { addDays, defaultWeekStart, formatDayMonth, formatWeekRange, relativeDayLabel, weekdayFullName, weekdayIndex, WEEKDAY_LONG } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { dayStatus } from "@/lib/plan/format";
-import { BLOCKS, BLOCK_LABEL } from "@/lib/types";
+import { BLOCKS, BLOCK_LABEL, type ExerciseDTO } from "@/lib/types";
 import { useToday } from "@/hooks/useToday";
 import {
   useAdaptDay,
@@ -15,6 +15,7 @@ import {
   usePlan,
   useProfile,
   useToggleLog,
+  useVideoEnabled,
 } from "@/hooks/queries";
 import { DayClosed } from "@/components/DayClosed";
 import { HoldToCompleteButton } from "@/components/HoldToCompleteButton";
@@ -24,6 +25,7 @@ import { DaySelector } from "@/components/plan/DaySelector";
 import { ExerciseCard } from "@/components/plan/ExerciseCard";
 import { GenerateSheet } from "@/components/plan/GenerateSheet";
 import { GeneratingOverlay } from "@/components/plan/GeneratingOverlay";
+import { VideoSheet } from "@/components/plan/VideoSheet";
 
 export function PlanScreen() {
   const today = useToday();
@@ -38,6 +40,8 @@ function PlanContent({ today }: { today: string }) {
   const [adaptOpen, setAdaptOpen] = useState(false);
   const [genOpen, setGenOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [videoFor, setVideoFor] = useState<ExerciseDTO | null>(null);
+  const videoEnabled = useVideoEnabled().data === true;
 
   const profile = useProfile();
   const equipment = useEquipment();
@@ -223,6 +227,7 @@ function PlanContent({ today }: { today: string }) {
                             exercise={ex}
                             done={done.has(ex.id)}
                             isNext={ex.id === nextId}
+                            onVideo={videoEnabled ? setVideoFor : undefined}
                             onComplete={() => log(ex.id, true)}
                             onUndo={() => log(ex.id, false)}
                           />
@@ -253,6 +258,7 @@ function PlanContent({ today }: { today: string }) {
         </>
       )}
 
+      <VideoSheet exercise={videoFor} onClose={() => setVideoFor(null)} />
       <AdaptSheet
         open={adaptOpen}
         onOpenChange={setAdaptOpen}

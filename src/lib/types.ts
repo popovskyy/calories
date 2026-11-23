@@ -87,3 +87,15 @@ export interface ScanResultDTO {
   alreadyHad: number;
   note: string | null;
 }
+
+export interface VideoCandidateDTO {
+  id: string;
+  title: string;
+  channel: string;
+}
+
+export interface VideoResponseDTO {
+  status: "ok" | "none" | "unavailable";
+  candidates: VideoCandidateDTO[];
+  searchUrl: string;
+}

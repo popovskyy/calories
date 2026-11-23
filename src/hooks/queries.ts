@@ -9,6 +9,7 @@ import type {
   PlanDTO,
   ProfileDTO,
   ScanResultDTO,
+  VideoResponseDTO,
 } from "@/lib/types";
 
 export const qk = {
@@ -190,5 +191,27 @@ export function useToggleLog(weekStart: string) {
       if (ctx) qc.setQueryData(qk.plan(weekStart), ctx.prev);
       toast.error(`Не вдалося зберегти прогрес: ${errMsg(e)}`);
     },
+  });
+}
+
+/* ---------------- Відео-демонстрації ---------------- */
+
+/** Чи задано YOUTUBE_API_KEY на сервері. Поки невідомо або вимкнено — кнопка лишається простим посиланням на пошук. */
+export function useVideoEnabled() {
+  return useQuery({
+    queryKey: ["video", "enabled"],
+    queryFn: async () => (await api.get<{ enabled: boolean }>("/api/video")).enabled,
+    staleTime: Infinity,
+    retry: 0,
+  });
+}
+
+export function useVideo(query: string | null) {
+  return useQuery({
+    queryKey: ["video", query],
+    queryFn: () => api.get<VideoResponseDTO>(`/api/video?q=${encodeURIComponent(query as string)}`),
+    enabled: !!query,
+    staleTime: 6 * 60 * 60 * 1000,
+    retry: 0,
   });
 }
