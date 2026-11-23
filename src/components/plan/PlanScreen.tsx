@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Dumbbell, Info, Sparkles, Zap } from "lucide-react";
 import { addDays, defaultWeekStart, formatDateLong, formatWeekRange, relativeDayLabel, weekdayIndex, WEEKDAY_LONG } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { dayStatus } from "@/lib/plan/format";
 import { BLOCKS, BLOCK_LABEL } from "@/lib/types";
 import { useToday } from "@/hooks/useToday";
 import {
@@ -15,7 +16,7 @@ import {
   useProfile,
   useToggleLog,
 } from "@/hooks/queries";
-import { Celebration } from "@/components/Celebration";
+import { DayClosed } from "@/components/DayClosed";
 import { HoldToCompleteButton } from "@/components/HoldToCompleteButton";
 import { AdaptSheet } from "@/components/plan/AdaptSheet";
 import { DayCard } from "@/components/plan/DayCard";
@@ -62,13 +63,24 @@ function PlanContent({ today }: { today: string }) {
 
   // Салют лише коли користувач САМ завершив тренування (false → true для того ж дня),
   // а не при завантаженні вже завершеного дня чи перемиканні між днями.
-  const [celebrate, setCelebrate] = useState(0);
+  const [celebrate, setCelebrate] = useState<{ n: number; origin: { x: number; y: number; reach: number } | null }>({ n: 0, origin: null });
   const prevFinish = useRef<{ id: string; finished: boolean } | null>(null);
   const celebrateDayId = day?.id ?? null;
   useEffect(() => {
     const prev = prevFinish.current;
     if (prev && celebrateDayId && prev.id === celebrateDayId && !prev.finished && dayFinished) {
-      setCelebrate((n) => n + 1);
+      // Хвиля виходить із кнопки завершення: беремо її центр відносно мобільного контейнера
+      const bar = document.querySelector<HTMLElement>(".hold-btn.h-14");
+      const frame = document.getElementById("app-frame");
+      let origin: { x: number; y: number; reach: number } | null = null;
+      if (bar && frame) {
+        const b = bar.getBoundingClientRect();
+        const f = frame.getBoundingClientRect();
+        const x = b.left + b.width / 2 - f.left;
+        const y = b.top + b.height / 2 - f.top;
+        origin = { x, y, reach: Math.hypot(Math.max(x, f.width - x), Math.max(y, f.height - y)) };
+      }
+      setCelebrate((c) => ({ n: c.n + 1, origin }));
     }
     prevFinish.current = celebrateDayId ? { id: celebrateDayId, finished: dayFinished } : null;
   }, [celebrateDayId, dayFinished]);
@@ -261,11 +273,19 @@ function PlanContent({ today }: { today: string }) {
           generate.mutate(note);
         }}
       />
-      {celebrate > 0 && day && (
-        <Celebration
-          key={celebrate}
-          title="Тренування зараховано"
-          subtitle={`${done.size}/${day.exercises.length} вправ · ~${day.caloriesEst} ккал`}
+      {celebrate.n > 0 && day && plan && (
+        <DayClosed
+          key={celebrate.n}
+          focus={day.focus}
+          doneCount={done.size}
+          totalCount={day.exercises.length}
+          kcal={day.caloriesEst}
+          weekFlags={[0, 1, 2, 3, 4].map((i) => {
+            const d = plan.days.find((x) => x.weekday === i);
+            return !!d && dayStatus(d) === "done";
+          })}
+          closedIndex={day.weekday}
+          origin={celebrate.origin}
         />
       )}
       {generate.isPending && <GeneratingOverlay title="Тренер складає план" />}

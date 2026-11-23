@@ -126,14 +126,14 @@ export function HoldToCompleteButton({
       glow.style.setProperty("--charge", "0");
       glow.dataset.burst = "false";
       void glow.offsetWidth;
-      glow.dataset.burst = "true";
+      glow.dataset.burst = variant === "bar" ? "day" : "true";
       // Перезбройка: таймер попередньої кнопки не має зняти спалах, що щойно почався вдруге
       if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
       burstTimerRef.current = setTimeout(() => delete glow.dataset.burst, 900);
     }
     vibrate(HAPTIC.complete);
     onComplete();
-  }, [onComplete, paint, stopRaf]);
+  }, [onComplete, paint, stopRaf, variant]);
 
   const begin = useCallback(() => {
     if (disabled || completed || holdingRef.current) return;
@@ -261,6 +261,7 @@ export function HoldToCompleteButton({
             className="absolute inset-0 origin-left rounded-[inherit]"
             style={{ transform: `scaleX(${completed ? 1 : 0})`, background: completed ? "rgba(76,232,146,0.2)" : `${accent}40` }}
           />
+          <span className="hold-shine" aria-hidden />
           <span className="relative z-10 flex items-center justify-center gap-2.5">
             {/* Фіксований слот 20×20: «порожній чекбокс» у спокої → галочка після завершення */}
             <span className={cn("relative h-5 w-5 shrink-0", !completed && "text-volt")} aria-hidden>

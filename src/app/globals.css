@@ -187,6 +187,12 @@ input[type="range"].weight-range::-moz-range-thumb {
 }
 /* Розряд при 100%: зелений спалах, що розходиться від країв */
 .charge-glow[data-burst="true"] { animation: charge-burst 0.8s ease-out 1 both; }
+/* Завершення всього дня: більший холодний спалах (колір «зарядки», а не «виконано») */
+.charge-glow[data-burst="day"] { animation: charge-burst-day 0.9s ease-out 1 both; }
+@keyframes charge-burst-day {
+  0% { opacity: 0.85; box-shadow: inset 0 0 80px 10px rgba(80, 175, 255, 0.8); }
+  100% { opacity: 0; box-shadow: inset 0 0 220px 70px rgba(43, 144, 254, 0); }
+}
 @keyframes charge-burst {
   0% { opacity: 1; box-shadow: inset 0 0 70px 12px rgba(76, 232, 146, 0.9); }
   100% { opacity: 0; box-shadow: inset 0 0 200px 70px rgba(76, 232, 146, 0); }
@@ -195,31 +201,71 @@ input[type="range"].weight-range::-moz-range-thumb {
   .charge-glow { display: none; }
 }
 
-/* ---------- Салют після завершення тренування ---------- */
-@keyframes confetti-fly {
-  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
-  70% { opacity: 1; }
-  100% { transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(0.6); opacity: 0; }
+/* ---------- «День закрито» ---------- */
+.dc-scrim { animation: dc-fade 0.28s ease-out 0.08s both; }
+.dc-card { animation: dc-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; transform-origin: 50% 100%; }
+.day-closed[data-phase="out"] .dc-scrim { animation: dc-fade-out 0.34s ease-in both; }
+.day-closed[data-phase="out"] .dc-card { animation: dc-sink 0.34s cubic-bezier(0.5, 0, 0.75, 0) both; }
+@keyframes dc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dc-fade-out { from { opacity: 1; } to { opacity: 0; } }
+/* Картка «матеріалізується» з кнопки: знизу, з блюром, що сходить нанівець */
+@keyframes dc-rise {
+  from { opacity: 0; transform: translateY(44px) scale(0.95); filter: blur(12px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
-.confetti-piece {
+@keyframes dc-sink {
+  from { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  to { opacity: 0; transform: translateY(44px) scale(0.96); filter: blur(10px); }
+}
+/* Хвиля від кнопки завершення — одна тонка, друга слабша */
+.dc-ring {
   position: absolute;
-  left: 50%;
-  top: 62%;
-  width: var(--w);
-  height: var(--h);
-  border-radius: 2px;
-  background: var(--c);
-  animation: confetti-fly var(--t) cubic-bezier(0.18, 0.7, 0.3, 1) both;
+  border-radius: 9999px;
+  border: 2px solid rgba(150, 225, 255, 0.95);
+  box-shadow: 0 0 36px rgba(43, 144, 254, 0.7), inset 0 0 36px rgba(43, 144, 254, 0.4);
+  transform: translate(-50%, -50%) scale(0.06);
+  opacity: 0;
+  animation: dc-ring 1s cubic-bezier(0.16, 0.84, 0.3, 1) both;
+  pointer-events: none;
 }
-@keyframes finish-title {
-  0% { opacity: 0; transform: translateY(14px) scale(0.92); }
-  18% { opacity: 1; transform: translateY(0) scale(1.04); }
-  28% { transform: scale(1); }
-  82% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-8px); }
+.dc-ring:nth-of-type(2) { border-width: 1px; border-color: rgba(150, 225, 255, 0.55); }
+@keyframes dc-ring {
+  0% { transform: translate(-50%, -50%) scale(0.06); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
-.finish-title { animation: finish-title 2.1s ease-out both; }
+/* Смужки тижня заповнюються зліва направо; щойно закритий день — золота (єдиний золотий акцент) */
+.dc-pip[data-on="true"] {
+  background: linear-gradient(90deg, #41c6ff, #2b90fe);
+  box-shadow: 0 0 10px rgba(43, 144, 254, 0.6);
+  transform-origin: 0 50%;
+  animation: dc-pip 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.dc-pip[data-on="true"][data-new="true"] {
+  background: linear-gradient(90deg, #fff2a8, #ffd700);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+}
+@keyframes dc-pip { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+
+/* Блік по кнопці завершення в момент розряду */
+.hold-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  transform: translateX(-130%);
+  background: linear-gradient(100deg, transparent 32%, rgba(255, 255, 255, 0.32) 50%, transparent 68%);
+}
+.hold-btn[data-pulse="true"] .hold-shine { animation: hold-shine 0.9s cubic-bezier(0.4, 0, 0.2, 1) 1; }
+@keyframes hold-shine { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
+
+/* reduce motion: без хвиль, блюру й зсувів — лише м'яке проявлення */
 @media (prefers-reduced-motion: reduce) {
-  .confetti-piece { display: none; }
-  .finish-title { animation: none; }
+  .dc-ring, .hold-shine { display: none; }
+  .dc-card, .day-closed[data-phase="out"] .dc-card { animation: dc-fade 0.25s ease-out both; filter: none; }
+  .day-closed[data-phase="out"] .dc-card { animation: dc-fade-out 0.25s ease-in both; }
+  .dc-pip[data-on="true"] { animation: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dc-card { background: var(--color-surface-2); backdrop-filter: none; }
+  .dc-scrim { backdrop-filter: none; }
 }
