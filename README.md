@@ -18,7 +18,8 @@
 TRAINER_DATABASE_URL=…?schema=trainer     # pooled (runtime)
 TRAINER_DIRECT_URL=…?schema=trainer       # direct (міграції)
 AUTH_SECRET=…                             # мін. 16 символів, підпис сесії
-ADMIN_USERNAME=…  ADMIN_PASSWORD=…        # єдиний вхід у застосунок (без дефолтів: не задано → вхід закрито)
+TRAINER_USERNAME=…  TRAINER_PASSWORD=…    # єдиний вхід у застосунок; якщо не задані — береться ADMIN_USERNAME/ADMIN_PASSWORD
+                                          # (без дефолтів: нічого не задано → вхід закрито)
 GEMINI_API_KEY=…
 GEMINI_MODEL=gemini-3.7-flash             # необов'язково
 ```

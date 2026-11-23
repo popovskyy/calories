@@ -1,24 +1,10 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, SESSION_DAYS, createSessionToken, readSessionToken } from "@/lib/session";
 
 /**
- * Одноюзерний вхід: застосунок публічний у мережі й смикає платний Gemini, тож
- * без воріт будь-хто міг би палити квоту й міняти дані. Облікові дані — ті самі
- * ADMIN_USERNAME / ADMIN_PASSWORD, що вже є в Vercel. Якщо env не задано — вхід
- * закритий (fail closed), жодних дефолтних паролів.
+ * Одноюзерний вхід: застосунок публічний у мережі й смикає платний Gemini, тож без воріт
+ * будь-хто міг би палити квоту й міняти дані. Перевірка облікових даних — у lib/credentials.ts.
  */
-const digest = (s: string) => createHash("sha256").update(s).digest();
-
-export function checkCredentials(username: string, password: string): boolean {
-  const u = process.env.ADMIN_USERNAME?.trim();
-  const p = process.env.ADMIN_PASSWORD?.trim();
-  if (!u || !p) return false;
-  // sha256 вирівнює довжини → timingSafeEqual не кидає і не витікає довжину
-  const okUser = timingSafeEqual(digest(username.trim()), digest(u));
-  const okPass = timingSafeEqual(digest(password), digest(p));
-  return okUser && okPass;
-}
 
 export async function startSession(): Promise<void> {
   const token = await createSessionToken({ userId: "me", username: "athlete" });

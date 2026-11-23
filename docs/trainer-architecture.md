@@ -37,7 +37,7 @@
 
 Публічний URL + платний Gemini = обов'язкові ворота. `proxy.ts` (Next 16, Node runtime) перенаправляє на `/login`
 (API → 401); кожен route handler перевіряє сесію ще раз (`lib/http.ts → handle`). Одноюзерний вхід за
-`ADMIN_USERNAME/ADMIN_PASSWORD` (порівняння в сталий час), JWT у httpOnly-cookie `trainer_session`.
+`TRAINER_USERNAME/TRAINER_PASSWORD` (фолбек — `ADMIN_*`; якщо задано TRAINER_*, ADMIN_* ігноруються; порівняння в сталий час), JWT у httpOnly-cookie `trainer_session`.
 Без заданих змінних вхід закритий. manifest, `sw.js` та іконки публічні (iOS тягне manifest без cookie).
 
 ## 4. Дати

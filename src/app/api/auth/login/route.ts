@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { checkCredentials, startSession } from "@/lib/auth";
+import { startSession } from "@/lib/auth";
+import { checkCredentials } from "@/lib/credentials";
 import { HttpError, handle, json } from "@/lib/http";
 
 const body = z.object({ username: z.string().min(1).max(120), password: z.string().min(1).max(200) });
