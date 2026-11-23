@@ -1,20 +1,26 @@
-/* App-shell service worker v4: offline shell + Web Push. */
-const CACHE = "calories-shell-v4";
-// Тільки завжди-публічна статика. "/" звідси прибрано свідомо: корінь за
-// логіном, і в гостя (або з протухлою сесією) fetch прозоро йде за 307 на
-// /login — тобто в кеш під ключем "/" лягала розмітка ЕКРАНА ВХОДУ. Потім,
-// уже залогінений, користувач ловив мережевий збій, отримував з фолбека цю
-// оболонку й бачив розсипану верстку. Оболонку кореня наповнює навігаційний
-// хендлер нижче — з реальної успішної відповіді на "/".
+/* Tactical Fit — service worker v1.
+ * Задачі: (1) інстальовність PWA, (2) швидкі hashed-ассети, (3) офлайн-заглушка.
+ * Дані (API) і сторінки — ЗАВЖДИ з мережі: у плані важливий актуальний прогрес.
+ *
+ * Нова назва кешу навмисно відрізняється від старого "calories-shell-v4": на цьому ж
+ * origin раніше жив калькулятор калорій — activate прибирає всі чужі кеші. */
+const CACHE = "trainer-shell-v1";
 const PRECACHE = ["/manifest.webmanifest", "/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
+
+const OFFLINE_HTML = `<!doctype html><html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Немає зв’язку</title>
+<style>html,body{height:100%;margin:0;background:#0b0d10;color:#f3f4f6;font-family:-apple-system,system-ui,sans-serif}
+body{display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
+h1{font-size:18px;margin:0 0 8px}p{font-size:13px;color:#9ca3af;margin:0 0 20px}
+button{background:#a3e635;color:#000;border:0;border-radius:12px;padding:10px 18px;font-weight:700;font-size:13px}</style></head>
+<body><div><h1>Немає зв’язку</h1><p>Тренування й прогрес потребують інтернету.</p>
+<button onclick="location.reload()">Спробувати ще</button></div></body></html>`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      // Не addAll: він відхиляється цілком, якщо впав бодай один із запитів, і
-      // тоді воркер не інсталюється взагалі. Прогрів кеша не вартий того, щоб
-      // через один 404 лишитись без офлайну.
       .then((cache) => Promise.allSettled(PRECACHE.map((u) => cache.add(u))))
       .then(() => self.skipWaiting()),
   );
@@ -22,83 +28,41 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
-    ).then(() => self.clients.claim()),
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
-
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) return; // API — лише мережа
 
-  // Never cache API / auth — always network
-  if (url.pathname.startsWith("/api/")) return;
-
-  // Navigations: network-first, fall back to cached shell
+  // Навігація: мережа, а при обриві — офлайн-заглушка (не стара розмітка чужої сторінки)
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((res) => {
-          // Оболонку кладемо в кеш ЛИШЕ з кореня і лише при успішній відповіді.
-          // Раніше під ключем "/" опинялась розмітка будь-якого маршруту, який
-          // відкривали останнім (/log, /profile, …) — і офлайн-фолбек віддавав
-          // чужу сторінку під адресою "/". React отримував розмітку не того
-          // екрана й гідрував її поверх дерева головної: звідси «на мобілі
-          // верстка ломається, а в браузері все норм» — на телефоні мережа
-          // рветься частіше, тож у фолбек влітали регулярно.
-          if (res.ok && url.pathname === "/") {
-            const copy = res.clone();
-            event.waitUntil(caches.open(CACHE).then((c) => c.put("/", copy)));
-          }
-          return res;
-        })
-        .catch(async () => {
-          // caches.match() повертає проміс, а проміс завжди truthy — тож старий
-          // `caches.match("/") || caches.match(request)` ніколи не доходив до
-          // другої гілки, а на порожньому кеші віддавав undefined у
-          // respondWith(), і замість офлайн-оболонки був екран помилки мережі.
-          const cache = await caches.open(CACHE);
-          return (
-            (await cache.match(request)) ||
-            (await cache.match("/")) ||
-            Response.error()
-          );
-        }),
+      fetch(request).catch(
+        () => new Response(OFFLINE_HTML, { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } }),
+      ),
     );
     return;
   }
 
-  // Все, що не є очевидно статичним асетом (JS/CSS чанки, іконки), лишаємо
-  // мережі як є — без event.respondWith(). Це критично для App Router: Next
-  // тягне RSC-пейлоади й дані клієнтських переходів звичайним GET на ті самі
-  // URL, БЕЗ mode:"navigate". Якщо піймати такий запит у cache-first нижче,
-  // Cache API може віддати старий закешований HTML-документ замість свіжого
-  // RSC-стріму (Cache.match звіряє в основному по URL, а не по заголовках
-  // запиту) — саме так компонент міг "зникати": React отримував протухлі дані.
-  const isStaticAsset =
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/icons/") ||
-    url.pathname === "/manifest.webmanifest" ||
-    url.pathname === "/icon.svg";
-  if (!isStaticAsset) return;
-
-  // Статичні асети: cache-first (безпечно — ці URL завжди контентно-хешовані
-  // або міняються разом з версією SW).
-  event.respondWith(
-    caches.match(request).then(
-      (cached) =>
-        cached ||
-        fetch(request).then((res) => {
-          if (res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(request, copy));
-          }
-          return res;
-        }),
-    ),
-  );
+  // Імутабельні хешовані ассети Next — cache-first. RSC-запити (без mode:"navigate")
+  // сюди не потрапляють і лишаються мережі.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        const hit = await cache.match(request);
+        if (hit) return hit;
+        const res = await fetch(request);
+        if (res.ok) cache.put(request, res.clone());
+        return res;
+      }),
+    );
+  }
 });

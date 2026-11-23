@@ -1,60 +1,48 @@
-# Калькулятор калорій
+# Tactical Fit — AI Домашній Тренер
 
-Персональний PWA-калькулятор калорій з ШІ-аналізом їжі (Gemini + GPT fallback),
-акаунтами, журналом, вагою, стріком і трьома безкоштовними темами.
+Персональний AI-тренер для домашніх тренувань у форматі iOS-орієнтованого PWA.
+Арсенал розпізнається по фото (Gemini Vision), тиждень Пн–Пт генерується під профіль, інвентар
+та історію тренувань, а кожну вправу фіксує кастомна кнопка «затисни для завершення» (1.5 с).
 
-Єдиний **Next.js (App Router)** застосунок: UI + API Route Handlers + Prisma.
+> Застосунок калькулятора калорій, що жив у цьому репозиторії раніше, збережено в гілці
+> [`calories-app`](../../tree/calories-app) (разом із його схемою `calories` у БД, яку тренер не чіпає).
 
 ## Стек
-- **Frontend:** Next.js 16, React 19, Tailwind CSS v4, Radix UI, Lucide, Recharts, Framer Motion
-- **State/Data:** Zustand + TanStack Query
-- **Backend:** Next.js Route Handlers, Prisma 6, Neon Postgres (`schema=calories`)
-- **ШІ:** Gemini (`GEMINI_MODEL`) з fallback на OpenAI (`GPT_API_KEY`)
+- **Next.js 16** (App Router, `proxy.ts`), React 19, TypeScript, Tailwind CSS v4
+- **PostgreSQL (Neon)** + **Prisma 6**, окрема Postgres-схема `trainer`
+- **Gemini** (`@google/genai`): розпізнавання фото й генерація плану в структурованому JSON (zod → JSON Schema)
+- TanStack Query (оптимістичні оновлення прогресу), Radix Dialog (шторки), sonner (тости)
 
-## Передумови
-- Node.js 20+
-- Neon Postgres
-- `GEMINI_API_KEY` (і бажано `GPT_API_KEY`)
-
-## Змінні оточення (`.env`)
+## Змінні оточення
 ```
-CALORIES_DATABASE_URL=…?schema=calories
-CALORIES_DIRECT_URL=…&schema=calories
-AUTH_SECRET=…                          # мін. 16 символів
+TRAINER_DATABASE_URL=…?schema=trainer     # pooled (runtime)
+TRAINER_DIRECT_URL=…?schema=trainer       # direct (міграції)
+AUTH_SECRET=…                             # мін. 16 символів, підпис сесії
+ADMIN_USERNAME=…  ADMIN_PASSWORD=…        # єдиний вхід у застосунок (без дефолтів: не задано → вхід закрито)
 GEMINI_API_KEY=…
-GEMINI_MODEL=gemini-3.7-flash          # дефолт моделі; можна перевизначити
-GPT_API_KEY=…                          # fallback
-AI_PROVIDER=gemini                     # або openai
-E2E_USERNAME=…                         # опційно: акаунт для Playwright
-E2E_PASSWORD=…
+GEMINI_MODEL=gemini-3.7-flash             # необов'язково
 ```
-> Ніколи не запускайте `prisma migrate reset` / `db push --force-reset` на спільній Neon-базі.
+> Ніколи не запускайте `prisma migrate reset`, `prisma migrate dev` чи `db push --force-reset`:
+> база спільна з іншими проєктами. Лише `prisma migrate deploy`.
 
 ## Запуск
 ```bash
-npm install
-npx prisma generate   # обовʼязково після pull / зміни schema — інакше локальний login дасть 500
-npx prisma db push
+npm install            # postinstall → prisma generate
+npm run db:migrate     # prisma migrate deploy (схема "trainer")
 npm run dev
 ```
 
-Якщо після оновлення коду локально падає `/api/auth/login` з Prisma `Unknown argument username` —
-просто знову виконайте `npx prisma generate` і перезапустіть `npm run dev`.
+## Скрипти
+| | |
+|-|-|
+| `npm run build` | `prisma generate && next build` |
+| `npm test` | vitest (чиста логіка: дати, форматування, валідація AI-плану) |
+| `npm run typecheck` / `npm run lint` | |
+| `npm run icons` | PNG-іконки з `public/icon.svg` |
 
-## ШІ-аналіз
-- Ключі лише з env (сервер), не з UI.
-- Ручний ввід ккал/БЖВ на `/add`, якщо ШІ недоступний.
-- Фото стискається на клієнті перед відправкою.
+## PWA на iPhone
+Safari → «Поділитись» → «На початковий екран». Якщо цей origin раніше був встановлений як
+калькулятор калорій — **видаліть стару іконку й додайте заново**: iOS тримає стару назву й іконку,
+доки застосунок не перевстановлено.
 
-## Тести
-```bash
-npm test              # vitest (src/lib)
-npx playwright install chromium
-npm run test:e2e      # потрібні E2E_USERNAME / E2E_PASSWORD (апрувнутий юзер)
-npm run lint
-npm run build
-```
-
-## Деплой (Vercel)
-Ті самі env у Production. `prisma generate` у `build` / `postinstall`.
-`prisma db push` на спільну Neon — лише свідомо: схема більше не містить ігрових таблиць.
+Архітектура, схема БД та рішення — у [docs/trainer-architecture.md](docs/trainer-architecture.md).

@@ -1,138 +1,73 @@
 import type { Metadata, Viewport } from "next";
-import {
-  Inter,
-  Handjet,
-  Nunito,
-  Russo_One,
-  Unbounded,
-} from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/PwaRegister";
-import { THEME_BOOT_SCRIPT } from "@/lib/theme-script";
 
-/*
- * cyrillic-ext потрібен саме для української: ґ (U+0491) лежить не в базовому
- * `cyrillic`, а в розширеному. Без нього поодинокі «ґанок/ґудзик» падали б у
- * системний фолбек посеред слова.
- */
 const inter = Inter({
   variable: "--font-inter",
+  // cyrillic-ext — для «ґ» (U+0491), якої немає в базовому cyrillic
   subsets: ["latin", "cyrillic", "cyrillic-ext"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-/*
- * Nocturne досі мав display і body однією родиною (Inter), тобто ієрархії не
- * було зовсім: заголовок, лейбл і величезне число героя малювались тим самим
- * шрифтом, що й дрібний підпис. Ігрові теми свій display мають — базова була
- * єдиною без нього.
- *
- * Unbounded узятий не «щоб красивіше», а за роллю: він display-first, має
- * повну кирилицю з українськими літерами й міцні цифри — а в цьому застосунку
- * головний елемент екрана саме число калорій на 62px.
- */
-const unbounded = Unbounded({
-  variable: "--font-unbounded",
-  subsets: ["latin", "cyrillic", "cyrillic-ext"],
-  weight: ["500", "700"],
-});
-
-/*
- * Шрифти ігрових тем. preload:false — їх тягне лише той, у кого відповідна тема
- * активна: @font-face оголошений завжди, але браузер качає файл, тільки коли
- * CSS теми реально задіє родину.
- */
-const russoOne = Russo_One({
-  variable: "--font-russo",
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin", "cyrillic"],
-  weight: "400",
-  preload: false,
+  weight: ["500", "600", "700"],
 });
-
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin", "cyrillic"],
-  preload: false,
-});
-
-const handjet = Handjet({
-  variable: "--font-handjet",
-  subsets: ["latin", "cyrillic"],
-  preload: false,
-});
-
-const APPLE_TOUCH_SIZES =[57, 60, 72, 76, 114, 120, 144, 152, 167, 180] as const;
 
 export const metadata: Metadata = {
-  applicationName: "Калорії",
-  title: {
-    default: "Калькулятор калорій",
-    template: "%s · Калорії",
-  },
-  description: "Персональний калькулятор калорій з ШІ-аналізом їжі",
-  formatDetection: {
-    telephone: false,
-  },
+  applicationName: "Tactical Fit",
+  title: { default: "Tactical Fit — AI Домашній Тренер", template: "%s · Tactical Fit" },
+  description: "Персональний AI-тренер для домашніх тренувань: арсенал по фото, план Пн–Пт, прогрес.",
+  formatDetection: { telephone: false },
   appleWebApp: {
     capable: true,
-    // НЕ "black-translucent": воно кидає контент під статус-бар і вмикає safe-area
-    statusBarStyle: "black",
-    title: "Калорії",
+    title: "Tactical Fit",
+    // Контент під статус-баром + env(safe-area-inset-*) в оболонці (потрібен viewportFit: "cover")
+    statusBarStyle: "black-translucent",
   },
   icons: {
     icon: [
       { url: "/icons/favicon-16.png", sizes: "16x16", type: "image/png" },
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
       { url: "/icon.svg", type: "image/svg+xml" },
     ],
-    apple: APPLE_TOUCH_SIZES.map((size) => ({
-      url: `/icons/apple-touch-icon-${size}.png`,
-      sizes: `${size}x${size}`,
-      type: "image/png",
-    })),
-    other: [
-      {
-        rel: "apple-touch-icon",
-        url: "/icons/apple-touch-icon.png",
-      },
+    apple: [
+      { url: "/icons/apple-touch-icon-152.png", sizes: "152x152", type: "image/png" },
+      { url: "/icons/apple-touch-icon-167.png", sizes: "167x167", type: "image/png" },
+      { url: "/icons/apple-touch-icon-180.png", sizes: "180x180", type: "image/png" },
     ],
   },
   other: {
+    // Next віддає лише mobile-web-app-capable; iOS Safari досі читає apple-префікс
+    "apple-mobile-web-app-capable": "yes",
     "mobile-web-app-capable": "yes",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#161826" },
-    { media: "(prefers-color-scheme: light)", color: "#161826" },
-  ],
+  themeColor: "#0B0D10",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="uk"
-      className={`${inter.variable} ${unbounded.variable} ${russoOne.variable} ${nunito.variable} ${handjet.variable}`}
-      suppressHydrationWarning
-    >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
-      </head>
-      <body>
-        <Providers>{children}</Providers>
+    <html lang="uk" className={`${inter.variable} ${jetbrains.variable}`}>
+      <body className="flex min-h-dvh items-start justify-center sm:items-center sm:p-4">
+        <Providers>
+          {/* Мобільний контейнер: на iPhone — на весь екран, на десктопі — «телефон» 402×844 */}
+          <div id="app-frame" className="relative flex h-dvh w-full flex-col overflow-hidden bg-graphite sm:h-[min(844px,calc(100dvh-2rem))] sm:w-[402px] sm:rounded-[46px] sm:border-[6px] sm:border-[#1e232d] sm:shadow-[0_25px_80px_rgba(0,0,0,0.85)]">
+            {children}
+          </div>
+        </Providers>
         <PwaRegister />
       </body>
     </html>

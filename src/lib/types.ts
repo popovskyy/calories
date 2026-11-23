@@ -1,211 +1,88 @@
-/** Спільні типи між API та фронтендом */
+/** DTO, спільні для сервера (route handlers) і клієнта (React Query). */
 
-import type { ActivityLevel, Goal, Sex } from "@/lib/calories";
+export type ExerciseType = "strength" | "cardio" | "mobility";
+export type DayType = "strength" | "cardio" | "mobility" | "mixed";
+export type Block = "warmup" | "main" | "cooldown";
+export type EquipmentCategory = "strength" | "cardio" | "mobility" | "other";
+export type AdaptMode = "fatigued" | "short_time" | "full_power";
+export type DayStatus = "planned" | "in_progress" | "done";
 
-export type DayStatus = "green" | "amber" | "red";
+export const BLOCKS: readonly Block[] = ["warmup", "main", "cooldown"];
 
-export interface UserDTO {
-  id: string;
-  username: string;
+export const BLOCK_LABEL: Record<Block, string> = {
+  warmup: "Розминка",
+  main: "Основний блок",
+  cooldown: "Заминка",
+};
+
+export interface ProfileDTO {
   name: string;
-  targetCalories: number;
-  birthYear: number;
-  birthMonth: number;
-  sex: Sex;
-  activityLevel: ActivityLevel;
-  goal: Goal;
-  weight: number;
-  height: number;
-  /** Похідний вік з року+місяця народження */
+  sex: "male" | "female";
   age: number;
-  /** preset:… або legacy data-URL */
-  avatarUrl: string | null;
-  /** Активна тема оформлення */
-  theme: string;
-  targetWeight: number | null;
-  startWeight: number | null;
-  startWeightDate: string | null;
-  /** false — акаунт чекає підтвердження адміна */
-  approved: boolean;
-  /** true — адмін призупинив доступ (окремо від approved: це не черга, а санкція) */
-  blocked: boolean;
-  /** Причина блокування — показується юзеру дослівно */
-  blockReason: string | null;
+  heightCm: number;
+  weightKg: number;
+  goal: string;
+  limitations: string;
 }
 
-/**
- * Юзер у списку адмінки — DTO плюс те, що потрібно для рішення «блокувати чи
- * ні»: коли востаннє був запис їжі (null = не було жодного).
- */
-export interface AdminUserDTO extends UserDTO {
-  lastEntryDate: string | null;
-}
-
-export interface ForecastResponse {
-  configured: boolean;
-  startWeight: number | null;
-  /** Дата, від якої рахується ціль (YYYY-MM-DD) — початок осі графіка. */
-  startWeightDate: string | null;
-  currentWeight: number | null;
-  targetWeight: number | null;
-  /**
-   * Вага, яку «прогнозує» журнал калорій від старту (не майбутня вага).
-   * Порівнюй із currentWeight: якщо expected > current при схудненні —
-   * на вагах ти легший, ніж каже калорійний трек.
-   */
-  expectedWeight: number | null;
-  deltaActual: number | null;
-  /** Дата, коли за поточним темпом (з фактичних зважувань) буде ціль. */
-  projectedDate: string | null;
-  /** Днів до projectedDate. */
-  daysLeft: number | null;
-  loggedDays: number;
-  totalDays: number;
-  /**
-   * Дні з їжею, відкинуті як недозаписані (з'їдено надто мало, щоб це була
-   * правда). Не входять у loggedDays і не тягнуть expectedWeight вниз.
-   */
-  skippedDays: number;
-  /**
-   * - progressing: темп веде до цілі, є projectedDate;
-   * - stalled: темп нульовий або в бік від цілі;
-   * - stale: давно не було зважувань — темп рахувати нема на чому;
-   * - unknown: замало зважувань для тренду.
-   */
-  paceStatus: "progressing" | "stalled" | "stale" | "unknown";
-  /** Темп зважувань, кг/тиждень (<0 — схуднення). null — замало даних. */
-  trendKgPerWeek: number | null;
-  /** Дата останнього зважування (YYYY-MM-DD). */
-  lastWeighInDate: string | null;
-  /** Скільки зважувань потрапило в оцінку темпу. */
-  weighInCount: number;
-  /**
-   * Днів між першим і останнім зважуванням у вікні тренду.
-   * Потрібен UI, щоб відрізнити «мало зважувань» від «замало часу між ними»:
-   * 5 зважувань за 4 дні — це друге, і казати про перше було б неправдою.
-   */
-  trendSpanDays: number;
-  /** Підтримка (TDEE) ккал/день. */
-  maintenanceKcal: number | null;
-  /** Денна ціль ккал. */
-  targetKcal: number | null;
-  /** Середній net (їжа − активність) за дні з записами. */
-  avgNetKcal: number | null;
-  /**
-   * Сума (net − target) за дні з їжею.
-   * >0 профіцит над ціллю, <0 дефіцит відносно цілі.
-   */
-  balanceVsTargetKcal: number | null;
-  /**
-   * Сума (net − maintenance). >0 профіцит над підтримкою (набір).
-   */
-  balanceVsMaintenanceKcal: number | null;
-  /** Скільки днів net був вище денної цілі. */
-  daysOverTarget: number;
-  /** Скільки днів net був вище підтримки. */
-  daysOverMaintenance: number;
-  /**
-   * Середній % net vs підтримка (від’ємне = дефіцит).
-   * Для UI; вердикт темпу дивись calorieStance + balanceVsTargetKcal.
-   */
-  avgDeficitPct: number | null;
-  /** Плановий % дефіциту: (maintenance − target) / maintenance. */
-  plannedDeficitPct: number | null;
-  /**
-   * Темп журналу відносно плану калорій (за сумою періоду):
-   * on_plan | shallow | deep | maintenance | surplus | unknown
-   */
-  calorieStance:
-    | "on_plan"
-    | "shallow"
-    | "deep"
-    | "maintenance"
-    | "surplus"
-    | "unknown";
-}
-
-export interface StreakResponse {
-  streak: number;
-  todayLogged: boolean;
-}
-
-export interface RecentActivityDTO {
+export interface EquipmentDTO {
   id: string;
-  description: string;
-  caloriesBurned: number;
-  durationMin: number | null;
-  createdAt: string;
+  name: string;
+  detail: string | null;
+  category: EquipmentCategory;
+  adjustable: boolean;
+  maxWeightKg: number | null;
+  weightKg: number | null;
+  active: boolean;
+  source: "manual" | "vision";
 }
 
-export interface RecentMealDTO {
+export interface ExerciseDTO {
   id: string;
-  description: string;
-  calories: number;
-  protein: number;
-  fats: number;
-  carbs: number;
-  createdAt: string;
+  block: Block;
+  position: number;
+  name: string;
+  type: ExerciseType;
+  equipment: string | null;
+  sets: number | null;
+  reps: string | null;
+  durationSec: number | null;
+  tempo: string | null;
+  load: string | null;
+  restSec: number;
+  tip: string;
 }
 
-export interface MealDTO {
+export interface DayDTO {
   id: string;
-  userId: string;
-  date: string; // YYYY-MM-DD
-  description: string;
-  calories: number;
-  protein: number;
-  fats: number;
-  carbs: number;
-  // Опційне: GET /api/meals (список) свідомо не селектить це поле — у старих
-  // записах там data:-URI по сотні КБ база64. Присутнє лише у відповідях
-  // POST/PATCH одразу після збереження запису.
-  imageUrl?: string | null;
-  status: "approved" | "cancelled" | string;
-  createdAt: string; // ISO
-}
-
-export interface ActivityDTO {
-  id: string;
-  userId: string;
+  weekday: number;
   date: string;
-  description: string;
-  caloriesBurned: number;
-  durationMin: number | null;
-  status: "approved" | "cancelled" | string;
+  type: DayType;
+  focus: string;
+  title: string | null;
+  durationMin: number;
+  caloriesEst: number;
+  rpe: number | null;
+  adaptedMode: AdaptMode | null;
+  exercises: ExerciseDTO[];
+  /** id вправ, які атлет закрив (hold-to-complete). */
+  completedExerciseIds: string[];
+  /** ISO-час завершення всього тренування або null. */
+  workoutCompletedAt: string | null;
+}
+
+export interface PlanDTO {
+  id: string;
+  weekStart: string;
+  summary: string | null;
   createdAt: string;
+  days: DayDTO[];
 }
 
-export interface AnalyzeActivityResult {
-  caloriesBurned: number;
-  durationMin: number | null;
-  notes: string[];
-}
-
-/** Результат ШІ-аналізу страви */
-export interface AnalyzeResult {
-  calories: number;
-  protein: number;
-  fats: number;
-  carbs: number;
-  parsedItems: string[];
-}
-
-export interface DashboardDay {
-  date: string; // YYYY-MM-DD
-  /** net = спожито − спалено */
-  totalCalories: number;
-  consumedCalories?: number;
-  burnedCalories?: number;
-  targetCalories: number;
-  protein: number;
-  fats: number;
-  carbs: number;
-  status: DayStatus;
-  difference: number; // target - total
-}
-
-export interface DashboardResponse {
-  userId: string;
-  days: DashboardDay[]; // 7 днів, від найстарішого до сьогодні
-  today: DashboardDay;
+export interface ScanResultDTO {
+  equipment: EquipmentDTO[];
+  detected: number;
+  added: number;
+  alreadyHad: number;
+  note: string | null;
 }

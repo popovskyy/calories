@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TACTICAL FIT // AI Домашній Тренер</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            graphite: '#0B0D10',
+            surface: '#14181F',
+            surfaceElevated: '#1A1F29',
+            limeAccent: '#A3E635',
+            amberAccent: '#F97316',
+            indigoAccent: '#818CF8',
+            emeraldAccent: '#10B981',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background-color: #050608;
+      color: #F3F4F6;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Tabular numbers for zero layout jitter */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Custom subtle scrollbar inside the phone viewport */
+    .phone-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .phone-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .phone-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+    }
+
+    /* Accordion smooth height transition via CSS Grid */
+    .accordion-content {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .accordion-content.open {
+      grid-template-rows: 1fr;
+    }
+    .accordion-inner {
+      overflow: hidden;
+    }
+
+    /* Exercise card holding physics */
+    .exercise-card {
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+                  border-color 0.25s ease,
+                  background-color 0.25s ease,
+                  opacity 0.3s ease;
+    }
+    .exercise-card.is-holding {
+      transform: scale(0.982);
+    }
+    .exercise-card.is-completed {
+      background-color: rgba(16, 185, 129, 0.05);
+      border-color: rgba(16, 185, 129, 0.22);
+    }
+
+    /* Checkmark pop animation on 100% completion */
+    @keyframes checkPop {
+      0% { transform: scale(0.4); opacity: 0; }
+      65% { transform: scale(1.22); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-check-pop {
+      animation: checkPop 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Day switch transition */
+    @keyframes dayEnter {
+      0% { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-day-enter {
+      animation: dayEnter 0.26s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Gemini Vision laser scan line */
+    @keyframes scanBeam {
+      0% { top: 4%; opacity: 0.2; }
+      50% { top: 92%; opacity: 1; }
+      100% { top: 4%; opacity: 0.2; }
+    }
+    .scan-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #A3E635, #22D3EE, transparent);
+      box-shadow: 0 0 14px #A3E635;
+      animation: scanBeam 1.6s ease-in-out infinite;
+    }
+
+    /* Shimmer loading state */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, #14181F 25%, #1F2633 50%, #14181F 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.3s infinite linear;
+    }
+
+    /* Custom range slider for dumbbell weight */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255,255,255,0.1);
+      height: 6px;
+      border-radius: 999px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #A3E635;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(163, 230, 53, 0.45);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center sm:p-4 md:p-6">
+
+  <!-- iPhone Frame Container -->
+  <div class="relative w-full sm:w-[402px] h-[100dvh] sm:h-[844px] bg-graphite sm:rounded-[46px] sm:border-[6px] sm:border-[#1E232D] sm:shadow-[0_25px_80px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden">
+    
+    <!-- iOS Dynamic Island & Status Bar (Simulated for Desktop Preview) -->
+    <div class="shrink-0 pt-2.5 pb-2 px-6 flex items-center justify-between text-[11px] font-semibold tracking-tight text-gray-300 bg-graphite/90 backdrop-blur-md z-30">
+      <span class="font-mono">09:41</span>
+      <div class="hidden sm:flex items-center justify-center w-24 h-5 bg-black rounded-full border border-white/5">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+        <span class="text-[9px] font-mono text-gray-400 tracking-wider">PWA LIVE</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20.5c4.7 0 8.8-2.3 11.4-5.8L12 3.5.6 14.7C3.2 18.2 7.3 20.5 12 20.5z"/></svg>
+        <div class="w-5 h-2.5 border border-gray-400 rounded-[3px] p-[1px] flex items-center">
+          <div class="w-full h-full bg-limeAccent rounded-[1px]"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Scrollable Viewport -->
+    <main id="app-viewport" class="flex-1 overflow-y-auto phone-scroll px-4 pb-28">
+      
+      <!-- ==================== TAB 1: WORKOUTS ==================== -->
+      <section id="tab-workouts" class="space-y-4 pt-1">
+        
+        <!-- Athlete Telemetry Header -->
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block w-2 h-2 rounded-full bg-limeAccent"></span>
+              <span class="text-[11px] font-mono uppercase tracking-wider text-gray-400">Атлет · 35 р.</span>
+            </div>
+            <h1 class="text-lg font-bold tracking-tight text-white mt-0.5">
+              186 см <span class="text-gray-600 font-normal">·</span> <span class="font-mono text-limeAccent">93.5 кг</span>
+            </h1>
+          </div>
+          
+          <button onclick="openAiModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surfaceElevated border border-white/10 hover:border-limeAccent/40 active:scale-95 transition text-xs font-semibold text-gray-100 shadow-sm">
+            <svg class="w-3.5 h-3.5 text-limeAccent" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span>Адаптувати</span>
+          </button>
+        </div>
+
+        <!-- Segmented Mon-Fri Day Switcher with Sliding Pill -->
+        <div class="relative bg-surface p-1 rounded-2xl border border-white/[0.07] grid grid-cols-5">
+          <!-- Sliding Active Pill -->
+          <div id="day-slider-pill" class="absolute top-1 bottom-1 left-1 w-[calc(20%-3.2px)] bg-surfaceElevated border border-white/10 rounded-xl transition-transform duration-300 ease-out shadow-sm pointer-events-none"></div>
+          
+          <button onclick="selectDay(0)" class="day-btn relative z-10 py-2 flex flex-col items-center justify-center gap-1 transition-colors" data-day="0">
+            <span class="text-xs font-bold tracking-wide">Пн</span>
+            <span id="day-dot-0" class="w-1.5 h-1.5 rounded-full bg-limeAccent transition-all"></span>
+          </button>
+          <button onclick="selectDay(1)" class="day-btn relative z-10 py-2 flex flex-col items-center justify-center gap-1 transition-colors text-gray-400" data-day="1">
+            <span class="text-xs font-bold tracking-wide">Вт</span>
+            <span id="day-dot-1" class="w-1.5 h-1.5 rounded-full bg-amberAccent/50 transition-all"></span>
+          </button>
+          <button onclick="selectDay(2)" class="day-btn relative z-10 py-2 flex flex-col items-center justify-center gap-1 transition-colors text-gray-400" data-day="2">
+            <span class="text-xs font-bold tracking-wide">Ср</span>
+            <span id="day-dot-2" class="w-1.5 h-1.5 rounded-full bg-limeAccent/50 transition-all"></span>
+          </button>
+          <button onclick="selectDay(3)" class="day-btn relative z-10 py-2 flex flex-col items-center justify-center gap-1 transition-colors text-gray-400" data-day="3">
+            <span class="text-xs font-bold tracking-wide">Чт</span>
+            <span id="day-dot-3" class="w-1.5 h-1.5 rounded-full bg-indigoAccent/50 transition-all"></span>
+          </button>
+          <button onclick="selectDay(4)" class="day-btn relative z-10 py-2 flex flex-col items-center justify-center gap-1 transition-colors text-gray-400" data-day="4">
+            <span class="text-xs font-bold tracking-wide">Пт</span>
+            <span id="day-dot-4" class="w-1.5 h-1.5 rounded-full bg-limeAccent/50 transition-all"></span>
+          </button>
+        </div>
+
+        <!-- Hero Day Card -->
+        <div id="hero-day-card" class="relative overflow-hidden rounded-2xl bg-surface border border-white/[0.08] p-4 transition-all">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <span id="day-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-mono font-semibold uppercase tracking-wider bg-limeAccent/15 text-limeAccent border border-limeAccent/20">
+                СИЛОВИЙ ДЕНЬ
+              </span>
+              <h2 id="day-title" class="text-base font-bold text-white mt-2 leading-snug">
+                Силовий верх + Прес
+              </h2>
+              <p id="day-subtitle" class="text-xs text-gray-400 mt-0.5">
+                Турнік, бруси, розбірна гантеля 13 кг, ролик
+              </p>
+            </div>
+            <div class="text-right shrink-0">
+              <div id="day-progress-pct" class="font-mono text-xl font-bold text-white tabular-nums">0%</div>
+              <div id="day-progress-count" class="text-[11px] font-mono text-gray-400 tabular-nums">0/4 вправ</div>
+            </div>
+          </div>
+
+          <!-- Telemetry Metrics Strip -->
+          <div class="grid grid-cols-3 gap-2 mt-3.5 pt-3 border-t border-white/[0.06] text-xs">
+            <div class="flex items-center gap-1.5 text-gray-300">
+              <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span id="day-duration" class="font-mono tabular-nums">45 хв</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-gray-300">
+              <svg class="w-3.5 h-3.5 text-amberAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2c.5 3.5-2 5.5-2 8.5a4 4 0 008 0c0-2.5-1.5-4.5-2-6.5 2.5 1.5 4 4.5 4 7.5a8 8 0 11-16 0c0-4 3-7.5 8-9.5z"/></svg>
+              <span id="day-kcal" class="font-mono tabular-nums">~420 ккал</span>
+            </div>
+            <div class="flex items-center justify-end gap-1 text-gray-400">
+              <span class="text-[11px] font-mono">RPE 7.5/10</span>
+            </div>
+          </div>
+
+          <!-- Linear Progress Bar -->
+          <div class="w-full h-1.5 bg-black/50 rounded-full overflow-hidden mt-3">
+            <div id="day-progress-bar" class="h-full bg-limeAccent rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Day Completed Celebration Banner (Hidden until 100%) -->
+        <div id="day-completed-banner" class="hidden rounded-2xl bg-gradient-to-r from-emerald-950/90 to-surfaceElevated border border-emeraldAccent/40 p-4 items-center justify-between gap-3 animate-day-enter">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emeraldAccent/20 border border-emeraldAccent/40 flex items-center justify-center text-emeraldAccent shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div>
+              <div class="text-xs font-mono uppercase tracking-wider text-emeraldAccent font-semibold">Тренування зараховано</div>
+              <div class="text-sm font-bold text-white mt-0.5">Чудова робота! План дня закрито.</div>
+            </div>
+          </div>
+          <button onclick="resetCurrentDay()" class="text-[11px] font-mono text-gray-400 hover:text-white underline px-2 py-1">
+            Скинути
+          </button>
+        </div>
+
+        <!-- Hold Hint Micro-Banner -->
+        <div class="flex items-center justify-between px-1 text-[11px] text-gray-400">
+          <span>Програма дня</span>
+          <span class="flex items-center gap-1 text-gray-500">
+            <svg class="w-3 h-3 text-limeAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>
+            Затисни кнопку на 1.2с для фіксації
+          </span>
+        </div>
+
+        <!-- Exercise List Container -->
+        <div id="exercise-list" class="space-y-3">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+      </section>
+
+      <!-- ==================== TAB 2: INVENTORY (АРСЕНАЛ) ==================== -->
+      <section id="tab-inventory" class="hidden space-y-4 pt-1 animate-day-enter">
+        <div>
+          <span class="text-[11px] font-mono uppercase tracking-wider text-limeAccent">Gemini Vision Sync</span>
+          <h1 class="text-lg font-bold text-white mt-0.5">Мій домашній арсенал</h1>
+          <p class="text-xs text-gray-400 mt-0.5">AI будує план виключно під активне обладнання</p>
+        </div>
+
+        <!-- Interactive Gemini Vision Photo Scanner Zone -->
+        <div id="scanner-box" class="relative overflow-hidden rounded-2xl bg-surface border border-dashed border-white/20 p-4 transition-all">
+          <div id="scanner-beam" class="hidden scan-line"></div>
+          
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-surfaceElevated border border-white/10 flex items-center justify-center text-limeAccent shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div id="scanner-title" class="text-sm font-semibold text-white">Оновити інвентар по фото</div>
+              <div id="scanner-desc" class="text-xs text-gray-400 mt-0.5">Сфоткай куточок — Gemini розпізнає снаряд</div>
+            </div>
+          </div>
+
+          <div class="mt-3 flex gap-2">
+            <label class="flex-1 cursor-pointer py-2 px-3 rounded-xl bg-limeAccent text-black font-semibold text-xs text-center active:scale-95 transition">
+              <span>Завантажити фото</span>
+              <input type="file" accept="image/*" class="hidden" onchange="simulateGeminiScan(this)" />
+            </label>
+            <button onclick="simulateGeminiScan(null)" class="py-2 px-3 rounded-xl bg-surfaceElevated border border-white/10 text-gray-200 font-medium text-xs active:scale-95 transition">
+              Демо-скан
+            </button>
+          </div>
+        </div>
+
+        <!-- Adjustable Dumbbell Weight Configurator Card -->
+        <div class="rounded-2xl bg-surface border border-white/[0.08] p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-limeAccent/15 text-limeAccent flex items-center justify-center font-mono text-xs font-bold">КГ</span>
+              <div>
+                <div class="text-sm font-semibold text-white">Розбірна гантеля</div>
+                <div class="text-[11px] text-gray-400">Поточна зібрана вага (макс. 13 кг)</div>
+              </div>
+            </div>
+            <span id="dumbbell-weight-val" class="font-mono text-base font-bold text-limeAccent tabular-nums">13.0 кг</span>
+          </div>
+          <div class="mt-3 flex items-center gap-3">
+            <span class="text-[11px] font-mono text-gray-500">3кг</span>
+            <input type="range" min="3" max="13" step="0.5" value="13" oninput="updateDumbbellWeight(this.value)" class="flex-1" />
+            <span class="text-[11px] font-mono text-gray-500">13кг</span>
+          </div>
+        </div>
+
+        <!-- Equipment Grid List -->
+        <div id="inventory-list" class="space-y-2.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Add Custom Equipment Input -->
+        <div class="rounded-2xl bg-surface border border-white/[0.08] p-3 flex gap-2">
+          <input id="custom-equip-input" type="text" placeholder="Додати інвентар (напр. Еспандер)..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-limeAccent" />
+          <button onclick="addCustomEquipment()" class="px-3.5 py-2 rounded-xl bg-surfaceElevated border border-white/10 text-xs font-semibold text-limeAccent hover:bg-white/5 active:scale-95 transition">
+            + Додати
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom iOS Tab Bar Navigation -->
+    <nav class="shrink-0 bg-surface/95 backdrop-blur-xl border-t border-white/[0.08] px-6 pt-2 pb-5 sm:pb-6 flex items-center justify-around z-30">
+      <button onclick="switchTab('workouts')" id="nav-workouts" class="flex flex-col items-center gap-1 text-limeAccent transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+        <span class="text-[10px] font-semibold tracking-wide">Тренування</span>
+      </button>
+
+      <button onclick="openAiModal()" class="relative -top-3 w-12 h-12 rounded-2xl bg-limeAccent text-black shadow-[0_6px_24px_rgba(163,230,53,0.35)] flex items-center justify-center active:scale-90 transition-transform" title="AI Тренер">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </button>
+
+      <button onclick="switchTab('inventory')" id="nav-inventory" class="flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+        </svg>
+        <span class="text-[10px] font-semibold tracking-wide">Мій арсенал</span>
+      </button>
+    </nav>
+
+    <!-- AI Adaptation Bottom Sheet Modal -->
+    <div id="ai-modal" class="hidden absolute inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-end justify-center">
+      <div class="w-full bg-surfaceElevated border-t border-white/15 rounded-t-3xl p-5 pb-8 space-y-4 animate-day-enter">
+        <div class="w-10 h-1 bg-white/20 rounded-full mx-auto"></div>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-mono uppercase tracking-widest text-limeAccent">Gemini 2.5 Flash Coach</span>
+            <h3 class="text-base font-bold text-white mt-0.5">Адаптувати тренування дня</h3>
+          </div>
+          <button onclick="closeAiModal()" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white">
+            ✕
+          </button>
+        </div>
+
+        <p class="text-xs text-gray-400">
+          Обери свій поточний стан — AI перебудує підходи, темп і вибір вправ під твій домашній інвентар:
+        </p>
+
+        <div class="space-y-2.5">
+          <button onclick="adaptWorkout('full')" class="w-full p-3.5 rounded-2xl bg-surface border border-white/10 hover:border-limeAccent/50 text-left flex items-center justify-between group active:scale-[0.98] transition">
+            <div>
+              <div class="text-sm font-bold text-white group-hover:text-limeAccent transition">Бадьорий / Повна сила</div>
+              <div class="text-xs text-gray-400 mt-0.5">Максимальний робочий об'єм · 45–50 хв</div>
+            </div>
+            <span class="text-xs font-mono text-limeAccent">100%</span>
+          </button>
+
+          <button onclick="adaptWorkout('express')" class="w-full p-3.5 rounded-2xl bg-surface border border-white/10 hover:border-amberAccent/50 text-left flex items-center justify-between group active:scale-[0.98] transition">
+            <div>
+              <div class="text-sm font-bold text-white group-hover:text-amberAccent transition">Мало часу (Експрес-режим)</div>
+              <div class="text-xs text-gray-400 mt-0.5">Щільні суперсети без довгих пауз · 25 хв</div>
+            </div>
+            <span class="text-xs font-mono text-amberAccent">25 ХВ</span>
+          </button>
+
+          <button onclick="adaptWorkout('recovery')" class="w-full p-3.5 rounded-2xl bg-surface border border-white/10 hover:border-indigoAccent/50 text-left flex items-center justify-between group active:scale-[0.98] transition">
+            <div>
+              <div class="text-sm font-bold text-white group-hover:text-indigoAccent transition">Втомлений / Легке відновлення</div>
+              <div class="text-xs text-gray-400 mt-0.5">Акцент на палку, мати та легке кардіо · Пульс 125</div>
+            </div>
+            <span class="text-xs font-mono text-indigoAccent">LIGHT</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtle Toast Notification -->
+    <div id="toast" class="pointer-events-none opacity-0 transition-opacity duration-300 absolute top-14 left-4 right-4 z-50 bg-surfaceElevated/95 border border-limeAccent/30 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 text-xs font-medium">
+      <span class="w-2 h-2 rounded-full bg-limeAccent shrink-0"></span>
+      <span id="toast-msg">Оновлено</span>
+    </div>
+
+  </div>
+
+  <script>
+    // ==================== STATE & DATA ====================
+    const state = {
+      currentDay: 0,
+      dumbbellWeight: 13,
+      expandedExerciseId: null,
+      activeTimers: {}, // { exerciseId: { remaining, total, intervalId } }
+      inventory: [
+        { id: 'bike', name: 'Велотренажер', detail: 'Кардіо · 8 рівнів опору', active: true, category: 'cardio' },
+        { id: 'pullup', name: 'Турнік настінний', detail: 'Широкий та паралельний хват', active: true, category: 'strength' },
+        { id: 'dips', name: 'Бруси', detail: 'Грудні, трицепс, підйом ніг', active: true, category: 'strength' },
+        { id: 'abwheel', name: 'Ролик для пресу', detail: 'Анти-екстензія кору', active: true, category: 'strength' },
+        { id: 'dumbbell', name: 'Гантеля розбірна (13 кг)', detail: 'Крок налаштування 0.5 кг', active: true, category: 'strength' },
+        { id: 'mats', name: "М'які мати / килимок", detail: 'Партер, планки, розтяжка', active: true, category: 'mobility' },
+        { id: 'stick', name: 'Гімнастична палка', detail: 'Мобіліті плечей та спини', active: true, category: 'mobility' }
+      ],
+      days: [
+        {
+          short: 'Пн',
+          type: 'strength',
+          badge: 'СИЛОВИЙ ВЕРХ + ПРЕС',
+          title: 'Тягово-жимовий верх + Кор',
+          subtitle: 'Турнік, бруси, гантеля 13 кг, ролик',
+          duration: '45 хв',
+          kcal: '~430 ккал',
+          exercises: [
+            {
+              id: 'mon-1',
+              name: 'Підтягування середнім хватом',
+              equip: 'Турнік',
+              type: 'strength',
+              setsReps: '4 × 8–10 повт',
+              restSec: 90,
+              tip: 'Повільний негатив (2–3 сек вниз), без ривків ногами. Зводь лопатки перед початком тяги.',
+              completed: false
+            },
+            {
+              id: 'mon-2',
+              name: 'Віджимання на брусах',
+              equip: 'Бруси',
+              type: 'strength',
+              setsReps: '4 × 10–12 повт',
+              restSec: 90,
+              tip: 'Легкий нахил корпусу вперед для акценту на грудні. Опускайся до кута 90° у ліктях.',
+              completed: false
+            },
+            {
+              id: 'mon-3',
+              name: 'Тяга гантелі в нахилі однією рукою',
+              equip: 'Гантеля 13 кг',
+              type: 'strength',
+              setsReps: '3 × 15 / рука',
+              restSec: 60,
+              tip: 'Спина рівна, тягни лікоть до тазу, затримуй пікове скорочення на 1 секунду.',
+              completed: false
+            },
+            {
+              id: 'mon-4',
+              name: 'Викати з роликом для пресу з колін',
+              equip: 'Ролик + Мати',
+              type: 'strength',
+              setsReps: '4 × 12 повт',
+              restSec: 60,
+              tip: 'Підкручуй таз (не прогинай поперек!). Виходь на максимальну комфортну амплітуду.',
+              completed: false
+            }
+          ]
+        },
+        {
+          short: 'Вт',
+          type: 'cardio',
+          badge: 'КАРДІО + МОБІЛІТІ',
+          title: 'Інтервальний велотренажер + Палка',
+          subtitle: 'Жироспалювання в 2–3 пульсовій зоні',
+          duration: '40 хв',
+          kcal: '~490 ккал',
+          exercises: [
+            {
+              id: 'tue-1',
+              name: 'Суглобова розминка та прокрути плечей',
+              equip: 'Гімнастична палка',
+              type: 'mobility',
+              setsReps: '5 хв · плавно',
+              restSec: 30,
+              tip: 'Широкий хват палки, переводь прямі руки за спину без болю в суглобах.',
+              completed: false
+            },
+            {
+              id: 'tue-2',
+              name: 'Інтервали на велотренажері (HIIT)',
+              equip: 'Велотренажер',
+              type: 'cardio',
+              setsReps: '8 × (40с спринт / 80с темп)',
+              restSec: 60,
+              tip: 'Рівень опору 5–6. На прискоренні каденс 95+ об/хв, у паузі не зупиняй педалі.',
+              completed: false
+            },
+            {
+              id: 'tue-3',
+              name: 'Рівномірне заминання на байку',
+              equip: 'Велотренажер',
+              type: 'cardio',
+              setsReps: '10 хв · пульс ~130',
+              restSec: 45,
+              tip: 'Плавне зниження пульсу, рівне дихання носом.',
+              completed: false
+            },
+            {
+              id: 'tue-4',
+              name: 'Декомпресія спини та грудного відділу',
+              equip: 'Мати + Палка',
+              type: 'mobility',
+              setsReps: '3 × 45 сек',
+              restSec: 30,
+              tip: 'Поза дитини на матах з руками на палці попереду — розтягує найширші м’язи спини.',
+              completed: false
+            }
+          ]
+        },
+        {
+          short: 'Ср',
+          type: 'strength',
+          badge: 'НОГИ, ПЛЕЧІ + КОР',
+          title: 'Односторонній силовий баланс',
+          subtitle: 'Болгарські випади, жим гантелі, ролик',
+          duration: '45 хв',
+          kcal: '~440 ккал',
+          exercises: [
+            {
+              id: 'wed-1',
+              name: 'Болгарські спліт-присідання з гантелею',
+              equip: 'Гантеля 13 кг',
+              type: 'strength',
+              setsReps: '4 × 12 / нога',
+              restSec: 75,
+              tip: 'Задня нога на опорі, фокус на п’яту передньої ноги. Відмінно навантажує ноги навіть з 13 кг.',
+              completed: false
+            },
+            {
+              id: 'wed-2',
+              name: 'Жим гантелі стоячи однією рукою',
+              equip: 'Гантеля 13 кг',
+              type: 'strength',
+              setsReps: '4 × 10 / рука',
+              restSec: 60,
+              tip: 'Напруж прес і сідниці, щоб не відхиляти корпус назад під час жиму.',
+              completed: false
+            },
+            {
+              id: 'wed-3',
+              name: 'Підйом прямих ніг у висі / на брусах',
+              equip: 'Турнік / Бруси',
+              type: 'strength',
+              setsReps: '3 × 12 повт',
+              restSec: 60,
+              tip: 'Піднімай таз вгору у верхній точці, опускай ноги під контролем без розкачки.',
+              completed: false
+            },
+            {
+              id: 'wed-4',
+              name: 'Планка з переходом та ролик',
+              equip: 'Ролик + Мати',
+              type: 'strength',
+              setsReps: '3 × 10 повт + 30с',
+              restSec: 60,
+              tip: 'Після 10 викатів роликом одразу стань у планку на передпліччях на 30 секунд.',
+              completed: false
+            }
+          ]
+        },
+        {
+          short: 'Чт',
+          type: 'mobility',
+          badge: 'ВИТРИВАЛІСТЬ + РОТАТОРИ',
+          title: 'Аеробний темп + Здорові плечі',
+          subtitle: 'Велотренажер 30 хв + палка + прес',
+          duration: '42 хв',
+          kcal: '~410 ккал',
+          exercises: [
+            {
+              id: 'thu-1',
+              name: 'Велотренажер у зоні жироспалювання',
+              equip: 'Велотренажер',
+              type: 'cardio',
+              setsReps: '28 хв · опір 4/8',
+              restSec: 45,
+              tip: 'Тримай стабільний темп 75–80 об/хв. Оптимально для ваги 93.5 кг без перевантаження колін.',
+              completed: false
+            },
+            {
+              id: 'thu-2',
+              name: 'Ротації плечових суглобів з палкою',
+              equip: 'Гімнастична палка',
+              type: 'mobility',
+              setsReps: '3 × 15 повт',
+              restSec: 30,
+              tip: 'Палка за спиною вздовж хребта — контроль постави та рухливості лопаток.',
+              completed: false
+            },
+            {
+              id: 'thu-3',
+              name: 'Скручування «Мертвий жук» на матах',
+              equip: 'М’які мати',
+              type: 'mobility',
+              setsReps: '3 × 16 повт',
+              restSec: 45,
+              tip: 'Поперек щільно притиснутий до мату протягом усього підходу.',
+              completed: false
+            }
+          ]
+        },
+        {
+          short: 'Пт',
+          type: 'strength',
+          badge: 'ФУЛБОДІ КРУГОВЕ',
+          title: 'Метаболічний фініш тижня',
+          subtitle: 'Суперсети на все тіло перед вихідними',
+          duration: '48 хв',
+          kcal: '~510 ккал',
+          exercises: [
+            {
+              id: 'fri-1',
+              name: 'Австралійські підтягування / паралельний хват',
+              equip: 'Турнік',
+              type: 'strength',
+              setsReps: '4 × 10 повт',
+              restSec: 60,
+              tip: 'Тягни груди до перекладини, максимальна концентрація на спині та біцепсі.',
+              completed: false
+            },
+            {
+              id: 'fri-2',
+              name: 'Глибокі віджимання на брусах + пауза',
+              equip: 'Бруси',
+              type: 'strength',
+              setsReps: '4 × 10 повт',
+              restSec: 60,
+              tip: '1 секунда паузи в нижній точці для вибухового виходу вгору.',
+              completed: false
+            },
+            {
+              id: 'fri-3',
+              name: 'Гоблет-присідання з гантелею біля грудей',
+              equip: 'Гантеля 13 кг',
+              type: 'strength',
+              setsReps: '4 × 16 повт',
+              restSec: 60,
+              tip: 'Лікті дивляться вниз, глибокий присід з рівною спиною.',
+              completed: false
+            },
+            {
+              id: 'fri-4',
+              name: 'Фінальний спринт на велотренажері',
+              equip: 'Велотренажер',
+              type: 'cardio',
+              setsReps: '6 хв · фінішер',
+              restSec: 45,
+              tip: 'Кожну хвилину додавай +1 рівень опору до 6-ї хвилини.',
+              completed: false
+            }
+          ]
+        }
+      ]
+    };
+
+    // ==================== COLOR HELPERS ====================
+    function getTypeAccent(type) {
+      switch (type) {
+        case 'cardio':
+          return {
+            text: 'text-amberAccent',
+            bg: 'bg-amberAccent/15',
+            border: 'border-amberAccent/30',
+            hex: '#F97316',
+            bar: 'bg-amberAccent'
+          };
+        case 'mobility':
+          return {
+            text: 'text-indigoAccent',
+            bg: 'bg-indigoAccent/15',
+            border: 'border-indigoAccent/30',
+            hex: '#818CF8',
+            bar: 'bg-indigoAccent'
+          };
+        default:
+          return {
+            text: 'text-limeAccent',
+            bg: 'bg-limeAccent/15',
+            border: 'border-limeAccent/30',
+            hex: '#A3E635',
+            bar: 'bg-limeAccent'
+          };
+      }
+    }
+
+    // ==================== RENDER WORKOUT DAY ====================
+    function renderCurrentDay() {
+      const day = state.days[state.currentDay];
+      const accent = getTypeAccent(day.type);
+
+      // Update slider pill position
+      const pill = document.getElementById('day-slider-pill');
+      pill.style.transform = `translateX(${state.currentDay * 100}%)`;
+
+      // Update day button text colors & completion dots
+      document.querySelectorAll('.day-btn').forEach((btn, idx) => {
+        const isActive = idx === state.currentDay;
+        btn.classList.toggle('text-white', isActive);
+        btn.classList.toggle('text-gray-400', !isActive);
+
+        const d = state.days[idx];
+        const allDone = d.exercises.every(ex => ex.completed);
+        const dot = document.getElementById(`day-dot-${idx}`);
+        if (allDone) {
+          dot.className = 'w-1.5 h-1.5 rounded-full bg-emeraldAccent shadow-[0_0_6px_#10B981]';
+        } else {
+          const dotAccent = getTypeAccent(d.type).bar;
+          dot.className = `w-1.5 h-1.5 rounded-full ${dotAccent} ${isActive ? 'opacity-100' : 'opacity-40'}`;
+        }
+      });
+
+      // Update Hero Card
+      const badgeEl = document.getElementById('day-badge');
+      badgeEl.textContent = day.badge;
+      badgeEl.className = `inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-mono font-semibold uppercase tracking-wider ${accent.bg} ${accent.text} border ${accent.border}`;
+
+      document.getElementById('day-title').textContent = day.title;
+      document.getElementById('day-subtitle').textContent = day.subtitle;
+      document.getElementById('day-duration').textContent = day.duration;
+      document.getElementById('day-kcal').textContent = day.kcal;
+
+      const completedCount = day.exercises.filter(e => e.completed).length;
+      const totalCount = day.exercises.length;
+      const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+      document.getElementById('day-progress-pct').textContent = `${pct}%`;
+      document.getElementById('day-progress-count').textContent = `${completedCount}/${totalCount} вправ`;
+
+      const barEl = document.getElementById('day-progress-bar');
+      barEl.style.width = `${pct}%`;
+      barEl.className = `h-full rounded-full transition-all duration-500 ease-out ${pct === 100 ? 'bg-emeraldAccent' : accent.bar}`;
+
+      // Show/Hide celebration banner
+      const banner = document.getElementById('day-completed-banner');
+      if (pct === 100) {
+        banner.classList.remove('hidden');
+        banner.classList.add('flex');
+      } else {
+        banner.classList.add('hidden');
+        banner.classList.remove('flex');
+      }
+
+      // Render Exercise Cards
+      const listEl = document.getElementById('exercise-list');
+      listEl.innerHTML = '';
+
+      day.exercises.forEach((ex) => {
+        const exAccent = getTypeAccent(ex.type);
+        const isExpanded = state.expandedExerciseId === ex.id;
+        const equipLabel = ex.equip.includes('Гантеля') ? `Гантеля ${state.dumbbellWeight} кг` : ex.equip;
+
+        const card = document.createElement('div');
+        card.id = `card-${ex.id}`;
+        card.className = `exercise-card rounded-2xl bg-surface border border-white/[0.08] p-3.5 ${ex.completed ? 'is-completed' : ''}`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <!-- Left Info (Click to expand technique & timer) -->
+            <div onclick="toggleExpand('${ex.id}')" class="flex-1 min-w-0 cursor-pointer">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold ${exAccent.bg} ${exAccent.text}">
+                  ${equipLabel}
+                </span>
+                <span class="font-mono text-xs font-semibold text-gray-300 tabular-nums">
+                  ${ex.setsReps}
+                </span>
+              </div>
+              <h3 class="text-sm font-semibold mt-1.5 leading-snug ${ex.completed ? 'text-gray-400 line-through decoration-emeraldAccent/60' : 'text-white'}">
+                ${ex.name}
+              </h3>
+              <div class="flex items-center gap-2 mt-1 text-[11px] text-gray-500">
+                <span>${isExpanded ? 'Згорнути техніку ↑' : 'Техніка та таймер відпочинку ↓'}</span>
+              </div>
+            </div>
+
+            <!-- Right: Custom Hold-to-Complete Circular Button -->
+            <div class="shrink-0">
+              <button
+                id="hold-btn-${ex.id}"
+                type="button"
+                aria-label="Затисніть для завершення"
+                class="relative w-12 h-12 rounded-2xl flex items-center justify-center transition-transform active:scale-95 focus:outline-none ${ex.completed ? 'bg-emeraldAccent/20 border border-emeraldAccent/50 text-emeraldAccent' : 'bg-surfaceElevated border border-white/10 text-gray-400 hover:border-white/25'}"
+              >
+                <!-- SVG Circular Progress Ring -->
+                <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 48 48">
+                  <circle
+                    cx="24" cy="24" r="20"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.06)"
+                    stroke-width="2.5"
+                  />
+                  <circle
+                    id="ring-${ex.id}"
+                    cx="24" cy="24" r="20"
+                    fill="none"
+                    stroke="${ex.completed ? '#10B981' : exAccent.hex}"
+                    stroke-width="2.8"
+                    stroke-linecap="round"
+                    stroke-dasharray="125.66"
+                    stroke-dashoffset="${ex.completed ? '0' : '125.66'}"
+                  />
+                </svg>
+
+                <!-- Center Check Icon -->
+                <svg id="icon-${ex.id}" class="w-5 h-5 relative z-10 ${ex.completed ? 'animate-check-pop text-emeraldAccent' : ''}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Expandable Technique & Built-in Rest Timer -->
+          <div class="accordion-content ${isExpanded ? 'open' : ''}">
+            <div class="accordion-inner">
+              <div class="mt-3 pt-3 border-t border-white/[0.06] space-y-3">
+                <p class="text-xs text-gray-300 leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/5">
+                  <span class="text-limeAccent font-semibold">Техніка:</span> ${ex.tip}
+                </p>
+                
+                <!-- Rest Timer Controls -->
+                <div class="flex items-center justify-between bg-surfaceElevated/80 px-3 py-2 rounded-xl border border-white/5">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full ${state.activeTimers[ex.id] ? 'bg-amberAccent animate-ping' : 'bg-gray-600'}"></span>
+                    <span class="text-xs text-gray-400">Відпочинок:</span>
+                    <span id="timer-display-${ex.id}" class="font-mono text-sm font-bold text-white tabular-nums">
+                      ${formatSeconds(state.activeTimers[ex.id] ? state.activeTimers[ex.id].remaining : ex.restSec)}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <button onclick="startRestTimer('${ex.id}', ${ex.restSec})" class="px-2.5 py-1 rounded-lg bg-limeAccent/15 text-limeAccent border border-limeAccent/30 font-mono text-[11px] font-semibold active:scale-95 transition">
+                      Старт ${ex.restSec}с
+                    </button>
+                    <button onclick="resetRestTimer('${ex.id}', ${ex.restSec})" class="px-2 py-1 rounded-lg bg-white/5 text-gray-400 hover:text-white font-mono text-[11px] active:scale-95 transition">
+                      ↺
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        listEl.appendChild(card);
+        attachHoldListeners(ex);
+      });
+    }
+
+    // ==================== HOLD-TO-COMPLETE PHYSICS (1.2s) ====================
+    function attachHoldListeners(exercise) {
+      const btn = document.getElementById(`hold-btn-${exercise.id}`);
+      const ring = document.getElementById(`ring-${exercise.id}`);
+      const card = document.getElementById(`card-${exercise.id}`);
+      if (!btn || !ring || !card) return;
+
+      const CIRCUMFERENCE = 125.66; // 2 * PI * 20
+      const HOLD_DURATION = 1150; // ms
+      let rafId = null;
+      let startTime = null;
+      let isHolding = false;
+
+      const updateProgress = (timestamp) => {
+        if (!isHolding) return;
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / HOLD_DURATION, 1);
+
+        const offset = CIRCUMFERENCE * (1 - progress);
+        ring.style.strokeDashoffset = offset;
+
+        if (progress >= 1) {
+          isHolding = false;
+          card.classList.remove('is-holding');
+          // Trigger completion!
+          if (navigator.vibrate) navigator.vibrate([35, 30, 50]);
+          exercise.completed = true;
+          renderCurrentDay();
+          showToast(`Зараховано: ${exercise.name}`);
+          return;
+        }
+
+        rafId = requestAnimationFrame(updateProgress);
+      };
+
+      const startHold = (e) => {
+        e.preventDefault();
+        // If already completed, single tap toggles it back off
+        if (exercise.completed) {
+          exercise.completed = false;
+          renderCurrentDay();
+          return;
+        }
+
+        isHolding = true;
+        startTime = null;
+        card.classList.add('is-holding');
+        ring.style.transition = 'none';
+        if (navigator.vibrate) navigator.vibrate(15);
+        rafId = requestAnimationFrame(updateProgress);
+      };
+
+      const cancelHold = () => {
+        if (!isHolding) return;
+        isHolding = false;
+        cancelAnimationFrame(rafId);
+        card.classList.remove('is-holding');
+        // Smoothly retract ring back to 0%
+        ring.style.transition = 'stroke-dashoffset 0.25s cubic-bezier(0.22, 1, 0.36, 1)';
+        ring.style.strokeDashoffset = CIRCUMFERENCE;
+      };
+
+      btn.addEventListener('pointerdown', startHold);
+      btn.addEventListener('pointerup', cancelHold);
+      btn.addEventListener('pointerleave', cancelHold);
+      btn.addEventListener('pointercancel', cancelHold);
+    }
+
+    // ==================== DAY & EXERCISE INTERACTIONS ====================
+    function selectDay(dayIndex) {
+      state.currentDay = dayIndex;
+      state.expandedExerciseId = null;
+      const listEl = document.getElementById('exercise-list');
+      listEl.classList.remove('animate-day-enter');
+      void listEl.offsetWidth; // trigger reflow
+      listEl.classList.add('animate-day-enter');
+      renderCurrentDay();
+    }
+
+    function toggleExpand(exId) {
+      state.expandedExerciseId = state.expandedExerciseId === exId ? null : exId;
+      renderCurrentDay();
+    }
+
+    function resetCurrentDay() {
+      state.days[state.currentDay].exercises.forEach(ex => ex.completed = false);
+      renderCurrentDay();
+      showToast('Прогрес дня скинуто');
+    }
+
+    // ==================== REST TIMER LOGIC ====================
+    function formatSeconds(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function startRestTimer(exId, defaultSec) {
+      if (state.activeTimers[exId]) {
+        clearInterval(state.activeTimers[exId].intervalId);
+      }
+      let remaining = defaultSec;
+      const display = document.getElementById(`timer-display-${exId}`);
+      if (display) display.textContent = formatSeconds(remaining);
+
+      const intervalId = setInterval(() => {
+        remaining -= 1;
+        if (state.activeTimers[exId]) {
+          state.activeTimers[exId].remaining = remaining;
+        }
+        const el = document.getElementById(`timer-display-${exId}`);
+        if (el) el.textContent = formatSeconds(Math.max(0, remaining));
+
+        if (remaining <= 0) {
+          clearInterval(intervalId);
+          delete state.activeTimers[exId];
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+          showToast('Час відпочинку вийшов! Наступний підхід.');
+          renderCurrentDay();
+        }
+      }, 1000);
+
+      state.activeTimers[exId] = { remaining, intervalId };
+      renderCurrentDay();
+    }
+
+    function resetRestTimer(exId, defaultSec) {
+      if (state.activeTimers[exId]) {
+        clearInterval(state.activeTimers[exId].intervalId);
+        delete state.activeTimers[exId];
+      }
+      renderCurrentDay();
+    }
+
+    // ==================== TAB NAVIGATION ====================
+    function switchTab(tabName) {
+      const workoutsTab = document.getElementById('tab-workouts');
+      const inventoryTab = document.getElementById('tab-inventory');
+      const navWorkouts = document.getElementById('nav-workouts');
+      const navInventory = document.getElementById('nav-inventory');
+
+      if (tabName === 'workouts') {
+        workoutsTab.classList.remove('hidden');
+        inventoryTab.classList.add('hidden');
+        navWorkouts.classList.replace('text-gray-500', 'text-limeAccent');
+        navInventory.classList.replace('text-limeAccent', 'text-gray-500');
+        renderCurrentDay();
+      } else {
+        workoutsTab.classList.add('hidden');
+        inventoryTab.classList.remove('hidden');
+        navInventory.classList.replace('text-gray-500', 'text-limeAccent');
+        navWorkouts.classList.replace('text-limeAccent', 'text-gray-500');
+        renderInventory();
+      }
+    }
+
+    // ==================== INVENTORY & GEMINI VISION SIMULATION ====================
+    function renderInventory() {
+      const list = document.getElementById('inventory-list');
+      list.innerHTML = '';
+
+      state.inventory.forEach((item, idx) => {
+        const accent = getTypeAccent(item.category);
+        const row = document.createElement('div');
+        row.className = `rounded-2xl bg-surface border border-white/[0.08] p-3.5 flex items-center justify-between gap-3 transition-opacity ${item.active ? 'opacity-100' : 'opacity-45'}`;
+
+        row.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-xl ${accent.bg} ${accent.text} flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-white truncate">${item.name}</div>
+              <div class="text-[11px] text-gray-400 truncate">${item.detail}</div>
+            </div>
+          </div>
+
+          <button onclick="toggleEquipment(${idx})" class="w-11 h-6 rounded-full p-0.5 transition-colors ${item.active ? 'bg-limeAccent' : 'bg-gray-700'}">
+            <div class="w-5 h-5 rounded-full bg-black transition-transform ${item.active ? 'translate-x-5' : 'translate-x-0'}"></div>
+          </button>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function toggleEquipment(index) {
+      state.inventory[index].active = !state.inventory[index].active;
+      renderInventory();
+      showToast(state.inventory[index].active ? 'Додано в пул тренувань' : 'Виключено з генерації');
+    }
+
+    function updateDumbbellWeight(val) {
+      state.dumbbellWeight = parseFloat(val).toFixed(1);
+      document.getElementById('dumbbell-weight-val').textContent = `${state.dumbbellWeight} кг`;
+    }
+
+    function addCustomEquipment() {
+      const input = document.getElementById('custom-equip-input');
+      const name = input.value.trim();
+      if (!name) return;
+      state.inventory.unshift({
+        id: 'custom-' + Date.now(),
+        name,
+        detail: 'Додано вручну',
+        active: true,
+        category: 'strength'
+      });
+      input.value = '';
+      renderInventory();
+      showToast(`Додано: ${name}`);
+    }
+
+    function simulateGeminiScan(inputEl) {
+      const beam = document.getElementById('scanner-beam');
+      const title = document.getElementById('scanner-title');
+      const desc = document.getElementById('scanner-desc');
+      const box = document.getElementById('scanner-box');
+
+      beam.classList.remove('hidden');
+      box.classList.add('border-limeAccent/60');
+      title.textContent = 'Gemini Vision аналізує фото...';
+      desc.textContent = 'Визначення снарядів та робочої ваги';
+
+      setTimeout(() => {
+        beam.classList.add('hidden');
+        box.classList.remove('border-limeAccent/60');
+        title.textContent = 'Розпізнано 7 одиниць інвентарю';
+        desc.textContent = 'Синхронізовано з планом Пн–Пт';
+        if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+        showToast('Арсенал успішно оновлено через Gemini Vision');
+        if (inputEl) inputEl.value = '';
+      }, 1800);
+    }
+
+    // ==================== AI ADAPTATION MODAL ====================
+    function openAiModal() {
+      document.getElementById('ai-modal').classList.remove('hidden');
+    }
+
+    function closeAiModal() {
+      document.getElementById('ai-modal').classList.add('hidden');
+    }
+
+    function adaptWorkout(mode) {
+      closeAiModal();
+      const listEl = document.getElementById('exercise-list');
+      listEl.innerHTML = `
+        <div class="h-20 rounded-2xl skeleton-shimmer"></div>
+        <div class="h-20 rounded-2xl skeleton-shimmer"></div>
+        <div class="h-20 rounded-2xl skeleton-shimmer"></div>
+      `;
+
+      setTimeout(() => {
+        const day = state.days[state.currentDay];
+        if (mode === 'express') {
+          day.duration = '25 хв';
+          day.kcal = '~290 ккал';
+          day.badge = 'ЕКСПРЕС-СЕСІЯ · 25 ХВ';
+          day.exercises.forEach(ex => {
+            ex.restSec = 40;
+            ex.setsReps = ex.setsReps.replace('4 ×', '3 ×');
+            ex.completed = false;
+          });
+          showToast('План стиснуто до 25 хв (паузи 40с)');
+        } else if (mode === 'recovery') {
+          day.duration = '30 хв';
+          day.kcal = '~240 ккал';
+          day.badge = 'ВІДНОВЛЕННЯ ТА МОБІЛІТІ';
+          day.type = 'mobility';
+          day.exercises.forEach(ex => {
+            ex.type = 'mobility';
+            ex.setsReps = '2 × спокійний темп';
+            ex.completed = false;
+          });
+          showToast('Адаптовано під легке відновлення');
+        } else {
+          day.duration = '45 хв';
+          day.kcal = '~430 ккал';
+          day.badge = 'ПОВНА СИЛА · 100%';
+          day.type = 'strength';
+          day.exercises.forEach(ex => {
+            ex.restSec = 75;
+            ex.setsReps = ex.setsReps.replace('3 ×', '4 ×').replace('2 × спокійний темп', '4 × 10 повт');
+            ex.completed = false;
+          });
+          showToast('Повернуто стандартний силовий об’єм');
+        }
+        renderCurrentDay();
+      }, 650);
+    }
+
+    // ==================== TOAST HELPER ====================
+    let toastTimeout;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.remove('opacity-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('opacity-0');
+      }, 2400);
+    }
+
+    // Initialize app on load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCurrentDay();
+    });
+  </script>
+</body>
+</html>

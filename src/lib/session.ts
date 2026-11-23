@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 
-export const SESSION_COOKIE = "calories_session";
+export const SESSION_COOKIE = "trainer_session";
 export const SESSION_DAYS = 30;
 
 export type SessionPayload = {

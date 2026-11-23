@@ -1,0 +1,80 @@
+# Tactical Fit — архітектура
+
+## 1. База даних
+
+Окрема Postgres-схема **`trainer`** на спільній Neon-базі (`?schema=trainer` в обох URL). Поряд живуть
+`calories` (гілка `calories-app`), `public` і `neon_auth` — вони не змінюються. Міграції — лише
+`prisma migrate deploy` (без shadow-БД); початкова: `prisma/migrations/20261123000000_trainer_init`.
+
+| Таблиця | Призначення | Ключове |
+|---|---|---|
+| `user_profile` | профіль атлета, один рядок `id="me"` | дефолти 35 р. / 186 см / 93.5 кг; `goal`, `limitations` йдуть у промпт |
+| `equipment` | домашній інвентар | `key` (нормалізована назва, unique) для дедуплікації; `adjustable/maxWeightKg/weightKg`; `source` manual\|vision; `active` |
+| `workout_plans` | тиждень | `weekStart` (понеділок), `status` active\|archived, `summary`, `model` |
+| `workout_days` | день плану | `weekday` 0–4, `date`, `type`, `focus`, `durationMin`, `caloriesEst`, `rpe`, `adaptedMode`; unique `(planId, weekday)` |
+| `exercises` | рядки дня | `block` warmup\|main\|cooldown, `sets/reps/durationSec/tempo/load/restSec/tip` |
+| `workout_logs` | прогрес | unique `(dayId, target)`, `target` = id вправи або `"workout"` → hold-to-complete ідемпотентний |
+
+Каскади: видалення плану → днів → вправ → логів. Перегенерація тижня **архівує** старий план (`status=archived`), а не видаляє.
+
+## 2. Gemini
+
+- `POST /api/equipment/analyze` — 1–4 фото (клієнт стискає до ≤1280px JPEG; ліміт тіла Vercel 4.5 МБ) →
+  `scanSchema` → злиття в `equipment` (дедуплікація по `key`, існуючі назви передаються моделі).
+- `POST /api/plan/generate` — тиждень Пн–Пт: профіль + активний інвентар (аліаси `E1…En`) + історія 3 попередніх тижнів.
+- `POST /api/plan/adapt` — один день під стан: `fatigued` / `short_time` / `full_power` (+ вільна примітка).
+
+Рішення, перевірені на живому ключі:
+- **zod — єдине джерело правди**: `z.toJSONSchema` → схема для Gemini, той самий zod валідує відповідь.
+- Gemini відхиляє вкладені схеми з `min/maxItems`, `maxLength` та числовими межами
+  («too many states for serving»), тож у запит іде спрощена схема, а межі перевіряє zod на відповіді.
+- Семантична перевірка (`plan/validate.ts`): вправа може посилатись лише на предмети з активного інвентарю,
+  потрібні reps або час, `weekday` = 0..4. Порушення йдуть назад моделі в одному «ремонтному» повторі.
+- `thinkingLevel: LOW` для `gemini-3*`: тиждень ~32–55 с замість ~79 с.
+- Модель береться з `GEMINI_MODEL` (доступність залежить від ключа).
+
+## 3. Автентифікація
+
+Публічний URL + платний Gemini = обов'язкові ворота. `proxy.ts` (Next 16, Node runtime) перенаправляє на `/login`
+(API → 401); кожен route handler перевіряє сесію ще раз (`lib/http.ts → handle`). Одноюзерний вхід за
+`ADMIN_USERNAME/ADMIN_PASSWORD` (порівняння в сталий час), JWT у httpOnly-cookie `trainer_session`.
+Без заданих змінних вхід закритий. manifest, `sw.js` та іконки публічні (iOS тягне manifest без cookie).
+
+## 4. Дати
+
+«Сьогодні» і понеділок тижня рахує **клієнт** у локальному часі (`lib/dates.ts`); сервер у UTC лише додає
+дні до `weekStart` чистою арифметикою. `useToday` оновлюється при поверненні на екран (iOS PWA не перезавантажується).
+
+## 5. Структура коду
+
+```
+src/
+  proxy.ts                         авторизація
+  app/
+    layout.tsx · manifest.ts · globals.css (токени, hold-кнопка)
+    login/                         вхід
+    (app)/ page · arsenal · profile   оболонка + TabBar
+    api/ auth · profile · equipment[/analyze|/[id]] · plan[/generate|/adapt] · logs
+  components/
+    HoldToCompleteButton.tsx       ★ кругова (ring) і лінійна (bar) варіації
+    plan/    PlanScreen · DaySelector · DayCard · ExerciseCard · RestTimer · AdaptSheet · GenerateSheet · GeneratingOverlay
+    arsenal/ ArsenalScreen · ScannerCard · EquipmentRow · EquipmentEditSheet
+    profile/ ProfileScreen
+    ui/      Sheet (Radix, рендериться всередині #app-frame) · Switch
+  hooks/     queries (React Query, оптимістичні логи) · useToday
+  lib/
+    gemini/  client · schemas · prompts
+    plan/    service (БД + оркестрація) · validate · format · serialize
+    dates · equipment-key · auth · session · http · api · haptics · image-compress
+```
+
+## 6. HoldToCompleteButton
+
+Pointer Events: `down` → старт, `up/leave/cancel` → плавний відкат кільця. Тривалість 1.5 с (`HOLD_MS`).
+- Прогрес і `scale` пишуться прямо в DOM з `requestAnimationFrame` (refs), без ре-рендерів на кадр.
+- iOS: `touch-action: none`, `-webkit-touch-callout: none`, `user-select: none`, `contextmenu → preventDefault`;
+  на дотиці pointerleave не приходить, тому вихід пальця за межі (+24 px) перевіряє `pointermove`.
+- Після завершення браузер шле «хвіст»-`click` — він ігнорується 700 мс, щоб не скасувати щойно записане.
+- Клавіатура: Space/Enter утримуються так само; `aria-pressed`, `prefers-reduced-motion` вимикає пульс.
+- Завершення: галочка малюється `stroke-dashoffset`, пульс-світіння, оптимістичний запис у `workout_logs`
+  (відкат + тост при помилці). Тап по виконаному скасовує.

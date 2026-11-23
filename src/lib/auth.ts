@@ -1,35 +1,27 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
-import {
-  SESSION_COOKIE,
-  SESSION_DAYS,
-  readSessionToken,
-  type SessionPayload,
-} from "@/lib/session";
-import { toUserDTO } from "@/lib/user-dto";
-import type { UserDTO } from "@/lib/types";
+import { SESSION_COOKIE, SESSION_DAYS, createSessionToken, readSessionToken } from "@/lib/session";
 
-export {
-  SESSION_COOKIE,
-  createSessionToken,
-  readSessionToken,
-  type SessionPayload,
-} from "@/lib/session";
+/**
+ * Одноюзерний вхід: застосунок публічний у мережі й смикає платний Gemini, тож
+ * без воріт будь-хто міг би палити квоту й міняти дані. Облікові дані — ті самі
+ * ADMIN_USERNAME / ADMIN_PASSWORD, що вже є в Vercel. Якщо env не задано — вхід
+ * закритий (fail closed), жодних дефолтних паролів.
+ */
+const digest = (s: string) => createHash("sha256").update(s).digest();
 
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
+export function checkCredentials(username: string, password: string): boolean {
+  const u = process.env.ADMIN_USERNAME?.trim();
+  const p = process.env.ADMIN_PASSWORD?.trim();
+  if (!u || !p) return false;
+  // sha256 вирівнює довжини → timingSafeEqual не кидає і не витікає довжину
+  const okUser = timingSafeEqual(digest(username.trim()), digest(u));
+  const okPass = timingSafeEqual(digest(password), digest(p));
+  return okUser && okPass;
 }
 
-export async function verifyPassword(
-  password: string,
-  hash: string,
-): Promise<boolean> {
-  return bcrypt.compare(password, hash);
-}
-
-export async function setSessionCookie(token: string) {
+export async function startSession(): Promise<void> {
+  const token = await createSessionToken({ userId: "me", username: "athlete" });
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -40,84 +32,14 @@ export async function setSessionCookie(token: string) {
   });
 }
 
-export async function clearSessionCookie() {
+export async function endSession(): Promise<void> {
   const jar = await cookies();
   jar.delete(SESSION_COOKIE);
 }
 
-export async function getSession(): Promise<SessionPayload | null> {
+export async function isAuthenticated(): Promise<boolean> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  return readSessionToken(token);
-}
-
-export async function getSessionUser(): Promise<UserDTO | null> {
-  const session = await getSession();
-  if (!session) return null;
-  const user = await prisma.user.findUnique({
-    where: { id: session.userId },
-  });
-  if (!user) return null;
-  return toUserDTO(user);
-}
-
-/** Причина за замовчуванням — коли адмін заблокував без пояснення. */
-export const BLOCKED_FALLBACK_REASON =
-  "Адміністратор призупинив доступ до акаунта";
-
-export async function requireSession(opts?: {
-  /** Дозволити сесію без апруву (logout / me / password). */
-  allowPending?: boolean;
-}): Promise<
-  { ok: true; session: SessionPayload } | { ok: false; response: NextResponse }
-> {
-  const session = await getSession();
-  if (!session) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "Потрібен вхід" }, { status: 401 }),
-    };
-  }
-
-  if (!opts?.allowPending) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { approved: true, blockedAt: true, blockReason: true },
-    });
-    if (!user) {
-      return {
-        ok: false,
-        response: NextResponse.json({ error: "Потрібен вхід" }, { status: 401 }),
-      };
-    }
-    // Блокування перевіряємо першим: якщо адмін закрив доступ уже після
-    // підтвердження, людині треба сказати саме це, а не «очікуйте апруву».
-    if (user.blockedAt) {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          {
-            error: user.blockReason?.trim() || BLOCKED_FALLBACK_REASON,
-            code: "BLOCKED",
-          },
-          { status: 403 },
-        ),
-      };
-    }
-    if (!user.approved) {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          {
-            error: "Акаунт очікує підтвердження адміністратора",
-            code: "PENDING_APPROVAL",
-          },
-          { status: 403 },
-        ),
-      };
-    }
-  }
-
-  return { ok: true, session };
+  if (!token) return false;
+  return (await readSessionToken(token)) !== null;
 }

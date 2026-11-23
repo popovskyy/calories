@@ -1,5 +1,11 @@
-// Калькулятор калорій — Prisma schema
-// Дані ізольовані в Postgres-схемі "calories" на спільній Neon-базі.
+// AI Home Trainer — Prisma schema
+//
+// Дані ізольовані в Postgres-схемі "trainer" на спільній Neon-базі
+// (поряд із "calories", "public", "neon_auth" — їх не чіпаємо).
+// Схема задається через ?schema=trainer у TRAINER_DATABASE_URL / TRAINER_DIRECT_URL.
+//
+// ⚠️ Ніколи: `prisma migrate reset`, `prisma db push --force-reset`, `prisma migrate dev`
+// (shadow-БД на спільній хостованій базі). Лише `prisma migrate deploy`.
 
 generator client {
   provider = "prisma-client-js"
@@ -7,78 +13,142 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("CALORIES_DATABASE_URL")
-  directUrl = env("CALORIES_DIRECT_URL")
+  url       = env("TRAINER_DATABASE_URL")
+  directUrl = env("TRAINER_DIRECT_URL")
 }
 
-model User {
-  id              String   @id @default(cuid())
-  username        String   @unique
-  passwordHash    String
-  name            String
-  targetCalories  Int
-  birthYear       Int      @default(1995)
-  birthMonth      Int      @default(1)
-  sex             String   @default("male")
-  activityLevel   String   @default("moderate")
-  goal            String   @default("maintain")
-  weight          Float    @default(70)
-  height          Float    @default(175)
-  avatarUrl       String?
-  theme           String   @default("nocturne")
-  targetWeight    Float?
-  startWeight     Float?
-  startWeightDate String?
-  approved        Boolean  @default(true)
-  blockedAt       DateTime?
-  blockReason     String?
-  createdAt       DateTime @default(now())
-  meals           MealLog[]
-  activities      ActivityLog[]
-  weights         WeightLog[]
-}
-
-model WeightLog {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      String
-  weight    Float
-  createdAt DateTime @default(now())
-
-  @@unique([userId, date])
-  @@index([userId, date])
-}
-
-model MealLog {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date        String
-  description String
-  calories    Int
-  protein     Int
-  fats        Int
-  carbs       Int
-  imageUrl    String?
-  status      String   @default("approved")
+/// Профіль атлета. Застосунок одноюзерний: рівно один рядок з id = "me".
+model UserProfile {
+  id          String   @id @default("me")
+  name        String   @default("Атлет")
+  sex         String   @default("male")
+  age         Int      @default(35)
+  heightCm    Int      @default(186)
+  weightKg    Float    @default(93.5)
+  /// Ціль словами — іде в промпт генератора як є.
+  goal        String   @default("Зниження ваги / сушка, збереження і ріст силової витривалості")
+  /// Обмеження/здоров'я — теж іде в промпт (спина, суглоби, травми).
+  limitations String   @default("Берегти спину та суглоби: без ривків, без осьового перевантаження, контроль техніки")
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@index([userId, date])
-  @@index([status, createdAt])
+  @@map("user_profile")
 }
 
-model ActivityLog {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date           String
-  description    String
-  caloriesBurned Int
-  durationMin    Int?
-  status         String   @default("approved")
-  createdAt      DateTime @default(now())
+/// Домашній інвентар (з фото через Gemini Vision або вручну).
+model Equipment {
+  id          String   @id @default(cuid())
+  name        String
+  /// Нормалізований ключ (lowercase, без зайвих пробілів) — дедуплікація при повторних скан-ах.
+  key         String   @unique
+  detail      String?
+  /// strength | cardio | mobility | other
+  category    String   @default("strength")
+  /// Чи регульована вага (розбірна гантеля, гиря зі змінними блінами).
+  adjustable  Boolean  @default(false)
+  maxWeightKg Float?
+  /// Поточна зібрана/доступна вага для регульованих предметів.
+  weightKg    Float?
+  /// Вимкнений предмет не потрапляє в генерацію плану.
+  active      Boolean  @default(true)
+  /// manual | vision
+  source      String   @default("manual")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@index([userId, date])
-  @@index([status, createdAt])
+  @@map("equipment")
+}
+
+/// Тижневий план. На один weekStart — максимум один plan зі status = "active".
+model WorkoutPlan {
+  id        String       @id @default(cuid())
+  /// Понеділок тижня, "YYYY-MM-DD" (рахується на клієнті в локальному часі).
+  weekStart String
+  /// active | archived (перегенерований тиждень архівується, не видаляється).
+  status    String       @default("active")
+  /// Коротке пояснення від тренера: логіка навантаження на тиждень.
+  summary   String?
+  /// Яка модель згенерувала план (для налагодження).
+  model     String?
+  createdAt DateTime     @default(now())
+  days      WorkoutDay[]
+
+  @@index([weekStart, status])
+  @@map("workout_plans")
+}
+
+model WorkoutDay {
+  id          String       @id @default(cuid())
+  planId      String
+  plan        WorkoutPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  /// 0 = Пн … 4 = Пт
+  weekday     Int
+  /// "YYYY-MM-DD" (weekStart + weekday)
+  date        String
+  /// strength | cardio | mobility | mixed
+  type        String
+  /// Фокус дня: «Верх тіла + Прес»
+  focus       String
+  title       String?
+  durationMin Int
+  caloriesEst Int
+  /// Очікуване RPE 1–10
+  rpe         Float?
+  /// Якщо день адаптовано під стан: fatigued | short_time | full_power
+  adaptedMode String?
+  exercises   Exercise[]
+  logs        WorkoutLog[]
+
+  @@unique([planId, weekday])
+  @@map("workout_days")
+}
+
+/// Рядок плану дня: розминка / основний блок / заминка.
+model Exercise {
+  id          String       @id @default(cuid())
+  dayId       String
+  day         WorkoutDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  /// warmup | main | cooldown
+  block       String       @default("main")
+  position    Int
+  name        String
+  /// strength | cardio | mobility
+  type        String       @default("strength")
+  /// Вільний підпис обладнання: «Турнік», «Гантеля», «Власна вага»
+  equipment   String?
+  sets        Int?
+  /// "8–10", "15 / рука", "40с спринт / 80с темп"
+  reps        String?
+  durationSec Int?
+  /// Темп повтору: «2-0-1» або словами
+  tempo       String?
+  /// Вага/опір: «13 кг», «опір 5–6 з 8», «власна вага»
+  load        String?
+  restSec     Int          @default(60)
+  /// Техніка / рекомендація
+  tip         String       @default("")
+  logs        WorkoutLog[]
+
+  @@index([dayId, block, position])
+  @@map("exercises")
+}
+
+/// Журнал виконання. Один рядок на (день, ціль): ціль = id вправи або "workout"
+/// (завершення всього тренування). Унікальність → hold-to-complete ідемпотентний.
+model WorkoutLog {
+  id          String      @id @default(cuid())
+  dayId       String
+  day         WorkoutDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  /// null для логу всього тренування
+  exerciseId  String?
+  exercise    Exercise?   @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  /// exercise | workout
+  kind        String
+  /// exerciseId або "workout"
+  target      String
+  completedAt DateTime    @default(now())
+
+  @@unique([dayId, target])
+  @@index([completedAt])
+  @@map("workout_logs")
 }
