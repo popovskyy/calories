@@ -3,8 +3,9 @@ import { isISODate, isMonday } from "@/lib/dates";
 import { HttpError, handle, json } from "@/lib/http";
 import { generateWeek } from "@/lib/plan/service";
 
-// План на 5 днів (~40 вправ) + роздуми моделі + можливий ремонтний повтор.
-export const maxDuration = 120;
+// План на 5 днів (~40 вправ): 30–80 с на виклик, а «ремонтний» повтор — ще один виклик. Дефолт Vercel — 300 с,
+// тому явне значення не має бути нижчим (інакше платформа обірве функцію й клієнт отримає не-JSON 504).
+export const maxDuration = 300;
 
 const body = z.object({
   weekStart: z.string(),

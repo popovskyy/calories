@@ -130,7 +130,11 @@ export function useGeneratePlan(weekStart: string) {
       qc.setQueryData(qk.plan(weekStart), plan);
       toast.success("Новий тиждень готовий");
     },
-    onError: (e) => toast.error(errMsg(e)),
+    onError: (e) => {
+      toast.error(errMsg(e));
+      // Запит міг обірватись (блокування екрана, мережа), а сервер — дописати план: підтягуємо справжній стан.
+      void qc.invalidateQueries({ queryKey: qk.plan(weekStart) });
+    },
   });
 }
 
@@ -143,7 +147,10 @@ export function useAdaptDay(weekStart: string) {
       qc.setQueryData(qk.plan(weekStart), plan);
       toast.success("Тренування адаптовано");
     },
-    onError: (e) => toast.error(errMsg(e)),
+    onError: (e) => {
+      toast.error(errMsg(e));
+      void qc.invalidateQueries({ queryKey: qk.plan(weekStart) });
+    },
   });
 }
 

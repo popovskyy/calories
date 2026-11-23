@@ -2,7 +2,8 @@ import { z } from "zod";
 import { handle, json } from "@/lib/http";
 import { adaptDay } from "@/lib/plan/service";
 
-export const maxDuration = 90;
+// Один день: ~15–20 с на виклик; із повтором — запас до 120 с.
+export const maxDuration = 120;
 
 const body = z.object({
   dayId: z.string().min(1).max(64),
