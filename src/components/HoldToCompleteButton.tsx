@@ -229,6 +229,7 @@ export function HoldToCompleteButton({
       aria-pressed={completed}
       disabled={disabled}
       data-done={completed}
+      data-variant={variant}
       onPointerDown={onPointerDown}
       onPointerUp={release}
       onPointerLeave={release}
@@ -241,7 +242,7 @@ export function HoldToCompleteButton({
       className={cn(
         "hold-btn border",
         isBar
-          ? "h-14 w-full overflow-hidden rounded-2xl text-sm font-bold"
+          ? "min-h-16 w-full overflow-hidden rounded-2xl px-4 py-3 text-base font-bold"
           : cn("shrink-0 rounded-2xl", size === "md" ? "h-10 w-10" : "h-12 w-12"),
         completed
           ? "border-mint/50 bg-mint/15 text-mint"

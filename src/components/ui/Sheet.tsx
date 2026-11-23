@@ -32,9 +32,9 @@ export function Sheet({ open, onOpenChange, title, eyebrow, description, childre
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               {eyebrow && (
-                <span className="font-mono text-[10px] tracking-widest text-volt uppercase">{eyebrow}</span>
+                <span className="text-sm font-semibold text-volt">{eyebrow}</span>
               )}
-              <Dialog.Title className="mt-0.5 text-base font-bold text-white">{title}</Dialog.Title>
+              <Dialog.Title className="mt-0.5 text-xl font-bold text-white">{title}</Dialog.Title>
             </div>
             <Dialog.Close
               aria-label="Закрити"
@@ -44,7 +44,7 @@ export function Sheet({ open, onOpenChange, title, eyebrow, description, childre
             </Dialog.Close>
           </div>
           {description ? (
-            <Dialog.Description className="mb-4 text-xs leading-relaxed text-gray-400">{description}</Dialog.Description>
+            <Dialog.Description className="mb-4 text-sm leading-relaxed text-gray-400">{description}</Dialog.Description>
           ) : (
             <Dialog.Description className="sr-only">{title}</Dialog.Description>
           )}

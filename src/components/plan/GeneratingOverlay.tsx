@@ -29,9 +29,9 @@ export function GeneratingOverlay({ title }: { title: string }) {
         <div className="animate-scan absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-volt to-transparent shadow-[0_0_14px_#2B90FE]" />
       </div>
       <div>
-        <div className="font-mono text-[11px] tracking-widest text-volt uppercase">{title}</div>
-        <div className="mt-2 text-sm text-gray-300">{PHRASES[i]}</div>
-        <div className="mt-1 text-[11px] text-gray-500">Це може зайняти до хвилини</div>
+        <div className="text-sm font-semibold text-volt">{title}</div>
+        <div className="mt-2 text-base text-gray-300">{PHRASES[i]}</div>
+        <div className="mt-1 text-xs text-gray-400">Це може зайняти до хвилини</div>
       </div>
     </div>
   );

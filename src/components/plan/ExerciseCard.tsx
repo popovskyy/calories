@@ -75,22 +75,23 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, o
             <span>
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1 pb-1.5">
                 {highlight && (
-                  <span className="rounded bg-volt px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider text-white">ДАЛІ</span>
+                  <span className="rounded bg-volt px-1.5 py-0.5 text-xs font-bold tracking-wide text-white">ДАЛІ</span>
                 )}
                 {ex.equipment && (
-                  <span className={cn("rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold", accent.bg, accent.text)}>
+                  <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", accent.bg, accent.text)}>
                     {ex.equipment}
                   </span>
                 )}
-                <span className="font-mono text-xs font-semibold text-gray-300 tabular-nums">{formatPrescription(ex)}</span>
-                {load && <span className="font-mono text-xs text-gray-500">{load}</span>}
+                <span className="text-sm font-semibold text-gray-300 tabular-nums">{formatPrescription(ex)}</span>
+                {load && <span className="text-sm text-gray-400">{load}</span>}
               </span>
             </span>
           </span>
           <span
             className={cn(
-              "block text-sm leading-snug font-semibold",
-              done ? "text-gray-400 line-through decoration-mint/60" : "text-white",
+              "block leading-snug font-semibold",
+              // Виконане — спокійніше й дрібніше, щоб не відбирати увагу й місце в списку
+              done ? "text-sm text-gray-400 line-through decoration-mint/60" : "text-base text-white",
             )}
           >
             {headWords && `${headWords} `}
@@ -98,7 +99,7 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, o
               {lastWord}
               <ChevronDown
                 aria-hidden
-                className={cn("ml-1 inline h-3.5 w-3.5 align-[-2px] text-gray-500 transition-transform", open && "rotate-180")}
+                className={cn("ml-1 inline h-3.5 w-3.5 align-[-2px] text-gray-400 transition-transform", open && "rotate-180")}
               />
             </span>
           </span>
@@ -111,7 +112,7 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, o
               href={videoUrl(ex)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 transition hover:bg-white/10 active:scale-95"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-2.5 py-1.5 text-xs font-semibold text-gray-200 transition hover:bg-white/10 active:scale-95"
             >
               <Play className="h-3 w-3 fill-red-500 text-red-500" aria-hidden />
               Як робити — відео
@@ -134,7 +135,7 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, o
       <div className="accordion" data-open={open}>
         <div>
           <div className="mt-3 space-y-3 border-t border-white/[0.06] pt-3">
-            <p className="rounded-xl border border-white/5 bg-black/30 p-2.5 text-xs leading-relaxed text-gray-300">
+            <p className="rounded-xl border border-white/5 bg-black/30 p-2.5 text-sm leading-relaxed text-gray-300">
               <span className="font-semibold text-volt">Як робити: </span>
               {ex.tip || "—"}
             </p>
@@ -142,8 +143,8 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, o
               <div className="grid grid-cols-2 gap-2">
                 {facts.map((f) => (
                   <div key={f.k} className="rounded-xl border border-white/5 bg-black/20 px-2.5 py-1.5">
-                    <div className="text-[10px] tracking-wider text-gray-500 uppercase">{f.k}</div>
-                    <div className="mt-0.5 text-xs font-semibold text-gray-100">{f.v}</div>
+                    <div className="text-xs font-medium text-gray-300">{f.k}</div>
+                    <div className="mt-0.5 text-sm font-semibold text-gray-100">{f.v}</div>
                   </div>
                 ))}
               </div>

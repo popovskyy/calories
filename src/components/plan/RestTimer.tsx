@@ -37,8 +37,8 @@ export function RestTimer({ seconds }: { seconds: number }) {
     <div className="flex items-center justify-between rounded-xl border border-white/5 bg-surface-2/80 px-3 py-2">
       <div className="flex items-center gap-2">
         <span className={cn("h-2 w-2 rounded-full", running ? "animate-ping bg-ember" : "bg-gray-600")} />
-        <span className="text-xs text-gray-400">Відпочинок:</span>
-        <span className="font-mono text-sm font-bold text-white tabular-nums">{formatSeconds(left)}</span>
+        <span className="text-sm text-gray-400">Відпочинок:</span>
+        <span className="text-base font-bold text-white tabular-nums">{formatSeconds(left)}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <button
@@ -46,7 +46,7 @@ export function RestTimer({ seconds }: { seconds: number }) {
             setLeft(seconds);
             setEndsAt(Date.now() + seconds * 1000);
           }}
-          className="rounded-lg border border-volt/30 bg-volt/15 px-2.5 py-1 font-mono text-[11px] font-semibold text-volt active:scale-95"
+          className="rounded-lg border border-volt/30 bg-volt/15 px-2.5 py-1 text-xs font-semibold text-volt active:scale-95"
         >
           Старт {seconds}с
         </button>

@@ -58,26 +58,26 @@ export function AdaptSheet({ open, onOpenChange, dayLabel, onPick }: Props) {
               setNote("");
             }}
             className={cn(
-              "group flex w-full items-center justify-between rounded-2xl border border-white/10 bg-surface p-3.5 text-left transition active:scale-[0.98]",
+              "group block w-full rounded-2xl border border-white/10 bg-surface p-4 text-left transition active:scale-[0.98]",
               m.hover,
             )}
           >
-            <div>
-              <div className="text-sm font-bold text-white">{m.title}</div>
-              <div className="mt-0.5 text-xs text-gray-400">{m.desc}</div>
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-base font-bold text-white">{m.title}</span>
+              <span className={cn("shrink-0 text-sm font-semibold whitespace-nowrap", m.badgeCls)}>{m.badge}</span>
             </div>
-            <span className={cn("font-mono text-xs", m.badgeCls)}>{m.badge}</span>
+            <div className="mt-1 text-sm text-gray-300">{m.desc}</div>
           </button>
         ))}
       </div>
       <label className="mt-4 block">
-        <span className="text-[11px] tracking-wider text-gray-500 uppercase">Додатково (необов’язково)</span>
+        <span className="text-sm font-medium text-gray-300">Додатково (необов’язково)</span>
         <input
           value={note}
           maxLength={300}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Напр.: болить поперек, без віджимань"
-          className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:border-volt focus:outline-none"
+          className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-base text-white placeholder-gray-500 focus:border-volt focus:outline-none"
         />
       </label>
     </Sheet>

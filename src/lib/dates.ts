@@ -97,3 +97,8 @@ export function relativeDayLabel(iso: string, today: string): string | null {
   if (iso === addDays(today, -1)) return "Вчора";
   return null;
 }
+
+/** Лише назва дня: «Понеділок» (для великого заголовка, що не переноситься). */
+export function weekdayFullName(iso: string): string {
+  return WEEKDAY_FULL[weekdayIndex(iso)];
+}

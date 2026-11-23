@@ -33,15 +33,15 @@ export function EquipmentRow({ item, onEdit }: { item: EquipmentDTO; onEdit: () 
     <div className={cn("rounded-2xl border border-white/[0.08] bg-surface p-3.5 transition-opacity", item.active ? "opacity-100" : "opacity-50")}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-mono text-[10px] font-bold", accent.bg, accent.text)}>
+          <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold", accent.bg, accent.text)}>
             {hasSlider ? `${shown}` : CATEGORY_LABEL[item.category].slice(0, 3).toUpperCase()}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="truncate text-sm font-semibold text-white">{item.name}</span>
+              <span className="truncate text-base font-semibold text-white">{item.name}</span>
               {item.source === "vision" && <ScanLine className="h-3 w-3 shrink-0 text-volt" aria-label="Розпізнано AI" />}
             </div>
-            <div className="truncate text-[11px] text-gray-400">
+            <div className="line-clamp-2 text-sm text-gray-300">
               {[CATEGORY_LABEL[item.category], item.detail].filter(Boolean).join(" · ")}
             </div>
           </div>
@@ -56,12 +56,12 @@ export function EquipmentRow({ item, onEdit }: { item: EquipmentDTO; onEdit: () 
 
       {hasSlider && (
         <div className="mt-3 border-t border-white/[0.06] pt-3">
-          <div className="flex items-center justify-between text-[11px] text-gray-400">
+          <div className="flex items-center justify-between text-xs text-gray-400">
             <span>Поточна зібрана вага (макс. {max} кг)</span>
-            <span className="font-mono text-sm font-bold text-volt tabular-nums">{shown.toFixed(1)} кг</span>
+            <span className="text-base font-bold text-volt tabular-nums">{shown.toFixed(1)} кг</span>
           </div>
           <div className="mt-2 flex items-center gap-3">
-            <span className="font-mono text-[11px] text-gray-500">0.5</span>
+            <span className="text-xs text-gray-400">0.5</span>
             <input
               type="range"
               className="weight-range flex-1"
@@ -75,7 +75,7 @@ export function EquipmentRow({ item, onEdit }: { item: EquipmentDTO; onEdit: () 
               onKeyUp={commit}
               onBlur={commit}
             />
-            <span className="font-mono text-[11px] text-gray-500">{max}</span>
+            <span className="text-xs text-gray-400">{max}</span>
           </div>
         </div>
       )}

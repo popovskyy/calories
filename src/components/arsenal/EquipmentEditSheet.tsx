@@ -16,7 +16,7 @@ const CATEGORIES: { id: EquipmentCategory; label: string }[] = [
 ];
 
 const input =
-  "mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:border-volt focus:outline-none";
+  "mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-base text-white placeholder-gray-500 focus:border-volt focus:outline-none";
 
 /** Ручне редагування предмета. Рендериться лише для відкритого предмета (key = id) → стан ініціалізується з пропа. */
 export function EquipmentEditSheet({ item, onClose }: { item: EquipmentDTO | null; onClose: () => void }) {
@@ -57,23 +57,23 @@ function EditForm({ item, onClose }: { item: EquipmentDTO; onClose: () => void }
   return (
     <div className="space-y-3.5">
       <label className="block">
-        <span className="text-[11px] tracking-wider text-gray-500 uppercase">Назва</span>
+        <span className="text-sm font-medium text-gray-300">Назва</span>
         <input className={input} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
       </label>
       <label className="block">
-        <span className="text-[11px] tracking-wider text-gray-500 uppercase">Опис</span>
+        <span className="text-sm font-medium text-gray-300">Опис</span>
         <input className={input} value={detail} maxLength={140} placeholder="Напр.: широкий та паралельний хват" onChange={(e) => setDetail(e.target.value)} />
       </label>
 
       <div>
-        <span className="text-[11px] tracking-wider text-gray-500 uppercase">Категорія</span>
+        <span className="text-sm font-medium text-gray-300">Категорія</span>
         <div className="mt-1.5 grid grid-cols-4 gap-1.5">
           {CATEGORIES.map((c) => (
             <button
               key={c.id}
               onClick={() => setCategory(c.id)}
               className={cn(
-                "rounded-xl border py-2 text-[11px] font-semibold transition",
+                "rounded-xl border py-2 text-xs font-semibold transition",
                 category === c.id ? "border-volt/50 bg-volt/15 text-volt" : "border-white/10 text-gray-400",
               )}
             >
@@ -85,15 +85,15 @@ function EditForm({ item, onClose }: { item: EquipmentDTO; onClose: () => void }
 
       <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2.5">
         <div>
-          <div className="text-sm font-medium text-white">Регульована вага</div>
-          <div className="text-[11px] text-gray-500">Розбірна гантеля, гиря зі змінними блінами</div>
+          <div className="text-base font-medium text-white">Регульована вага</div>
+          <div className="text-xs text-gray-400">Розбірна гантеля, гиря зі змінними блінами</div>
         </div>
         <Switch checked={adjustable} onChange={setAdjustable} label="Регульована вага" />
       </div>
 
       {adjustable && (
         <label className="block">
-          <span className="text-[11px] tracking-wider text-gray-500 uppercase">Максимальна вага, кг</span>
+          <span className="text-sm font-medium text-gray-300">Максимальна вага, кг</span>
           <input className={input} inputMode="decimal" value={maxW} placeholder="13" onChange={(e) => setMaxW(e.target.value)} />
         </label>
       )}
@@ -101,7 +101,7 @@ function EditForm({ item, onClose }: { item: EquipmentDTO; onClose: () => void }
       <button
         onClick={save}
         disabled={patch.isPending || name.trim().length < 2}
-        className="w-full rounded-2xl btn-primary py-3.5 text-sm font-bold active:scale-[0.98] disabled:opacity-50"
+        className="w-full rounded-2xl btn-primary py-3.5 text-base font-bold active:scale-[0.98] disabled:opacity-50"
       >
         {patch.isPending ? "Зберігаю…" : "Зберегти"}
       </button>
@@ -110,7 +110,7 @@ function EditForm({ item, onClose }: { item: EquipmentDTO; onClose: () => void }
         onClick={() => (confirmDelete ? del.mutate(item.id, { onSuccess: onClose }) : setConfirmDelete(true))}
         disabled={del.isPending}
         className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-semibold transition",
+          "flex w-full items-center justify-center gap-2 rounded-2xl border py-3 text-base font-semibold transition",
           confirmDelete ? "border-red-500/60 bg-red-500/15 text-red-300" : "border-white/10 text-gray-400",
         )}
       >

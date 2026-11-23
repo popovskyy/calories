@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Dumbbell, Info, Sparkles, Zap } from "lucide-react";
-import { addDays, defaultWeekStart, formatDateLong, formatWeekRange, relativeDayLabel, weekdayIndex, WEEKDAY_LONG } from "@/lib/dates";
+import { addDays, defaultWeekStart, formatDayMonth, formatWeekRange, relativeDayLabel, weekdayFullName, weekdayIndex, WEEKDAY_LONG } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { dayStatus } from "@/lib/plan/format";
 import { BLOCKS, BLOCK_LABEL } from "@/lib/types";
@@ -70,7 +70,7 @@ function PlanContent({ today }: { today: string }) {
     const prev = prevFinish.current;
     if (prev && celebrateDayId && prev.id === celebrateDayId && !prev.finished && dayFinished) {
       // Хвиля виходить із кнопки завершення: беремо її центр відносно мобільного контейнера
-      const bar = document.querySelector<HTMLElement>(".hold-btn.h-14");
+      const bar = document.querySelector<HTMLElement>('.hold-btn[data-variant="bar"]');
       const frame = document.getElementById("app-frame");
       let origin: { x: number; y: number; reach: number } | null = null;
       if (bar && frame) {
@@ -98,7 +98,7 @@ function PlanContent({ today }: { today: string }) {
   const p = profile.data;
   // Заголовок веде з ДАТИ обраного дня («Сьогодні», «Завтра»…), а не зі статичних зросту/ваги
   const headerDate = day?.date ?? today;
-  const headerEyebrow = relativeDayLabel(headerDate, today) ?? "День плану";
+  const headerEyebrow = [relativeDayLabel(headerDate, today), formatDayMonth(headerDate)].filter(Boolean).join(" · ");
   const nextId = day?.exercises.find((e) => !done.has(e.id))?.id ?? null;
 
   return (
@@ -108,33 +108,33 @@ function PlanContent({ today }: { today: string }) {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 rounded-full bg-volt" />
-            <span className="font-mono text-[11px] tracking-wider text-gray-400 uppercase">{headerEyebrow}</span>
+            <span className="text-base font-semibold text-gray-300">{headerEyebrow}</span>
           </div>
-          <h1 className="font-display mt-0.5 text-[26px] leading-tight font-semibold tracking-wide whitespace-nowrap text-white">{formatDateLong(headerDate)}</h1>
-          <p className="mt-0.5 font-mono text-[11px] text-gray-500 tabular-nums">
+          <h1 className="font-display mt-0.5 text-3xl leading-tight font-semibold tracking-wide text-white">{weekdayFullName(headerDate)}</h1>
+          <p className="mt-1 text-sm text-gray-300 tabular-nums">
             {p ? `${p.age} р. · ${p.heightCm} см · ${p.weightKg} кг` : <span className="inline-block h-3 w-32 rounded skeleton" />}
           </p>
         </div>
         <button
           onClick={() => setAdaptOpen(true)}
           disabled={!day || dayFinished || adapt.isPending}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-surface-2 px-3 py-2 text-xs font-semibold text-gray-100 shadow-sm transition hover:border-volt/40 active:scale-95 disabled:opacity-40"
+          className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-surface-2 px-3.5 py-2 text-sm font-semibold text-gray-100 shadow-sm transition hover:border-volt/40 active:scale-95 disabled:opacity-40"
         >
-          <Zap className="h-3.5 w-3.5 text-volt" strokeWidth={2.2} />
+          <Zap className="h-4 w-4 text-volt" strokeWidth={2.2} />
           Адаптувати
         </button>
       </div>
 
       {/* Навігація по тижнях + новий тиждень */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <button aria-label="Попередній тиждень" onClick={() => shiftWeek(-1)} className="rounded-lg p-1.5 text-gray-400 hover:bg-white/5 hover:text-white">
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="flex min-w-0 items-center">
+          <button aria-label="Попередній тиждень" onClick={() => shiftWeek(-1)} className="rounded-lg p-2 text-gray-400 hover:bg-white/5 hover:text-white">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="min-w-[88px] text-center font-mono text-xs font-semibold text-gray-200 tabular-nums">
+          <span className="px-1 text-center text-sm font-semibold whitespace-nowrap text-gray-200 tabular-nums">
             {formatWeekRange(weekStart)}
           </span>
-          <button aria-label="Наступний тиждень" onClick={() => shiftWeek(1)} className="rounded-lg p-1.5 text-gray-400 hover:bg-white/5 hover:text-white">
+          <button aria-label="Наступний тиждень" onClick={() => shiftWeek(1)} className="rounded-lg p-2 text-gray-400 hover:bg-white/5 hover:text-white">
             <ChevronRight className="h-4 w-4" />
           </button>
           {plan?.summary && (
@@ -142,7 +142,7 @@ function PlanContent({ today }: { today: string }) {
               aria-label="Логіка тижня від тренера"
               aria-expanded={summaryOpen}
               onClick={() => setSummaryOpen((v) => !v)}
-              className={cn("ml-1 rounded-lg p-1.5 transition-colors hover:bg-white/5", summaryOpen ? "text-volt" : "text-gray-500 hover:text-white")}
+              className={cn("rounded-lg p-2 transition-colors hover:bg-white/5", summaryOpen ? "text-volt" : "text-gray-400 hover:text-white")}
             >
               <Info className="h-4 w-4" />
             </button>
@@ -152,10 +152,10 @@ function PlanContent({ today }: { today: string }) {
           <button
             onClick={() => setGenOpen(true)}
             disabled={generate.isPending}
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:border-volt/40 hover:text-volt active:scale-95 disabled:opacity-40"
+            className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-sm font-semibold whitespace-nowrap text-gray-300 transition hover:border-volt/40 hover:text-volt active:scale-95 disabled:opacity-40"
           >
-            <Sparkles className="h-3.5 w-3.5" />
-            Новий тиждень
+            <Sparkles className="h-4 w-4 max-[399px]:hidden" />
+            <span>Новий<span className="max-[339px]:hidden"> тиждень</span></span>
           </button>
         )}
       </div>
@@ -163,7 +163,7 @@ function PlanContent({ today }: { today: string }) {
       {planQ.isPending ? (
         <PlanSkeleton inline />
       ) : planQ.isError ? (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-base text-red-200">
           Не вдалося завантажити план: {planQ.error.message}
           <button onClick={() => planQ.refetch()} className="mt-2 block font-semibold underline">
             Спробувати ще
@@ -180,8 +180,8 @@ function PlanContent({ today }: { today: string }) {
           <div>
           <div className="accordion" data-open={summaryOpen}>
             <div>
-              <p className="mb-4 rounded-2xl border border-white/[0.07] bg-surface p-3.5 text-xs leading-relaxed text-gray-300">
-                <span className="mb-1 block font-mono text-[10px] tracking-wider text-gray-500 uppercase">Логіка тижня від тренера</span>
+              <p className="mb-4 rounded-2xl border border-white/[0.07] bg-surface p-3.5 text-sm leading-relaxed text-gray-300">
+                <span className="mb-1 block text-sm font-medium text-gray-300">Логіка тижня від тренера</span>
                 {plan.summary}
               </p>
             </div>
@@ -203,7 +203,7 @@ function PlanContent({ today }: { today: string }) {
               ) : (
                 <>
                   {done.size === 0 && !dayFinished && (
-                    <p className="flex items-center justify-end gap-1 px-1 text-[11px] text-gray-500">
+                    <p className="flex items-center justify-end gap-1 px-1 text-xs text-gray-400">
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-volt" />
                       Затисни кнопку на 1.5 с для фіксації
                     </p>
@@ -214,7 +214,7 @@ function PlanContent({ today }: { today: string }) {
                     if (items.length === 0) return null;
                     return (
                       <div key={block} className="space-y-2.5">
-                        <h3 className="px-1 font-mono text-[11px] tracking-widest text-gray-400 uppercase">
+                        <h3 className="px-1 text-base font-semibold text-gray-200">
                           {BLOCK_LABEL[block]}
                         </h3>
                         {items.map((ex) => (
@@ -241,7 +241,7 @@ function PlanContent({ today }: { today: string }) {
                       doneLabel="Тренування зараховано"
                     />
                     {dayFinished && (
-                      <p className="mt-2 text-center text-[11px] text-gray-500">
+                      <p className="mt-2 text-center text-xs text-gray-400">
                         {WEEKDAY_LONG[day.weekday]}: чудова робота! Торкнись кнопки, щоб скасувати.
                       </p>
                     )}
@@ -299,12 +299,12 @@ function EmptyPlan({ weekLabel, noEquipment, onGenerate }: { weekLabel: string; 
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-surface-2 text-volt">
         <Dumbbell className="h-6 w-6" />
       </div>
-      <h2 className="mt-3 text-base font-bold text-white">Плану на {weekLabel} ще немає</h2>
-      <p className="mt-1 text-xs leading-relaxed text-gray-400">
+      <h2 className="mt-3 text-xl font-bold text-white">Плану на {weekLabel} ще немає</h2>
+      <p className="mt-1 text-sm leading-relaxed text-gray-400">
         AI-тренер складе тиждень Пн–Пт під твій профіль, арсенал та історію тренувань.
       </p>
       {noEquipment && (
-        <p className="mt-3 rounded-xl border border-ember/30 bg-ember/10 p-2.5 text-xs leading-relaxed text-orange-200">
+        <p className="mt-3 rounded-xl border border-ember/30 bg-ember/10 p-2.5 text-sm leading-relaxed text-orange-200">
           Арсенал порожній — план буде лише з власною вагою.{" "}
           <Link href="/arsenal" className="font-semibold underline">
             Додати обладнання
@@ -313,7 +313,7 @@ function EmptyPlan({ weekLabel, noEquipment, onGenerate }: { weekLabel: string; 
       )}
       <button
         onClick={onGenerate}
-        className="mt-4 inline-flex items-center gap-2 rounded-2xl btn-primary px-5 py-3 text-sm font-bold active:scale-95"
+        className="mt-4 inline-flex items-center gap-2 rounded-2xl btn-primary px-5 py-3 text-base font-bold active:scale-95"
       >
         <Sparkles className="h-4 w-4" />
         Згенерувати тиждень

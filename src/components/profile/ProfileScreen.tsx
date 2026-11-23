@@ -9,17 +9,17 @@ import type { ProfileDTO } from "@/lib/types";
 import { useProfile, useSaveProfile } from "@/hooks/queries";
 
 const field =
-  "mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:border-volt focus:outline-none";
-const label = "text-[11px] tracking-wider text-gray-500 uppercase";
+  "mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-base text-white placeholder-gray-500 focus:border-volt focus:outline-none";
+const label = "text-sm font-medium text-gray-300";
 
 export function ProfileScreen() {
   const profile = useProfile();
   return (
     <section className="animate-day-enter space-y-4">
       <div>
-        <span className="font-mono text-[11px] tracking-wider text-volt uppercase">Налаштування</span>
+        <span className="text-sm font-semibold text-volt">Налаштування</span>
         <h1 className="font-display mt-0.5 text-3xl leading-tight font-semibold tracking-wide text-white">Профіль атлета</h1>
-        <p className="mt-0.5 text-xs text-gray-400">Ці дані AI-тренер використовує при кожній генерації плану</p>
+        <p className="mt-0.5 text-sm text-gray-400">Ці дані AI-тренер використовує при кожній генерації плану</p>
       </div>
 
       {profile.isPending ? (
@@ -29,7 +29,7 @@ export function ProfileScreen() {
           <div className="skeleton h-28 rounded-xl" />
         </div>
       ) : profile.isError ? (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-base text-red-200">
           Не вдалося завантажити профіль: {profile.error.message}
           <button onClick={() => profile.refetch()} className="mt-2 block font-semibold underline">
             Спробувати ще
@@ -95,7 +95,7 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
               key={s}
               onClick={() => setSex(s)}
               className={cn(
-                "rounded-xl border py-2.5 text-xs font-semibold transition",
+                "rounded-xl border py-2.5 text-sm font-semibold transition",
                 sex === s ? "border-volt/50 bg-volt/15 text-volt" : "border-white/10 text-gray-400",
               )}
             >
@@ -108,15 +108,15 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
       <div className="grid grid-cols-3 gap-2.5">
         <label className="block">
           <span className={label}>Вік</span>
-          <input className={cn(field, "font-mono")} inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} />
+          <input className={cn(field, "tabular-nums")} inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} />
         </label>
         <label className="block">
           <span className={label}>Зріст, см</span>
-          <input className={cn(field, "font-mono")} inputMode="numeric" value={height} onChange={(e) => setHeight(e.target.value)} />
+          <input className={cn(field, "tabular-nums")} inputMode="numeric" value={height} onChange={(e) => setHeight(e.target.value)} />
         </label>
         <label className="block">
           <span className={label}>Вага, кг</span>
-          <input className={cn(field, "font-mono")} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} />
+          <input className={cn(field, "tabular-nums")} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} />
         </label>
       </div>
 
@@ -140,11 +140,11 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
       <button
         type="submit"
         disabled={!dirty || !valid || save.isPending}
-        className="w-full rounded-2xl btn-primary py-3.5 text-sm font-bold transition active:scale-[0.98] disabled:bg-surface-2 disabled:text-gray-500"
+        className="w-full rounded-2xl btn-primary py-3.5 text-base font-bold transition active:scale-[0.98] disabled:bg-surface-2 disabled:text-gray-400"
       >
         {save.isPending ? "Зберігаю…" : dirty ? "Зберегти зміни" : "Збережено"}
       </button>
-      {dirty && !valid && <p className="text-center text-[11px] text-orange-300">Перевірте поля: вік 14–90, зріст 120–230, вага 35–250</p>}
+      {dirty && !valid && <p className="text-center text-xs text-orange-300">Перевірте поля: вік 14–90, зріст 120–230, вага 35–250</p>}
     </form>
   );
 }
@@ -164,7 +164,7 @@ function LogoutButton() {
           toast.error("Не вдалося вийти");
         }
       }}
-      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 py-3 text-sm font-medium text-gray-400 transition hover:text-white active:scale-[0.98] disabled:opacity-50"
+      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 py-3 text-base font-medium text-gray-400 transition hover:text-white active:scale-[0.98] disabled:opacity-50"
     >
       <LogOut className="h-4 w-4" />
       Вийти

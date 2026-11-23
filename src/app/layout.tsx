@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Oswald } from "next/font/google";
+import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/PwaRegister";
@@ -15,12 +15,6 @@ const inter = Inter({
 const oswald = Oswald({
   variable: "--font-oswald",
   subsets: ["latin", "cyrillic", "cyrillic-ext"],
-  weight: ["500", "600", "700"],
-});
-
-const jetbrains = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin", "cyrillic"],
   weight: ["500", "600", "700"],
 });
 
@@ -67,7 +61,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="uk" className={`${inter.variable} ${jetbrains.variable} ${oswald.variable}`}>
+    <html lang="uk" className={`${inter.variable} ${oswald.variable}`}>
       <body className="flex min-h-dvh items-start justify-center sm:items-center sm:p-4">
         <Providers>
           {/* Мобільний контейнер: на iPhone — на весь екран, на десктопі — «телефон» 402×844 */}

@@ -27,9 +27,9 @@ export function ArsenalScreen() {
   return (
     <section className="animate-day-enter space-y-4">
       <div>
-        <span className="font-mono text-[11px] tracking-wider text-volt uppercase">Gemini Vision Sync</span>
+        <span className="text-sm font-semibold text-volt">Gemini Vision Sync</span>
         <h1 className="font-display mt-0.5 text-3xl leading-tight font-semibold tracking-wide text-white">Мій домашній арсенал</h1>
-        <p className="mt-0.5 text-xs text-gray-400">
+        <p className="mt-0.5 text-sm text-gray-400">
           AI будує план виключно під активне обладнання
           {equipment.isSuccess && items.length > 0 && ` · активно ${activeCount} з ${items.length}`}
         </p>
@@ -44,7 +44,7 @@ export function ArsenalScreen() {
             <div className="skeleton h-16 rounded-2xl" />
           </>
         ) : equipment.isError ? (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-base text-red-200">
             Не вдалося завантажити арсенал: {equipment.error.message}
             <button onClick={() => equipment.refetch()} className="mt-2 block font-semibold underline">
               Спробувати ще
@@ -52,8 +52,8 @@ export function ArsenalScreen() {
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-2xl border border-white/[0.08] bg-surface p-5 text-center">
-            <p className="text-sm font-semibold text-white">Арсенал порожній</p>
-            <p className="mt-1 text-xs leading-relaxed text-gray-400">
+            <p className="text-base font-semibold text-white">Арсенал порожній</p>
+            <p className="mt-1 text-sm leading-relaxed text-gray-400">
               Завантаж фото свого спорткуточка або додай предмет вручну. Без інвентарю тренер складе план лише з власною вагою.
             </p>
           </div>
@@ -69,12 +69,12 @@ export function ArsenalScreen() {
           onChange={(e) => setName(e.target.value)}
           aria-label="Назва нового предмета"
           placeholder="Додати інвентар (напр. Еспандер)…"
-          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder-gray-500 focus:border-volt focus:outline-none"
+          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-volt focus:outline-none"
         />
         <button
           type="submit"
           disabled={add.isPending || name.trim().length < 2}
-          className="flex items-center gap-1 rounded-xl border border-white/10 bg-surface-2 px-3.5 py-2 text-xs font-semibold text-volt active:scale-95 disabled:opacity-40"
+          className="flex items-center gap-1 rounded-xl border border-white/10 bg-surface-2 px-3.5 py-2 text-sm font-semibold text-volt active:scale-95 disabled:opacity-40"
         >
           <Plus className="h-3.5 w-3.5" />
           Додати

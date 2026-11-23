@@ -36,7 +36,7 @@ export function DayCard({ day }: { day: DayDTO }) {
         <div className="min-w-0">
           <span
             className={cn(
-              "inline-flex items-center rounded-md border px-2.5 py-0.5 font-mono text-[11px] font-semibold tracking-wider uppercase",
+              "inline-flex items-center rounded-md border px-2.5 py-0.5 text-sm font-semibold",
               accent.bg,
               accent.text,
               accent.border,
@@ -44,34 +44,34 @@ export function DayCard({ day }: { day: DayDTO }) {
           >
             {DAY_TYPE_LABEL[day.type]}
           </span>
-          <h2 className="font-display mt-2 text-2xl leading-tight font-semibold tracking-wide text-white">{day.focus}</h2>
-          {day.title && <p className="mt-0.5 text-xs text-gray-400">{day.title}</p>}
+          <h2 className="font-display mt-2.5 text-[26px] leading-tight font-semibold tracking-wide text-balance text-white">{day.focus}</h2>
+          {day.title && <p className="mt-1 text-sm text-balance text-gray-300">{day.title}</p>}
         </div>
         <div className="shrink-0 text-right">
-          <div className="font-display text-4xl leading-none font-semibold text-white tabular-nums">{pctShown}<span className="text-xl text-gray-400">%</span></div>
-          <div className="font-mono text-[11px] text-gray-400 tabular-nums">
+          <div className="font-display text-[38px] leading-none font-semibold text-white tabular-nums">{pctShown}<span className="text-xl text-gray-400">%</span></div>
+          <div className="text-xs text-gray-400 tabular-nums">
             {done}/{total} вправ
           </div>
         </div>
       </div>
 
       {day.adaptedMode && (
-        <div className="mt-2.5 inline-flex rounded-md border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wide text-gray-300 uppercase">
+        <div className="mt-2.5 inline-flex rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-sm font-medium text-gray-200">
           {MODE_LABEL[day.adaptedMode]}
         </div>
       )}
 
-      <div className="mt-3.5 grid grid-cols-3 gap-2 border-t border-white/[0.06] pt-3 text-xs">
+      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-white/[0.06] pt-3 text-sm whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-gray-300">
-          <Clock className="h-3.5 w-3.5 text-gray-500" />
-          <span className="font-mono tabular-nums">{durationShown} хв</span>
+          <Clock className="h-3.5 w-3.5 text-gray-400" />
+          <span className="tabular-nums">{durationShown} хв</span>
         </div>
         <div className="flex items-center gap-1.5 text-gray-300">
           <Flame className="h-3.5 w-3.5 text-ember" />
-          <span className="font-mono tabular-nums">~{kcalShown} ккал</span>
+          <span className="tabular-nums">~{kcalShown} ккал</span>
         </div>
         <div className="flex items-center justify-end text-gray-400">
-          <span className="font-mono text-[11px]">RPE {day.rpe ?? "—"}/10</span>
+          <span className="text-xs">RPE {day.rpe ?? "—"}/10</span>
         </div>
       </div>
 

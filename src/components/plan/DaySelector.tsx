@@ -37,23 +37,23 @@ export function DaySelector({ days, selected, today, onSelect }: Props) {
             aria-label={`${label}${isToday ? " (сьогодні)" : ""}: ${status === "done" ? "виконано" : status === "in_progress" ? "в процесі" : "заплановано"}`}
             onClick={() => onSelect(i)}
             className={cn(
-              "relative z-10 flex flex-col items-center justify-center gap-1 py-2 transition-colors",
+              "relative z-10 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors",
               active ? "text-white" : "text-gray-400",
             )}
           >
-            <span className="text-xs font-bold tracking-wide">{label}</span>
-            <span className={cn("font-mono text-[9px] tabular-nums", isToday ? "text-volt" : "text-gray-600")}>
+            <span className="text-base font-bold">{label}</span>
+            <span className={cn("text-xs tabular-nums", isToday ? "text-volt" : "text-gray-500")}>
               {day ? Number(day.date.slice(8)) : "·"}
             </span>
             {status === "done" ? (
-              <span className="flex h-2 w-2 items-center justify-center rounded-full bg-mint shadow-[0_0_8px_#4CE892]">
-                <Check className="h-1.5 w-1.5 text-black" strokeWidth={4} />
+              <span className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-mint shadow-[0_0_8px_#4CE892]">
+                <Check className="h-2 w-2 text-black" strokeWidth={4} />
               </span>
             ) : status === "in_progress" ? (
               // половина заповнена — «в процесі»
-              <span className="h-2 w-2 rounded-full border border-gold bg-[linear-gradient(90deg,#ffd700_50%,transparent_50%)]" />
+              <span className="h-2.5 w-2.5 rounded-full border border-gold bg-[linear-gradient(90deg,#ffd700_50%,transparent_50%)]" />
             ) : (
-              <span className={cn("h-1.5 w-1.5 rounded-full", accent.dot, active ? "opacity-100" : "opacity-40")} />
+              <span className={cn("h-2 w-2 rounded-full", accent.dot, active ? "opacity-100" : "opacity-40")} />
             )}
           </button>
         );

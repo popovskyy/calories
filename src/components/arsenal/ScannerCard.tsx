@@ -79,10 +79,10 @@ export function ScannerCard() {
           <ScanLine className="h-6 w-6" strokeWidth={1.8} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-white">
+          <div className="text-base font-semibold text-white">
             {busy ? "Gemini Vision аналізує фото…" : result ? `Розпізнано: ${result.detected} · нових: ${result.added}` : "Оновити арсенал по фото"}
           </div>
-          <div className="mt-0.5 text-xs text-gray-400">
+          <div className="mt-0.5 text-sm text-gray-400">
             {busy
               ? "Визначаю снаряди та робочу вагу"
               : result?.note ?? "Сфотографуй куточок — AI розпізнає снаряди"}
@@ -119,7 +119,7 @@ export function ScannerCard() {
           <button
             onClick={analyze}
             disabled={busy}
-            className="flex-1 rounded-xl btn-primary px-3 py-2.5 text-center text-xs font-bold active:scale-95 disabled:opacity-50"
+            className="flex-1 rounded-xl btn-primary px-3 py-2.5 text-center text-sm font-bold active:scale-95 disabled:opacity-50"
           >
             {busy ? "Аналізую…" : `Розпізнати (${photos.length})`}
           </button>
@@ -127,7 +127,7 @@ export function ScannerCard() {
           <button
             onClick={() => galleryRef.current?.click()}
             disabled={preparing}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl btn-primary px-3 py-2.5 text-center text-xs font-bold active:scale-95 disabled:opacity-60"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl btn-primary px-3 py-2.5 text-center text-sm font-bold active:scale-95 disabled:opacity-60"
           >
             <ImagePlus className="h-4 w-4" />
             {preparing ? "Обробка…" : "Завантажити фото"}
@@ -136,14 +136,14 @@ export function ScannerCard() {
         <button
           onClick={() => cameraRef.current?.click()}
           disabled={busy || preparing || photos.length >= MAX_PHOTOS}
-          className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-surface-2 px-3 py-2.5 text-xs font-medium text-gray-200 active:scale-95 disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-surface-2 px-3 py-2.5 text-sm font-medium text-gray-200 active:scale-95 disabled:opacity-40"
         >
           <Camera className="h-4 w-4" />
           Камера
         </button>
       </div>
       {photos.length > 0 && photos.length < MAX_PHOTOS && !busy && (
-        <button onClick={() => galleryRef.current?.click()} className="mt-2 text-[11px] text-gray-400 underline">
+        <button onClick={() => galleryRef.current?.click()} className="mt-2 text-xs text-gray-400 underline">
           + додати ще фото ({photos.length}/{MAX_PHOTOS})
         </button>
       )}

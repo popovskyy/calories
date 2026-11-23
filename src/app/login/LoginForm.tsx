@@ -30,7 +30,7 @@ export function LoginForm() {
   };
 
   const field =
-    "mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white placeholder-gray-500 focus:border-volt focus:outline-none";
+    "mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-base text-white placeholder-gray-500 focus:border-volt focus:outline-none";
 
   return (
     <form onSubmit={submit} className="w-full space-y-4">
@@ -39,20 +39,20 @@ export function LoginForm() {
           <Zap className="h-8 w-8" strokeWidth={2.2} />
         </div>
         <h1 className="font-display mt-4 text-4xl font-semibold tracking-wider text-white">Tactical Fit</h1>
-        <p className="mt-1 text-xs text-gray-400">AI Домашній Тренер</p>
+        <p className="mt-1 text-sm text-gray-400">AI Домашній Тренер</p>
       </div>
 
       <label className="block">
-        <span className="text-[11px] tracking-wider text-gray-500 uppercase">Логін</span>
+        <span className="text-sm font-medium text-gray-300">Логін</span>
         <input className={field} autoComplete="username" autoCapitalize="none" autoCorrect="off" value={username} onChange={(e) => setUsername(e.target.value)} required />
       </label>
       <label className="block">
-        <span className="text-[11px] tracking-wider text-gray-500 uppercase">Пароль</span>
+        <span className="text-sm font-medium text-gray-300">Пароль</span>
         <input className={field} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
       </label>
 
       {error && (
-        <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+        <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
           {error}
         </p>
       )}
@@ -60,7 +60,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-2xl btn-primary py-3.5 text-sm font-bold transition active:scale-[0.98] disabled:opacity-50"
+        className="w-full rounded-2xl btn-primary py-3.5 text-base font-bold transition active:scale-[0.98] disabled:opacity-50"
       >
         {busy ? "Входжу…" : "Увійти"}
       </button>

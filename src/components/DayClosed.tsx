@@ -82,7 +82,7 @@ export function DayClosed({ focus, doneCount, totalCount, kcal, weekFlags, close
           </span>
           <div className="min-w-0">
             <h2 className="font-display text-[30px] leading-none font-semibold text-white">День закрито</h2>
-            <p className="mt-1.5 truncate text-xs text-gray-400">{focus}</p>
+            <p className="mt-1.5 truncate text-sm text-gray-400">{focus}</p>
           </div>
         </div>
 
@@ -90,20 +90,20 @@ export function DayClosed({ focus, doneCount, totalCount, kcal, weekFlags, close
           <div>
             <div className="font-display text-[40px] leading-none font-semibold text-white tabular-nums">
               {doneShown}
-              <span className="text-2xl text-gray-500">/{totalCount}</span>
+              <span className="text-2xl text-gray-400">/{totalCount}</span>
             </div>
-            <div className="mt-1.5 text-[11px] tracking-[0.02em] text-gray-400">вправ виконано</div>
+            <div className="mt-1.5 text-xs tracking-[0.02em] text-gray-400">вправ виконано</div>
           </div>
           <div>
             <div className="font-display text-[40px] leading-none font-semibold text-white tabular-nums">
               {kcalShown}
             </div>
-            <div className="mt-1.5 text-[11px] tracking-[0.02em] text-gray-400">ккал (оцінка)</div>
+            <div className="mt-1.5 text-xs tracking-[0.02em] text-gray-400">ккал (оцінка)</div>
           </div>
         </div>
 
         <div className="mt-4">
-          <div className="flex items-baseline justify-between text-[11px] tracking-[0.02em] text-gray-400">
+          <div className="flex items-baseline justify-between text-xs tracking-[0.02em] text-gray-400">
             <span>Тиждень</span>
             <span className="tabular-nums text-gray-300">{weekDone} з 5 днів</span>
           </div>
@@ -116,7 +116,7 @@ export function DayClosed({ focus, doneCount, totalCount, kcal, weekFlags, close
                   data-new={i === closedIndex}
                   style={{ animationDelay: `${500 + i * 90}ms` }}
                 />
-                <span className={cn("mt-1.5 block text-[10px]", i === closedIndex ? "text-gold" : "text-gray-500")}>{WEEKDAYS[i]}</span>
+                <span className={cn("mt-1.5 block text-xs", i === closedIndex ? "text-gold" : "text-gray-400")}>{WEEKDAYS[i]}</span>
               </div>
             ))}
           </div>
