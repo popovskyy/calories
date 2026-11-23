@@ -28,6 +28,8 @@ interface Props {
   doneLabel?: string;
   /** Колір кільця/заливки в стані утримання. */
   accent?: string;
+  /** Лише для ring: lg 48px (за замовчуванням), md 40px — для згорнутих виконаних карток. */
+  size?: "lg" | "md";
   disabled?: boolean;
   className?: string;
 }
@@ -52,6 +54,7 @@ export function HoldToCompleteButton({
   label,
   doneLabel,
   accent = "#A3E635",
+  size = "lg",
   disabled = false,
   className,
 }: Props) {
@@ -215,10 +218,14 @@ export function HoldToCompleteButton({
       onClick={onClick}
       className={cn(
         "hold-btn border",
-        isBar ? "h-14 w-full overflow-hidden rounded-2xl text-sm font-bold" : "h-12 w-12 shrink-0 rounded-2xl",
+        isBar
+          ? "h-14 w-full overflow-hidden rounded-2xl text-sm font-bold"
+          : cn("shrink-0 rounded-2xl", size === "md" ? "h-10 w-10" : "h-12 w-12"),
         completed
           ? "border-mint/50 bg-mint/15 text-mint"
-          : "border-white/10 bg-surface-2 text-gray-300 hover:border-white/25",
+          : isBar
+            ? "border-volt/40 bg-surface-2 text-white hover:border-volt/70"
+            : "border-white/10 bg-surface-2 text-gray-300 hover:border-white/25",
         disabled && "opacity-50",
         className,
       )}
@@ -230,13 +237,17 @@ export function HoldToCompleteButton({
             ref={fillRef}
             aria-hidden
             className="absolute inset-0 origin-left rounded-[inherit]"
-            style={{ transform: `scaleX(${completed ? 1 : 0})`, background: completed ? "rgba(16,185,129,0.18)" : `${accent}33` }}
+            style={{ transform: `scaleX(${completed ? 1 : 0})`, background: completed ? "rgba(16,185,129,0.18)" : `${accent}40` }}
           />
           <span className="relative z-10 flex items-center justify-center gap-2.5">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path className="hold-check-path" d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="hold-label">{completed ? (doneLabel ?? label) : label}</span>
+            {/* Фіксований слот 20×20: «порожній чекбокс» у спокої → галочка після завершення */}
+            <span className={cn("relative h-5 w-5 shrink-0", !completed && "text-volt")} aria-hidden>
+              <span className="hold-idle-glyph absolute inset-[3px] rounded-[4px] border-2 border-current" />
+              <svg viewBox="0 0 24 24" className="absolute inset-0 h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path className="hold-check-path" d="M5 13l4 4L19 7" />
+              </svg>
+            </span>
+            <span>{completed ? (doneLabel ?? label) : label}</span>
           </span>
         </>
       ) : (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayProgress, dayStatus, formatDuration, formatPrescription, formatSeconds } from "./format";
+import { dayProgress, dayStatus, formatDuration, formatPrescription, formatSeconds, videoUrl } from "./format";
 
 describe("formatPrescription", () => {
   it("підходи × повтори", () => {
@@ -45,5 +45,21 @@ describe("dayProgress / dayStatus", () => {
     expect(dayStatus({ completedExerciseIds: ["a"], workoutCompletedAt: "2026-11-23T10:00:00Z" })).toBe(
       "done",
     );
+  });
+});
+
+describe("videoUrl", () => {
+  it("бере запит від ШІ й кодує його", () => {
+    expect(videoUrl({ name: "x", videoQuery: "dead bug exercise proper form" })).toBe(
+      "https://www.youtube.com/results?search_query=dead%20bug%20exercise%20proper%20form",
+    );
+  });
+  it("без запиту — фолбек з назви вправи (кирилиця кодується)", () => {
+    const url = videoUrl({ name: "Планка", videoQuery: null });
+    expect(url.startsWith("https://www.youtube.com/results?search_query=")).toBe(true);
+    expect(decodeURIComponent(url.split("=")[1])).toBe("Планка як правильно робити");
+  });
+  it("порожній рядок запиту не вважається запитом", () => {
+    expect(decodeURIComponent(videoUrl({ name: "Присідання", videoQuery: "  " }).split("=")[1])).toContain("Присідання");
   });
 });

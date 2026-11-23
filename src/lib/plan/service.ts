@@ -174,6 +174,7 @@ function exerciseRows(day: AiDay, aliases: Map<string, Equipment>) {
         load: ex.load?.trim() || null,
         restSec: ex.restSec,
         tip: ex.tip.trim(),
+        videoQuery: ex.videoQuery.trim() || null,
       });
     }
   }

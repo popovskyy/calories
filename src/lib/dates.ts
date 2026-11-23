@@ -8,6 +8,8 @@
 export const WEEKDAY_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт"] as const;
 export const WEEKDAY_LONG = ["Понеділок", "Вівторок", "Середа", "Четвер", "П’ятниця"] as const;
 
+const WEEKDAY_FULL = ["Понеділок", "Вівторок", "Середа", "Четвер", "П’ятниця", "Субота", "Неділя"] as const;
+
 const MONTHS_SHORT = [
   "січ", "лют", "бер", "кві", "тра", "чер", "лип", "сер", "вер", "жов", "лис", "гру",
 ] as const;
@@ -81,4 +83,17 @@ export function formatWeekRange(weekStart: string): string {
     return `${a.getUTCDate()}–${b.getUTCDate()} ${MONTHS_SHORT[b.getUTCMonth()]}`;
   }
   return `${formatDayMonth(weekStart)} – ${formatDayMonth(end)}`;
+}
+
+/** "Понеділок, 23 лис" */
+export function formatDateLong(iso: string): string {
+  return `${WEEKDAY_FULL[weekdayIndex(iso)]}, ${formatDayMonth(iso)}`;
+}
+
+/** «Сьогодні» / «Завтра» / «Вчора» або null, якщо дата далі за добу від `today`. */
+export function relativeDayLabel(iso: string, today: string): string | null {
+  if (iso === today) return "Сьогодні";
+  if (iso === addDays(today, 1)) return "Завтра";
+  if (iso === addDays(today, -1)) return "Вчора";
+  return null;
 }

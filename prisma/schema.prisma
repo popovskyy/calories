@@ -125,8 +125,10 @@ model Exercise {
   /// Вага/опір: «13 кг», «опір 5–6 з 8», «власна вага»
   load        String?
   restSec     Int          @default(60)
-  /// Техніка / рекомендація
+  /// «Як робити»: прості кроки для новачка (стартова поза → рух → на що звернути увагу)
   tip         String       @default("")
+  /// Пошуковий запит для відео-демонстрації на YouTube (англійською — результатів більше й вони краще)
+  videoQuery  String?
   logs        WorkoutLog[]
 
   @@index([dayId, block, position])

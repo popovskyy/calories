@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ChevronDown, Dumbbell, Sparkles, Zap } from "lucide-react";
-import { addDays, defaultWeekStart, formatWeekRange, weekdayIndex, WEEKDAY_LONG } from "@/lib/dates";
+import { ChevronLeft, ChevronRight, Dumbbell, Info, Sparkles, Zap } from "lucide-react";
+import { addDays, defaultWeekStart, formatDateLong, formatWeekRange, relativeDayLabel, weekdayIndex, WEEKDAY_LONG } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { BLOCKS, BLOCK_LABEL } from "@/lib/types";
 import { useToday } from "@/hooks/useToday";
@@ -70,33 +70,29 @@ function PlanContent({ today }: { today: string }) {
   };
 
   const p = profile.data;
+  // Заголовок веде з ДАТИ обраного дня («Сьогодні», «Завтра»…), а не зі статичних зросту/ваги
+  const headerDate = day?.date ?? today;
+  const headerEyebrow = relativeDayLabel(headerDate, today) ?? "День плану";
+  const nextId = day?.exercises.find((e) => !done.has(e.id))?.id ?? null;
 
   return (
     <section className="space-y-4">
-      {/* Телеметрія атлета + адаптація */}
-      <div className="flex items-center justify-between gap-2">
+      {/* Дата дня + адаптація; зріст/вага — компактним рядком (повні дані — у профілі) */}
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 rounded-full bg-volt" />
-            <span className="truncate font-mono text-[11px] tracking-wider text-gray-400 uppercase">
-              {p ? `${p.name} · ${p.age} р.` : "Атлет"}
-            </span>
+            <span className="font-mono text-[11px] tracking-wider text-gray-400 uppercase">{headerEyebrow}</span>
           </div>
-          <h1 className="mt-0.5 text-lg font-bold tracking-tight text-white">
-            {p ? (
-              <>
-                {p.heightCm} см <span className="font-normal text-gray-600">·</span>{" "}
-                <span className="font-mono text-volt">{p.weightKg} кг</span>
-              </>
-            ) : (
-              <span className="inline-block h-6 w-28 rounded skeleton" />
-            )}
-          </h1>
+          <h1 className="mt-0.5 text-xl font-bold tracking-tight text-white">{formatDateLong(headerDate)}</h1>
+          <p className="mt-0.5 font-mono text-[11px] text-gray-500 tabular-nums">
+            {p ? `${p.age} р. · ${p.heightCm} см · ${p.weightKg} кг` : <span className="inline-block h-3 w-32 rounded skeleton" />}
+          </p>
         </div>
         <button
           onClick={() => setAdaptOpen(true)}
           disabled={!day || dayFinished || adapt.isPending}
-          className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-surface-2 px-3 py-2 text-xs font-semibold text-gray-100 shadow-sm transition hover:border-volt/40 active:scale-95 disabled:opacity-40"
+          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-surface-2 px-3 py-2 text-xs font-semibold text-gray-100 shadow-sm transition hover:border-volt/40 active:scale-95 disabled:opacity-40"
         >
           <Zap className="h-3.5 w-3.5 text-volt" strokeWidth={2.2} />
           Адаптувати
@@ -115,6 +111,16 @@ function PlanContent({ today }: { today: string }) {
           <button aria-label="Наступний тиждень" onClick={() => shiftWeek(1)} className="rounded-lg p-1.5 text-gray-400 hover:bg-white/5 hover:text-white">
             <ChevronRight className="h-4 w-4" />
           </button>
+          {plan?.summary && (
+            <button
+              aria-label="Логіка тижня від тренера"
+              aria-expanded={summaryOpen}
+              onClick={() => setSummaryOpen((v) => !v)}
+              className={cn("ml-1 rounded-lg p-1.5 transition-colors hover:bg-white/5", summaryOpen ? "text-volt" : "text-gray-500 hover:text-white")}
+            >
+              <Info className="h-4 w-4" />
+            </button>
+          )}
         </div>
         {plan && (
           <button
@@ -145,26 +151,18 @@ function PlanContent({ today }: { today: string }) {
         />
       ) : (
         <>
-          <DaySelector days={plan.days} selected={selected} today={today} onSelect={(d) => setPicked({ week: weekStart, day: d })} />
-
-          {plan.summary && (
-            <div className="rounded-2xl border border-white/[0.07] bg-surface">
-              <button
-                type="button"
-                onClick={() => setSummaryOpen((v) => !v)}
-                aria-expanded={summaryOpen}
-                className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[11px] tracking-wider text-gray-400 uppercase"
-              >
-                Логіка тижня від тренера
-                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", summaryOpen && "rotate-180")} />
-              </button>
-              <div className="accordion" data-open={summaryOpen}>
-                <div>
-                  <p className="px-3.5 pb-3 text-xs leading-relaxed text-gray-300">{plan.summary}</p>
-                </div>
-              </div>
+          <div>
+          <div className="accordion" data-open={summaryOpen}>
+            <div>
+              <p className="mb-4 rounded-2xl border border-white/[0.07] bg-surface p-3.5 text-xs leading-relaxed text-gray-300">
+                <span className="mb-1 block font-mono text-[10px] tracking-wider text-gray-500 uppercase">Логіка тижня від тренера</span>
+                {plan.summary}
+              </p>
             </div>
-          )}
+          </div>
+
+          <DaySelector days={plan.days} selected={selected} today={today} onSelect={(d) => setPicked({ week: weekStart, day: d })} />
+          </div>
 
           {day && (
             <div key={`${weekStart}-${day.id}-${day.adaptedMode ?? ""}`} className="space-y-4">
@@ -178,10 +176,12 @@ function PlanContent({ today }: { today: string }) {
                 </div>
               ) : (
                 <>
-                  <p className="flex items-center justify-end gap-1 px-1 text-[11px] text-gray-500">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-volt" />
-                    Затисни кнопку на 1.5 с для фіксації
-                  </p>
+                  {done.size === 0 && !dayFinished && (
+                    <p className="flex items-center justify-end gap-1 px-1 text-[11px] text-gray-500">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-volt" />
+                      Затисни кнопку на 1.5 с для фіксації
+                    </p>
+                  )}
 
                   {BLOCKS.map((block) => {
                     const items = day.exercises.filter((e) => e.block === block);
@@ -196,6 +196,7 @@ function PlanContent({ today }: { today: string }) {
                             key={ex.id}
                             exercise={ex}
                             done={done.has(ex.id)}
+                            isNext={ex.id === nextId}
                             onComplete={() => log(ex.id, true)}
                             onUndo={() => log(ex.id, false)}
                           />

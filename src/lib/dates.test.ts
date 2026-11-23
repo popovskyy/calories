@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  formatDateLong,
+  relativeDayLabel,
   defaultWeekStart,
   formatWeekRange,
   isISODate,
@@ -60,5 +62,17 @@ describe("dates", () => {
   it("formatWeekRange: у межах місяця й через місяць", () => {
     expect(formatWeekRange("2026-11-23")).toBe("23–27 лис");
     expect(formatWeekRange("2026-11-30")).toBe("30 лис – 4 гру");
+  });
+
+  it("formatDateLong: повна назва дня + дата, у т.ч. вихідні", () => {
+    expect(formatDateLong("2026-11-23")).toBe("Понеділок, 23 лис");
+    expect(formatDateLong("2026-11-28")).toBe("Субота, 28 лис");
+  });
+
+  it("relativeDayLabel: сьогодні/завтра/вчора, далі — null", () => {
+    expect(relativeDayLabel("2026-11-23", "2026-11-23")).toBe("Сьогодні");
+    expect(relativeDayLabel("2026-11-24", "2026-11-23")).toBe("Завтра");
+    expect(relativeDayLabel("2026-11-22", "2026-11-23")).toBe("Вчора");
+    expect(relativeDayLabel("2026-11-26", "2026-11-23")).toBeNull();
   });
 });

@@ -140,7 +140,7 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
       <button
         type="submit"
         disabled={!dirty || !valid || save.isPending}
-        className="w-full rounded-2xl bg-volt py-3.5 text-sm font-bold text-black transition active:scale-[0.98] disabled:opacity-40"
+        className="w-full rounded-2xl bg-volt py-3.5 text-sm font-bold text-black transition active:scale-[0.98] disabled:bg-surface-2 disabled:text-gray-500"
       >
         {save.isPending ? "Зберігаю…" : dirty ? "Зберегти зміни" : "Збережено"}
       </button>

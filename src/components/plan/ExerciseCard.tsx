@@ -1,24 +1,55 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Play } from "lucide-react";
 import { accentFor } from "@/lib/accent";
 import { cn } from "@/lib/cn";
-import { formatPrescription } from "@/lib/plan/format";
+import { formatPrescription, videoUrl } from "@/lib/plan/format";
 import type { ExerciseDTO } from "@/lib/types";
 import { HoldToCompleteButton } from "@/components/HoldToCompleteButton";
 import { RestTimer } from "@/components/plan/RestTimer";
 
+/**
+ * Скільки виконана картка чекає, перш ніж стиснутись. Має бути помітно більше за
+ * «хвіст»-клік hold-кнопки (700 мс): інакше список стрибав би просто з-під пальця.
+ */
+const SETTLE_MS = 900;
+
 interface Props {
   exercise: ExerciseDTO;
   done: boolean;
+  /** Перша невиконана вправа дня — підсвічується як «далі». */
+  isNext?: boolean;
   onComplete: () => void;
   onUndo: () => void;
 }
 
-export function ExerciseCard({ exercise: ex, done, onComplete, onUndo }: Props) {
+/** «власна вага» — шум у рядку; показуємо лише змістовне навантаження. */
+function inlineLoad(load: string | null): string | null {
+  if (!load) return null;
+  return /^власна вага$/i.test(load.trim()) ? null : load;
+}
+
+export function ExerciseCard({ exercise: ex, done, isNext = false, onComplete, onUndo }: Props) {
   const [open, setOpen] = useState(false);
+  // Початково виконана (завантаження сторінки) — одразу стиснута; щойно виконана — з паузою.
+  const [settled, setSettled] = useState(done);
+  useEffect(() => {
+    if (!done) {
+      setSettled(false);
+      return;
+    }
+    const id = setTimeout(() => setSettled(true), SETTLE_MS);
+    return () => clearTimeout(id);
+  }, [done]);
+
   const accent = accentFor(ex.type);
+  const load = inlineLoad(ex.load);
+  const highlight = isNext && !done;
+  // Остання лексема + шеврон не розриваються: інакше іконка падає на окремий рядок
+  const words = ex.name.split(" ");
+  const lastWord = words.pop() ?? "";
+  const headWords = words.join(" ");
   const facts = [
     ex.load && { k: "Вага / опір", v: ex.load },
     ex.tempo && { k: "Темп", v: ex.tempo },
@@ -27,38 +58,67 @@ export function ExerciseCard({ exercise: ex, done, onComplete, onUndo }: Props) 
   return (
     <div
       className={cn(
-        "rounded-2xl border p-3.5 transition-[border-color,background-color] duration-300",
-        done ? "border-mint/25 bg-mint/[0.05]" : "border-white/[0.08] bg-surface",
+        "rounded-2xl border transition-[padding,border-color,background-color,box-shadow] duration-300",
+        settled ? "p-2.5" : "p-3.5",
+        done
+          ? "border-mint/25 bg-mint/[0.05]"
+          : highlight
+            ? "border-volt/40 bg-surface shadow-[0_8px_30px_-12px_rgba(163,230,53,0.3)]"
+            : "border-white/[0.08] bg-surface",
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className="min-w-0 flex-1 text-left"
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            {ex.equipment && (
-              <span className={cn("rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold", accent.bg, accent.text)}>
-                {ex.equipment}
+        <div className="min-w-0 flex-1">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="w-full text-left">
+          {/* Метадані згортаються у виконаної картки: лишається один рядок із назвою */}
+          <span className="accordion" data-open={!settled}>
+            <span>
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1 pb-1.5">
+                {highlight && (
+                  <span className="rounded bg-volt px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider text-black">ДАЛІ</span>
+                )}
+                {ex.equipment && (
+                  <span className={cn("rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold", accent.bg, accent.text)}>
+                    {ex.equipment}
+                  </span>
+                )}
+                <span className="font-mono text-xs font-semibold text-gray-300 tabular-nums">{formatPrescription(ex)}</span>
+                {load && <span className="font-mono text-xs text-gray-500">{load}</span>}
               </span>
-            )}
-            <span className="font-mono text-xs font-semibold text-gray-300 tabular-nums">{formatPrescription(ex)}</span>
-          </div>
-          <h3
+            </span>
+          </span>
+          <span
             className={cn(
-              "mt-1.5 text-sm leading-snug font-semibold",
+              "block text-sm leading-snug font-semibold",
               done ? "text-gray-400 line-through decoration-mint/60" : "text-white",
             )}
           >
-            {ex.name}
-          </h3>
-          <span className="mt-1 flex items-center gap-1 text-[11px] text-gray-500">
-            Техніка та таймер відпочинку
-            <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+            {headWords && `${headWords} `}
+            <span className="whitespace-nowrap">
+              {lastWord}
+              <ChevronDown
+                aria-hidden
+                className={cn("ml-1 inline h-3.5 w-3.5 align-[-2px] text-gray-500 transition-transform", open && "rotate-180")}
+              />
+            </span>
           </span>
         </button>
+
+        {/* Відео — поза кнопкою-розкривачем (посилання всередині button — невалідний HTML); у виконаної картки згортається */}
+        <div className="accordion" data-open={!settled}>
+          <div>
+            <a
+              href={videoUrl(ex)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 transition hover:bg-white/10 active:scale-95"
+            >
+              <Play className="h-3 w-3 fill-red-500 text-red-500" aria-hidden />
+              Як робити — відео
+            </a>
+          </div>
+        </div>
+        </div>
 
         <HoldToCompleteButton
           completed={done}
@@ -67,6 +127,7 @@ export function ExerciseCard({ exercise: ex, done, onComplete, onUndo }: Props) 
           label={ex.name}
           doneLabel={`Виконано: ${ex.name}`}
           accent={accent.hex}
+          size={settled ? "md" : "lg"}
         />
       </div>
 
@@ -74,7 +135,7 @@ export function ExerciseCard({ exercise: ex, done, onComplete, onUndo }: Props) 
         <div>
           <div className="mt-3 space-y-3 border-t border-white/[0.06] pt-3">
             <p className="rounded-xl border border-white/5 bg-black/30 p-2.5 text-xs leading-relaxed text-gray-300">
-              <span className="font-semibold text-volt">Техніка: </span>
+              <span className="font-semibold text-volt">Як робити: </span>
               {ex.tip || "—"}
             </p>
             {facts.length > 0 && (

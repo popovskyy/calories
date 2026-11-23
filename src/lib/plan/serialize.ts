@@ -80,6 +80,7 @@ export function toDayDTO(d: DayWithRelations): DayDTO {
         load: e.load,
         restSec: e.restSec,
         tip: e.tip,
+        videoQuery: e.videoQuery,
       }),
     ),
     completedExerciseIds: d.logs

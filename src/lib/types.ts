@@ -51,6 +51,7 @@ export interface ExerciseDTO {
   load: string | null;
   restSec: number;
   tip: string;
+  videoQuery: string | null;
 }
 
 export interface DayDTO {

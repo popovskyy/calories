@@ -38,3 +38,13 @@ export function dayStatus(
   if (day.completedExerciseIds.length > 0) return "in_progress";
   return "planned";
 }
+
+/**
+ * Посилання на відео-демонстрацію. Свідомо ПОШУК на YouTube, а не конкретний ролик:
+ * модель не знає реальних id відео й вигадувала б неіснуючі посилання, а пошук не ламається.
+ * Запит бере англійський `videoQuery` від ШІ; для старих вправ без нього — з назви.
+ */
+export function videoUrl(ex: { name: string; videoQuery?: string | null }): string {
+  const q = ex.videoQuery?.trim() || `${ex.name} як правильно робити`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+}

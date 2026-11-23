@@ -12,7 +12,8 @@ const ex = (over: Partial<AiExercise> = {}): AiExercise => ({
   tempo: null,
   load: null,
   restSec: 90,
-  tip: "Без ривків",
+  tip: "Візьміться за перекладину, підтягніться до підборіддя.",
+  videoQuery: "pull up proper form",
   ...over,
 });
 

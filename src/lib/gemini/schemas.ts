@@ -27,7 +27,11 @@ export type ScanOutput = z.infer<typeof scanSchema>;
 /* ---------- Gemini: план тренувань ---------- */
 
 export const aiExerciseSchema = z.object({
-  name: z.string().min(2).max(120),
+  name: z
+    .string()
+    .min(2)
+    .max(120)
+    .describe("Проста зрозуміла назва звичайною українською, без жаргону, кальок і англійських назв у дужках"),
   type: z.enum(["strength", "cardio", "mobility"]),
   equipmentIds: z
     .array(z.string())
@@ -43,7 +47,16 @@ export const aiExerciseSchema = z.object({
   tempo: z.string().max(40).nullable().describe("Темп повтору, напр. «2-0-1» або «повільний негатив 3 с»"),
   load: z.string().max(80).nullable().describe("Вага або опір: «13 кг», «опір 5–6 з 8», «власна вага»"),
   restSec: z.number().int().min(0).max(300),
-  tip: z.string().max(260).describe("Техніка / рекомендація 1–2 речення українською"),
+  tip: z
+    .string()
+    .min(20)
+    .max(450)
+    .describe("«Як робити» для людини, яка цього ніколи не робила: 2–3 короткі прості речення — стартова поза, сам рух, на що звернути увагу"),
+  videoQuery: z
+    .string()
+    .min(3)
+    .max(80)
+    .describe("Запит для пошуку відео-демонстрації на YouTube англійською, напр. «dead bug exercise proper form»"),
 });
 export type AiExercise = z.infer<typeof aiExerciseSchema>;
 
