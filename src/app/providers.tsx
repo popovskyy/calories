@@ -21,7 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         position="top-center"
         theme="dark"
         // Під статус-баром iPhone (black-translucent) тост не має ховатись за годинником
-        offset="calc(env(safe-area-inset-top) + 8px)"
+        offset="calc(env(safe-area-inset-top, 0px) + 24px)"
         toastOptions={{
           style: {
             background: "var(--color-surface-2)",

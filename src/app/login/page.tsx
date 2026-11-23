@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Вхід" };
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 pt-[max(env(safe-area-inset-top),14px)] pb-[max(env(safe-area-inset-bottom),24px)]">
+    <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 pt-[calc(env(safe-area-inset-top,0px)+32px)] pb-[max(env(safe-area-inset-bottom),24px)]">
       <LoginForm />
     </main>
   );
