@@ -63,6 +63,7 @@ export function HoldToCompleteButton({
   const fillRef = useRef<HTMLSpanElement>(null);
   /** Світіння по краях екрана (#charge-glow у layout): яскравість = прогрес утримання. */
   const glowRef = useRef<HTMLElement | null>(null);
+  const burstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
@@ -126,7 +127,9 @@ export function HoldToCompleteButton({
       glow.dataset.burst = "false";
       void glow.offsetWidth;
       glow.dataset.burst = "true";
-      setTimeout(() => delete glow.dataset.burst, 900);
+      // Перезбройка: таймер попередньої кнопки не має зняти спалах, що щойно почався вдруге
+      if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
+      burstTimerRef.current = setTimeout(() => delete glow.dataset.burst, 900);
     }
     vibrate(HAPTIC.complete);
     onComplete();

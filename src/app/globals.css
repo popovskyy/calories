@@ -159,8 +159,10 @@ input[type="range"].weight-range::-moz-range-thumb {
 
 /* ---------- Основна кнопка: градієнт електричного синього + світіння ---------- */
 .btn-primary {
-  background: linear-gradient(149deg, #41c6ff 8%, #1a64fc 80%);
+  /* Старт градієнта темніший за #41C6FF: білий дрібний текст на світло-блакитному мав контраст < 2:1 */
+  background: linear-gradient(149deg, #2f9bff 4%, #1a64fc 78%);
   color: #fff;
+  text-shadow: 0 1px 2px rgba(5, 20, 60, 0.45);
   box-shadow: 0 10px 26px -10px rgba(43, 144, 254, 0.75);
   transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
