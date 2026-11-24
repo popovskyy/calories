@@ -196,7 +196,13 @@ describe("qualityWeek: власне кардіо атлета", () => {
   });
   it("вимагає кардіо в плані, якщо атлет його робить", () => {
     expect(qualityWeek(wk(1), { routine: "щодня 45 хв велотренажер" }).some((i) => i.includes("кардіо"))).toBe(true);
-    expect(qualityWeek(wk(3), { routine: "щодня 45 хв велотренажер" })).toEqual([]);
+    // 3 дні × 40 хв = 120 хв: днів досить, хвилин замало
+    const mins = qualityWeek(wk(3), { routine: "щодня 45 хв велотренажер" });
+    expect(mins).toHaveLength(1);
+    expect(mins[0]).toContain("150 хв");
+  });
+  it("кардіо 4 × 40 хв проходить", () => {
+    expect(qualityWeek(wk(4), { routine: "щодня 45 хв велотренажер" })).toEqual([]);
   });
   it("не вимагає, якщо кардіо у звичках немає", () => {
     expect(qualityWeek(wk(0), { routine: "підтягування на турніку" })).toEqual([]);

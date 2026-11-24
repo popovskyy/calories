@@ -129,6 +129,8 @@ export interface WeekQualityOpts {
 
 /** Скільки днів плану має містити власне кардіо атлета (решта дозволена як відпочинок від нього). */
 const MIN_ROUTINE_CARDIO_DAYS = 3;
+/** Мінімум кардіо за тиждень (хв) в основних блоках, коли атлет сам займається кардіо: мета сушки, ≈ нижня межа рекомендацій. */
+export const MIN_ROUTINE_CARDIO_MINUTES = 150;
 
 /** Частка силових вправ основного блоку з ≥4 підходами, нижче якої рівень «не відчувається» в плані. */
 const MIN_HEAVY_SHARE: Record<AthleteLevel, number> = { beginner: 0, intermediate: 0.35, advanced: 0.6 };
@@ -174,6 +176,14 @@ export function qualityWeek(week: AiWeek, opts: WeekQualityOpts = {}): string[] 
   }
 
   if (routine && routineMentionsCardio(routine)) {
+    const cardioMin = Math.round(
+      week.days.reduce((n, d) => n + d.main.filter((e) => e.type === "cardio").reduce((m, e) => m + (e.durationSec ?? 0), 0), 0) / 60,
+    );
+    if (cardioMin < MIN_ROUTINE_CARDIO_MINUTES) {
+      issues.push(
+        `Кардіо в основних блоках за тиждень лише ${cardioMin} хв (durationSec усіх cardio-вправ), а має бути щонайменше ${MIN_ROUTINE_CARDIO_MINUTES} хв. Збільш тривалість сесій до 30–45 хв (рівний темп у 2 зоні), одна сесія — інтервали; durationSec = загальна тривалість сесії`,
+      );
+    }
     const cardioDays = week.days.filter((d) => d.main.some((e) => e.type === "cardio")).length;
     if (cardioDays < MIN_ROUTINE_CARDIO_DAYS) {
       issues.push(
