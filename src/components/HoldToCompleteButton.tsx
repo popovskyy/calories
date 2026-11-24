@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { HAPTIC, vibrate } from "@/lib/haptics";
+import { chargeCancel, chargeSet, chargeStart, playComplete } from "@/lib/sound";
 
 /** Тривалість утримання за ТЗ: 1.5 с. */
 export const HOLD_MS = 1500;
@@ -96,6 +97,7 @@ export function HoldToCompleteButton({
     if (!holdingRef.current) return;
     holdingRef.current = false;
     stopRaf();
+    chargeCancel();
     const btn = btnRef.current;
     if (btn) delete btn.dataset.holding;
     // Плавний відкат: вмикаємо transition лише на час повернення
@@ -132,6 +134,7 @@ export function HoldToCompleteButton({
       burstTimerRef.current = setTimeout(() => delete glow.dataset.burst, 900);
     }
     vibrate(HAPTIC.complete);
+    playComplete(variant === "bar" ? "day" : "exercise");
     onComplete();
   }, [onComplete, paint, stopRaf, variant]);
 
@@ -149,12 +152,14 @@ export function HoldToCompleteButton({
     if (ringRef.current) ringRef.current.style.transition = "none";
     if (fillRef.current) fillRef.current.style.transition = "none";
     vibrate(HAPTIC.holdStart);
+    chargeStart();
 
     // rAF-цикл — локальна функція: так вона може безпечно посилатись сама на себе
     const loop = (now: number) => {
       if (!holdingRef.current) return;
       const p = Math.min(Math.max((now - startRef.current) / holdMs, 0), 1);
       paint(p);
+      chargeSet(p);
       if (p >= 1) {
         finish();
         return;
@@ -168,6 +173,7 @@ export function HoldToCompleteButton({
   useEffect(
     () => () => {
       stopRaf();
+      chargeCancel();
       glowRef.current?.style.setProperty("--charge", "0");
     },
     [stopRaf],

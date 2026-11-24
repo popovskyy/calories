@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { LEVEL_HINT, LEVEL_LABEL, type AthleteLevel, type ProfileDTO } from "@/lib/types";
 import { useProfile, useSaveProfile } from "@/hooks/queries";
+import { isSoundOn, playPreview, setSoundOn } from "@/lib/sound";
 
 const field =
   "mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-base text-white placeholder-gray-500 focus:border-volt focus:outline-none";
@@ -39,6 +40,7 @@ export function ProfileScreen() {
         <ProfileForm initial={profile.data} />
       )}
 
+      <SoundToggle />
       <LogoutButton />
     </section>
   );
@@ -207,6 +209,35 @@ function LogoutButton() {
     >
       <LogOut className="h-4 w-4" />
       Вийти
+    </button>
+  );
+}
+
+/** Звук утримання «виконано» — налаштування лише цього пристрою (localStorage), не профілю атлета. */
+function SoundToggle() {
+  const [on, setOn] = useState(() => isSoundOn());
+  const Icon = on ? Volume2 : VolumeX;
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => {
+        const next = !on;
+        setSoundOn(next);
+        setOn(next);
+        if (next) playPreview(); // дотик — це жест, що розблоковує аудіо на iOS, і заодно прев'ю звуку
+      }}
+      className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-surface px-4 py-3 text-left transition active:scale-[0.98]"
+    >
+      <Icon className={cn("h-5 w-5 shrink-0", on ? "text-volt" : "text-gray-500")} aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-base font-medium text-white">Звук при утриманні</span>
+        <span className="block text-sm text-gray-400">Тон наростає, поки тримаєш, і «клац» при завершенні</span>
+      </span>
+      <span aria-hidden className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors", on ? "bg-volt" : "bg-white/15")}>
+        <span className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform", on && "translate-x-5")} />
+      </span>
     </button>
   );
 }
