@@ -29,6 +29,10 @@ model UserProfile {
   goal        String   @default("Зниження ваги / сушка, збереження і ріст силової витривалості")
   /// Обмеження/здоров'я — теж іде в промпт (спина, суглоби, травми).
   limitations String   @default("Берегти спину та суглоби: без ривків, без осьового перевантаження, контроль техніки")
+  /// Рівень підготовки: beginner | intermediate | advanced — визначає складність варіантів вправ, підходи й обсяг.
+  level       String   @default("intermediate")
+  /// Що атлет уже робить сам (напр. «щодня 45 хв велотренажер, підтягування на турніку»). Тренер не дублює це, а враховує втому.
+  routine     String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

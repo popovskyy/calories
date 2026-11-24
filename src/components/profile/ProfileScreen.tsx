@@ -5,7 +5,7 @@ import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
-import type { ProfileDTO } from "@/lib/types";
+import { LEVEL_HINT, LEVEL_LABEL, type AthleteLevel, type ProfileDTO } from "@/lib/types";
 import { useProfile, useSaveProfile } from "@/hooks/queries";
 
 const field =
@@ -54,6 +54,8 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
   const [weight, setWeight] = useState(String(initial.weightKg));
   const [goal, setGoal] = useState(initial.goal);
   const [limitations, setLimitations] = useState(initial.limitations);
+  const [level, setLevel] = useState<AthleteLevel>(initial.level);
+  const [routine, setRoutine] = useState(initial.routine);
 
   const num = (s: string) => Number(s.replace(",", "."));
   const draft: ProfileDTO = {
@@ -64,6 +66,8 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
     weightKg: Math.round(num(weight) * 10) / 10,
     goal: goal.trim(),
     limitations: limitations.trim(),
+    level,
+    routine: routine.trim(),
   };
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const valid =
@@ -119,6 +123,41 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
           <input className={cn(field, "tabular-nums")} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} />
         </label>
       </div>
+
+      <div>
+        <span className={label}>Рівень підготовки</span>
+        <div className="mt-1.5 grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Рівень підготовки">
+          {(["beginner", "intermediate", "advanced"] as const).map((l) => (
+            <button
+              type="button"
+              key={l}
+              role="radio"
+              aria-checked={level === l}
+              onClick={() => setLevel(l)}
+              className={cn(
+                "min-h-11 rounded-xl border px-1 py-2.5 text-sm font-semibold transition",
+                level === l ? "border-volt/50 bg-volt/15 text-volt" : "border-white/10 text-gray-400",
+              )}
+            >
+              {LEVEL_LABEL[l]}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-sm text-gray-400">{LEVEL_HINT[level]}</p>
+      </div>
+
+      <label className="block">
+        <span className={label}>Що я вже роблю сам</span>
+        <textarea
+          className={cn(field, "resize-none")}
+          rows={3}
+          maxLength={400}
+          value={routine}
+          placeholder="Напр.: щодня 45 хв велотренажер; підтягування й віджимання на турніку"
+          onChange={(e) => setRoutine(e.target.value)}
+        />
+        <span className="mt-1 block text-sm text-gray-400">Тренер не дублюватиме це, а враховуватиме втому й доповнюватиме.</span>
+      </label>
 
       <label className="block">
         <span className={label}>Ціль</span>

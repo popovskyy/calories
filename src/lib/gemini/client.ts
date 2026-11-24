@@ -159,21 +159,37 @@ export async function generateStructured<T>(
  * Генерація з одним «ремонтним» заходом: якщо відповідь не пройшла схему або
  * семантичні правила (напр. вправа з інвентарем, якого немає), повертаємо моделі
  * її ж відповідь і список порушень — це дешевше й надійніше, ніж обирати «з нуля».
+ *
+ * Гарантія: м'які правила якості (qualityCheck) ніколи не перетворюють відповідь, яка проходить схему
+ * й жорсткі правила, на помилку. Така відповідь запам'ятовується, і якщо ремонт нічого не виправив,
+ * зламав або впав мережею — повертається найкраща з придатних.
  */
 export async function generateValidated<T>(opts: {
   system: string;
   userParts: Part[];
   schema: z.ZodType<T>;
+  /** Жорсткі правила (неіснуючий інвентар тощо): якщо порушені навіть після ремонту й придатної відповіді немає — помилка. */
   semanticCheck: (data: T) => string[];
+  /**
+   * М'які правила якості (обсяг, покриття інвентарю): порушення теж ідуть у ремонтний повтор,
+   * але якщо модель їх не виправила — результат приймаємо (працюючий план кращий за помилку).
+   */
+  qualityCheck?: (data: T) => string[];
   temperature?: number;
   maxOutputTokens?: number;
+  /** Для тестів: підміна виклику моделі. */
+  run?: typeof generateStructured;
 }): Promise<{ data: T; model: string }> {
+  const run = opts.run ?? generateStructured;
   const contents: Content[] = [{ role: "user", parts: opts.userParts }];
+  /** Найкраща відповідь, що пройшла схему й жорсткі правила (з найменшою кількістю м'яких порушень). */
+  let best: { data: T; soft: string[] } | null = null;
+
   for (let attempt = 0; attempt < 2; attempt++) {
     let issues: string[];
     let raw = "";
     try {
-      const out = await generateStructured({
+      const out = await run({
         system: opts.system,
         contents,
         schema: opts.schema,
@@ -181,14 +197,22 @@ export async function generateValidated<T>(opts: {
         maxOutputTokens: opts.maxOutputTokens,
       });
       raw = out.raw;
-      issues = opts.semanticCheck(out.data);
+      const hard = opts.semanticCheck(out.data);
+      const soft = hard.length === 0 ? (opts.qualityCheck?.(out.data) ?? []) : [];
+      issues = [...hard, ...soft];
       if (issues.length === 0) return { data: out.data, model: geminiModel() };
+      if (hard.length === 0 && (!best || soft.length < best.soft.length)) best = { data: out.data, soft };
     } catch (e) {
-      if (!(e instanceof AiValidationError)) throw e;
-      issues = e.issues;
-      raw = e.raw;
+      // Ремонтний виклик (мережа, 5xx, ліміт) не повинен знецінити вже придатну відповідь
+      if (!(e instanceof AiValidationError) && !(attempt === 1 && best)) throw e;
+      issues = e instanceof AiValidationError ? e.issues : [e instanceof Error ? e.message : String(e)];
+      raw = e instanceof AiValidationError ? e.raw : "";
     }
     if (attempt === 1) {
+      if (best) {
+        console.warn("[gemini] repair did not fully fix quality issues (accepted):", best.soft.slice(0, 5));
+        return { data: best.data, model: geminiModel() };
+      }
       console.error("[gemini] validation failed after repair:", issues.slice(0, 5));
       throw new AiError(
         `ШІ двічі видав некоректний результат (${issues.slice(0, 2).join("; ")}). Спробуйте ще раз.`,

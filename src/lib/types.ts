@@ -6,6 +6,18 @@ export type Block = "warmup" | "main" | "cooldown";
 export type EquipmentCategory = "strength" | "cardio" | "mobility" | "other";
 export type AdaptMode = "fatigued" | "short_time" | "full_power";
 export type DayStatus = "planned" | "in_progress" | "done";
+export type AthleteLevel = "beginner" | "intermediate" | "advanced";
+
+export const LEVEL_LABEL: Record<AthleteLevel, string> = {
+  beginner: "Новачок",
+  intermediate: "Середній",
+  advanced: "Просунутий",
+};
+export const LEVEL_HINT: Record<AthleteLevel, string> = {
+  beginner: "Полегшені варіанти, 2–3 підходи, багато уваги техніці",
+  intermediate: "Стандартні рухи, 3–4 підходи, запас 1–2 повтори",
+  advanced: "Складні варіанти, темп і паузи, 4–5 підходів",
+};
 
 export const BLOCKS: readonly Block[] = ["warmup", "main", "cooldown"];
 
@@ -23,6 +35,8 @@ export interface ProfileDTO {
   weightKg: number;
   goal: string;
   limitations: string;
+  level: AthleteLevel;
+  routine: string;
 }
 
 export interface EquipmentDTO {

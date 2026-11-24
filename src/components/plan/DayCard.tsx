@@ -5,6 +5,7 @@ import { accentFor, DAY_TYPE_LABEL } from "@/lib/accent";
 import { cn } from "@/lib/cn";
 import { dayProgress } from "@/lib/plan/format";
 import { useCountUp } from "@/hooks/useCountUp";
+import { TypeIcon } from "@/components/TypeIcon";
 import type { AdaptMode, DayDTO } from "@/lib/types";
 
 const MODE_LABEL: Record<AdaptMode, string> = {
@@ -36,12 +37,13 @@ export function DayCard({ day }: { day: DayDTO }) {
         <div className="min-w-0">
           <span
             className={cn(
-              "inline-flex items-center rounded-md border px-2.5 py-0.5 text-sm font-semibold",
+              "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-sm font-semibold",
               accent.bg,
               accent.text,
               accent.border,
             )}
           >
+            <TypeIcon type={day.type} className="h-4 w-4" />
             {DAY_TYPE_LABEL[day.type]}
           </span>
           <h2 className="font-display mt-2.5 text-[26px] leading-tight font-semibold tracking-wide text-balance text-white">{day.focus}</h2>

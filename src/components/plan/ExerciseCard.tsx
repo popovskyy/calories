@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { formatPrescription, videoUrl } from "@/lib/plan/format";
 import type { ExerciseDTO } from "@/lib/types";
 import { HoldToCompleteButton } from "@/components/HoldToCompleteButton";
+import { TYPE_NAME, TypeIcon } from "@/components/TypeIcon";
 import { RestTimer } from "@/components/plan/RestTimer";
 
 /**
@@ -70,6 +71,19 @@ export function ExerciseCard({ exercise: ex, done, isNext = false, onVideo, onCo
       )}
     >
       <div className="flex items-center justify-between gap-3">
+        {/* Плитка типу вправи: гиря — силова, пульс — кардіо, людина — мобіліті (колір теж за типом) */}
+        <span
+          role="img"
+          aria-label={TYPE_NAME[ex.type]}
+          title={TYPE_NAME[ex.type]}
+          className={cn(
+            "flex shrink-0 items-center justify-center self-start rounded-xl border transition-[width,height,opacity] duration-300",
+            settled ? "h-8 w-8" : "h-10 w-10",
+            done ? "border-white/10 bg-white/[0.04] text-gray-500" : cn(accent.border, accent.bg, accent.text),
+          )}
+        >
+          <TypeIcon type={ex.type} className={settled ? "h-4 w-4" : "h-5 w-5"} />
+        </span>
         <div className="min-w-0 flex-1">
         <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="w-full text-left">
           {/* Метадані згортаються у виконаної картки: лишається один рядок із назвою */}

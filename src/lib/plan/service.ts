@@ -1,4 +1,4 @@
-import { Prisma, type Equipment } from "@prisma/client";
+import { Prisma, type Equipment, type UserProfile } from "@prisma/client";
 import type { Part } from "@google/genai";
 import { prisma } from "@/lib/prisma";
 import { addDays, WEEKDAY_SHORT } from "@/lib/dates";
@@ -14,10 +14,10 @@ import {
   type AliasedEquipment,
 } from "@/lib/gemini/prompts";
 import { aiDaySchema, aiWeekSchema, scanSchema, type AiDay } from "@/lib/gemini/schemas";
-import { BLOCKS, type AdaptMode, type PlanDTO, type ScanResultDTO } from "@/lib/types";
+import { BLOCKS, type AdaptMode, type AthleteLevel, type PlanDTO, type ScanResultDTO } from "@/lib/types";
 import { formatPrescription } from "@/lib/plan/format";
 import { planInclude, toDayDTO, toEquipmentDTO, toPlanDTO, type PlanWithRelations } from "@/lib/plan/serialize";
-import { validateDay, validateWeek } from "@/lib/plan/validate";
+import { qualityDay, qualityWeek, validateDay, validateWeek, type RequiredEquipment } from "@/lib/plan/validate";
 
 /* ------------------------------------------------------------------ */
 /* Профіль та інвентар                                                  */
@@ -140,7 +140,7 @@ export async function buildHistory(weekStart: string): Promise<string> {
     include: planInclude,
   });
   if (plans.length === 0) {
-    return "Історії тренувань ще немає (перший тиждень) — починай з помірного обсягу й чіткої техніки.";
+    return "Історії тренувань ще немає (перший тиждень). Обсяг і складність обирай за рівнем підготовки атлета з профілю, а не за «обережним стартом».";
   }
   return plans
     .map((p) => `Тиждень ${p.weekStart}:\n${p.days.map(describeDay).join("\n")}`)
@@ -185,24 +185,69 @@ function exerciseRows(day: AiDay, aliases: Map<string, Equipment>) {
 /* Генерація тижня                                                      */
 /* ------------------------------------------------------------------ */
 
+/** Назви й описи активних предметів одним рядком — для перевірки, що модель не вигадує інвентар у назвах вправ. */
+function ownedText(aliased: AliasedEquipment[]): string {
+  return aliased.map((a) => `${a.item.name} ${a.item.detail ?? ""}`).join(" ");
+}
+
+function levelOf(profile: UserProfile): AthleteLevel {
+  return profile.level === "beginner" || profile.level === "advanced" ? profile.level : "intermediate";
+}
+
+/** Силові предмети, які тренер зобов'язаний використати протягом тижня (інакше «турнік є, а вправ на нього нема»). */
+function requiredStrength(aliased: AliasedEquipment[]): RequiredEquipment[] {
+  return aliased.filter((a) => a.item.category === "strength").map((a) => ({ alias: a.alias, name: a.item.name }));
+}
+
+/**
+ * Чиста частина генерації (без запису в БД): промпт → Gemini → перевірка. Окремо від generateWeek,
+ * щоб можна було прогнати живу перевірку якості на реальних даних, нічого не змінюючи в базі.
+ */
+export async function composeWeek(args: {
+  profile: UserProfile;
+  equipment: Equipment[];
+  history: string;
+  weekStart: string;
+  note?: string;
+}) {
+  const aliased = aliasEquipment(args.equipment);
+  const aliasMap = new Map(aliased.map((a) => [a.alias, a.item]));
+  const allowed = new Set(aliasMap.keys());
+  const required = requiredStrength(aliased);
+
+  const { data, model } = await generateValidated({
+    system: COACH_SYSTEM,
+    userParts: [
+      {
+        text: weekUserPrompt({
+          profile: args.profile,
+          equipment: aliased,
+          history: args.history,
+          weekStart: args.weekStart,
+          note: args.note,
+        }),
+      },
+    ],
+    schema: aiWeekSchema,
+    semanticCheck: (week) => validateWeek(week, allowed),
+    qualityCheck: (week) => qualityWeek(week, { required, ownedText: ownedText(aliased), level: levelOf(args.profile) }),
+    maxOutputTokens: 24000,
+  });
+  return { data, model, aliasMap };
+}
+
 export async function generateWeek(args: { weekStart: string; note?: string }): Promise<PlanDTO> {
   const [profile, equipment, history] = await Promise.all([
     getProfile(),
     listEquipment(),
     buildHistory(args.weekStart),
   ]);
-  const aliased = aliasEquipment(equipment);
-  const aliasMap = new Map(aliased.map((a) => [a.alias, a.item]));
-  const allowed = new Set(aliasMap.keys());
-
-  const { data, model } = await generateValidated({
-    system: COACH_SYSTEM,
-    userParts: [
-      { text: weekUserPrompt({ profile, equipment: aliased, history, weekStart: args.weekStart, note: args.note }) },
-    ],
-    schema: aiWeekSchema,
-    semanticCheck: (week) => validateWeek(week, allowed),
-    maxOutputTokens: 24000,
+  const { data, model, aliasMap } = await composeWeek({
+    profile,
+    equipment,
+    history,
+    weekStart: args.weekStart,
+    note: args.note,
   });
 
   const days = [...data.days].sort((a, b) => a.weekday - b.weekday);
@@ -296,6 +341,7 @@ export async function adaptDay(args: { dayId: string; mode: AdaptMode; note?: st
     ],
     schema: aiDaySchema,
     semanticCheck: (d) => validateDay(d, allowed),
+    qualityCheck: (d) => qualityDay(d, "День", args.mode, ownedText(aliased)),
     maxOutputTokens: 8000,
   });
 

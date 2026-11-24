@@ -6,6 +6,7 @@ import { accentFor } from "@/lib/accent";
 import { cn } from "@/lib/cn";
 import { dayStatus } from "@/lib/plan/format";
 import type { DayDTO } from "@/lib/types";
+import { TypeIcon } from "@/components/TypeIcon";
 
 interface Props {
   days: DayDTO[];
@@ -49,11 +50,12 @@ export function DaySelector({ days, selected, today, onSelect }: Props) {
               <span className="flex h-2.5 w-2.5 items-center justify-center rounded-full bg-mint shadow-[0_0_8px_#4CE892]">
                 <Check className="h-2 w-2 text-black" strokeWidth={4} />
               </span>
-            ) : status === "in_progress" ? (
-              // половина заповнена — «в процесі»
-              <span className="h-2.5 w-2.5 rounded-full border border-gold bg-[linear-gradient(90deg,#ffd700_50%,transparent_50%)]" />
             ) : (
-              <span className={cn("h-2 w-2 rounded-full", accent.dot, active ? "opacity-100" : "opacity-40")} />
+              // Тип дня — іконкою (гиря / пульс / людина / шари); «в процесі» — золотий колір замість акценту типу
+              <TypeIcon
+                type={day?.type ?? "strength"}
+                className={cn("h-4 w-4", status === "in_progress" ? "text-gold" : accent.text, active ? "opacity-100" : "opacity-50")}
+              />
             )}
           </button>
         );

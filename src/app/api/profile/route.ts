@@ -12,6 +12,8 @@ const body = z.object({
   weightKg: z.number().min(35).max(250),
   goal: z.string().trim().min(3).max(300),
   limitations: z.string().trim().max(400),
+  level: z.enum(["beginner", "intermediate", "advanced"]),
+  routine: z.string().trim().max(400),
 });
 
 export async function GET() {

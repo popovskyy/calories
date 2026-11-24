@@ -33,6 +33,8 @@ export function toProfileDTO(p: UserProfile): ProfileDTO {
     weightKg: p.weightKg,
     goal: p.goal,
     limitations: p.limitations,
+    level: (p.level === "beginner" || p.level === "advanced" ? p.level : "intermediate") as ProfileDTO["level"],
+    routine: p.routine,
   };
 }
 
