@@ -230,7 +230,7 @@ export async function composeWeek(args: {
     ],
     schema: aiWeekSchema,
     semanticCheck: (week) => validateWeek(week, allowed),
-    qualityCheck: (week) => qualityWeek(week, { required, ownedText: ownedText(aliased), level: levelOf(args.profile) }),
+    qualityCheck: (week) => qualityWeek(week, { required, ownedText: ownedText(aliased), level: levelOf(args.profile), routine: args.profile.routine }),
     maxOutputTokens: 24000,
   });
   return { data, model, aliasMap };

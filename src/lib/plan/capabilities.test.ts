@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectCapabilities, isDipExercise, isFullPullUp } from "./capabilities";
+import { detectCapabilities, isDipExercise, isFullPullUp, routineMentionsCardio } from "./capabilities";
 
 describe("detectCapabilities", () => {
   it("знаходить турнік і бруси в описі шведської стінки", () => {
@@ -24,5 +24,15 @@ describe("isFullPullUp / isDipExercise", () => {
     expect(isDipExercise("Віджимання на брусах")).toBe(true);
     expect(isDipExercise("Віджимання від брусів")).toBe(true);
     expect(isDipExercise("Віджимання від підлоги")).toBe(false);
+  });
+});
+
+describe("routineMentionsCardio", () => {
+  it("впізнає кардіо у звичках", () => {
+    expect(routineMentionsCardio("щодня 45 хв велотренажер; підтягування")).toBe(true);
+    expect(routineMentionsCardio("Вранці біг 5 км")).toBe(true);
+    expect(routineMentionsCardio("двічі на тиждень плаваю")).toBe(true);
+    expect(routineMentionsCardio("підтягування й віджимання на турніку")).toBe(false);
+    expect(routineMentionsCardio("")).toBe(false);
   });
 });

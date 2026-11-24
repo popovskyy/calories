@@ -1,6 +1,6 @@
 import type { AiDay, AiExercise, AiWeek } from "@/lib/gemini/schemas";
 import { BLOCKS, LEVEL_LABEL, type AdaptMode, type AthleteLevel } from "@/lib/types";
-import { detectCapabilities, isDipExercise, isFullPullUp } from "@/lib/plan/capabilities";
+import { detectCapabilities, isDipExercise, isFullPullUp, routineMentionsCardio } from "@/lib/plan/capabilities";
 
 /**
  * Детермінована перевірка відповіді моделі. Схема гарантує форму, але не сенс:
@@ -123,7 +123,12 @@ export interface WeekQualityOpts {
   /** Назви й описи наявних предметів (для перевірки вигаданого інвентарю й можливостей: турнік, бруси). */
   ownedText?: string;
   level?: AthleteLevel;
+  /** Власні заняття атлета: якщо там є кардіо — воно має бути в плані щонайменше 3 дні. */
+  routine?: string;
 }
+
+/** Скільки днів плану має містити власне кардіо атлета (решта дозволена як відпочинок від нього). */
+const MIN_ROUTINE_CARDIO_DAYS = 3;
 
 /** Частка силових вправ основного блоку з ≥4 підходами, нижче якої рівень «не відчувається» в плані. */
 const MIN_HEAVY_SHARE: Record<AthleteLevel, number> = { beginner: 0, intermediate: 0.35, advanced: 0.6 };
@@ -133,7 +138,7 @@ const MIN_HEAVY_SHARE: Record<AthleteLevel, number> = { beginner: 0, intermediat
  * рівень відчутний у підходах, а турнік і бруси (якщо вони є) використані за призначенням.
  */
 export function qualityWeek(week: AiWeek, opts: WeekQualityOpts = {}): string[] {
-  const { required = [], ownedText, level } = opts;
+  const { required = [], ownedText, level, routine } = opts;
   const issues: string[] = [];
   for (const day of week.days) issues.push(...qualityDay(day, `День ${day.weekday}`, undefined, ownedText));
 
@@ -164,6 +169,15 @@ export function qualityWeek(week: AiWeek, opts: WeekQualityOpts = {}): string[] 
     if (caps.dipBars && !mainEx.some((e) => isDipExercise(e.name))) {
       issues.push(
         "В інвентарі є бруси, але в основних блоках тижня немає віджимань на брусах. Додай віджимання на брусах (назвіть вправу «Віджимання на брусах»)",
+      );
+    }
+  }
+
+  if (routine && routineMentionsCardio(routine)) {
+    const cardioDays = week.days.filter((d) => d.main.some((e) => e.type === "cardio")).length;
+    if (cardioDays < MIN_ROUTINE_CARDIO_DAYS) {
+      issues.push(
+        `Атлет сам робить кардіо («${routine.slice(0, 80)}»), але в основних блоках лише ${cardioDays} днів із вправою типу cardio. Постав його кардіо щонайменше в ${MIN_ROUTINE_CARDIO_DAYS} дні (рівний темп / інтервали / легко) за правилом 10`,
       );
     }
   }

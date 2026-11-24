@@ -186,3 +186,20 @@ describe("qualityWeek: рівень, турнік і бруси", () => {
     expect(qualityWeek(w, { level: "advanced", ownedText: "Гантеля" })).toEqual([]);
   });
 });
+
+describe("qualityWeek: власне кардіо атлета", () => {
+  const cardio = ex({ name: "Велотренажер, рівний темп", type: "cardio", equipmentIds: [], sets: null, reps: null, durationSec: 2400 });
+  const base = [ex({ equipmentIds: [] }), ex({ equipmentIds: [] }), ex({ equipmentIds: [] }), ex({ equipmentIds: [] })];
+  const wk = (cardioDays: number): AiWeek => ({
+    summary: "Тиждень.",
+    days: [0, 1, 2, 3, 4].map((weekday) => ({ ...day({ main: weekday < cardioDays ? [...base, cardio] : base }), weekday })),
+  });
+  it("вимагає кардіо в плані, якщо атлет його робить", () => {
+    expect(qualityWeek(wk(1), { routine: "щодня 45 хв велотренажер" }).some((i) => i.includes("кардіо"))).toBe(true);
+    expect(qualityWeek(wk(3), { routine: "щодня 45 хв велотренажер" })).toEqual([]);
+  });
+  it("не вимагає, якщо кардіо у звичках немає", () => {
+    expect(qualityWeek(wk(0), { routine: "підтягування на турніку" })).toEqual([]);
+    expect(qualityWeek(wk(0), { routine: "" })).toEqual([]);
+  });
+});

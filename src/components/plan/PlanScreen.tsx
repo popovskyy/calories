@@ -187,7 +187,7 @@ function PlanContent({ today }: { today: string }) {
           <div>
           <div className="accordion" data-open={summaryOpen}>
             <div>
-              <p className="mb-4 rounded-2xl border border-white/[0.07] bg-surface p-3.5 text-sm leading-relaxed text-gray-300">
+              <p className="mb-4 rounded-2xl border border-white/[0.07] bg-surface p-3.5 text-sm leading-relaxed whitespace-pre-line text-gray-300">
                 <span className="mb-1 block text-sm font-medium text-gray-300">Логіка тижня від тренера</span>
                 {plan.summary}
               </p>

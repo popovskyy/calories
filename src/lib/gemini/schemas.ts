@@ -74,7 +74,7 @@ export const aiDaySchema = z.object({
 export type AiDay = z.infer<typeof aiDaySchema>;
 
 export const aiWeekSchema = z.object({
-  summary: z.string().min(10).max(500).describe("Логіка навантаження на тиждень, 2–3 речення"),
+  summary: z.string().min(10).max(1400).describe("Логіка навантаження на тиждень (абзац) + окремий абзац з оцінкою власних тренувань атлета й змінами в них"),
   days: z
     .array(aiDaySchema.extend({ weekday: z.number().int().min(0).max(4) }))
     .length(5)

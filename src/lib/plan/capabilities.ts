@@ -17,6 +17,11 @@ export function detectCapabilities(ownedText: string): Capabilities {
   };
 }
 
+/** У власних заняттях атлета є кардіо (велотренажер, біг тощо) — тоді воно має з'явитись у плані. */
+export function routineMentionsCardio(routine: string): boolean {
+  return /кардіо|велотренаж|велосипед|(^|[^\p{L}])вело([^\p{L}]|$)|(^|[^\p{L}])біг|бігов|ходьб|плав(ан|аю|анн)|еліпс|орбітрек|скакалк|кросфіт|hiit/iu.test(routine);
+}
+
 /** Назва вправи — справжнє підтягування (не австралійське / горизонтальне / негативне). */
 export function isFullPullUp(name: string): boolean {
   return /(^|[^\p{L}])підтягуван/iu.test(name) && !/австралійськ|горизонтальн|під кутом|низьк|негатив|стрибк/iu.test(name);

@@ -158,7 +158,7 @@ function ProfileForm({ initial }: { initial: ProfileDTO }) {
           placeholder="Напр.: щодня 45 хв велотренажер; підтягування й віджимання на турніку"
           onChange={(e) => setRoutine(e.target.value)}
         />
-        <span className="mt-1 block text-sm text-gray-400">Тренер не дублюватиме це, а враховуватиме втому й доповнюватиме.</span>
+        <span className="mt-1 block text-sm text-gray-400">Тренер поставить це в план, оцінить, чи правильно ти це робиш (частота, тривалість, відновлення), і запропонує, як покращити. Пиши, як часто й скільки.</span>
       </label>
 
       <label className="block">
