@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { handle, json } from "@/lib/http";
+import { handle, json, readJson } from "@/lib/http";
 import { adaptDay } from "@/lib/plan/service";
 
 // Один день: ~15–20 с на виклик; із повтором — запас до 120 с.
@@ -13,7 +13,7 @@ const body = z.object({
 
 export async function POST(req: Request) {
   return handle(async () => {
-    const input = body.parse(await req.json());
+    const input = body.parse(await readJson(req));
     return json({ plan: await adaptDay(input) });
   });
 }

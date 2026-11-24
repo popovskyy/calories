@@ -106,7 +106,7 @@ export async function searchYoutube(query: string, deps: Deps = {}): Promise<You
   const key = deps.apiKey === undefined ? youtubeKey() : deps.apiKey;
   if (!key) return { status: "unavailable", reason: "no_key" };
   const f = deps.fetch ?? fetch;
-  const base = deps.base ?? process.env.YOUTUBE_API_BASE?.trim() ?? DEFAULT_BASE;
+  const base = deps.base ?? (process.env.YOUTUBE_API_BASE?.trim() || DEFAULT_BASE);
 
   const short = await searchOnce(query, true, key, f, base);
   if (!short.ok) return { status: "unavailable", reason: short.reason };

@@ -207,7 +207,9 @@ export async function generateWeek(args: { weekStart: string; note?: string }): 
 
   const days = [...data.days].sort((a, b) => a.weekday - b.weekday);
 
-  const [, created] = await prisma.$transaction([
+  let created: PlanWithRelations;
+  try {
+    [, created] = await prisma.$transaction([
     // Перегенерація не видаляє — архівує: історія попередніх спроб лишається в БД.
     prisma.workoutPlan.updateMany({
       where: { weekStart: args.weekStart, status: "active" },
@@ -234,7 +236,14 @@ export async function generateWeek(args: { weekStart: string; note?: string }): 
       },
       include: planInclude,
     }),
-  ]);
+    ]);
+  } catch (e) {
+    // Частковий унікальний індекс workout_plans_one_active_per_week: хтось (інший пристрій) щойно створив активний план цього тижня
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      throw new HttpError(409, "Цей тиждень щойно згенерували з іншого пристрою. Оновіть екран.");
+    }
+    throw e;
+  }
 
   return toPlanDTO(created);
 }

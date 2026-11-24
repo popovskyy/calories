@@ -13,6 +13,15 @@ export class HttpError extends Error {
   }
 }
 
+/** Тіло запиту як JSON; зламаний JSON — це 400, а не внутрішня помилка (SyntaxError з іншого місця коду лишається 500 і логується). */
+export async function readJson(req: Request): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    throw new HttpError(400, "Некоректний JSON у запиті");
+  }
+}
+
 export function json<T>(data: T, init?: ResponseInit): NextResponse {
   return NextResponse.json(data, { ...init, headers: { "Cache-Control": "no-store", ...init?.headers } });
 }
@@ -36,9 +45,6 @@ export async function handle(fn: () => Promise<Response>, opts: { auth?: boolean
       const first = e.issues[0];
       const where = first?.path.length ? ` (${first.path.join(".")})` : "";
       return json({ error: `Некоректні дані${where}: ${first?.message ?? "перевірте поля"}` }, { status: 400 });
-    }
-    if (e instanceof SyntaxError) {
-      return json({ error: "Некоректний JSON у запиті" }, { status: 400 });
     }
     console.error("[api] unhandled:", e);
     return json({ error: "Внутрішня помилка сервера" }, { status: 500 });

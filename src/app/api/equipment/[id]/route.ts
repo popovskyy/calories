@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { equipmentKey } from "@/lib/equipment-key";
-import { HttpError, handle, json } from "@/lib/http";
+import { HttpError, handle, json, readJson } from "@/lib/http";
 import { toEquipmentDTO } from "@/lib/plan/serialize";
 
 const patch = z
@@ -22,7 +22,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function PATCH(req: Request, { params }: Ctx) {
   return handle(async () => {
     const { id } = await params;
-    const input = patch.parse(await req.json());
+    const input = patch.parse(await readJson(req));
     const current = await prisma.equipment.findUnique({ where: { id } });
     if (!current) throw new HttpError(404, "Предмет не знайдено");
 

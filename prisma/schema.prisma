@@ -59,7 +59,8 @@ model Equipment {
   @@map("equipment")
 }
 
-/// Тижневий план. На один weekStart — максимум один plan зі status = "active".
+/// Тижневий план. На один weekStart — максимум один plan зі status = "active":
+/// це гарантує частковий унікальний індекс workout_plans_one_active_per_week (міграція SQL; Prisma такі індекси не описує).
 model WorkoutPlan {
   id        String       @id @default(cuid())
   /// Понеділок тижня, "YYYY-MM-DD" (рахується на клієнті в локальному часі).
@@ -166,4 +167,15 @@ model VideoCache {
   createdAt  DateTime @default(now())
 
   @@map("video_cache")
+}
+
+/// Невдалі (і всі) спроби входу за IP — захист від підбору пароля, що переживає холодні старти serverless.
+/// Спроба записується ДО перевірки пароля й видаляється після успіху, тож паралельні запити теж рахуються.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+  @@map("login_attempts")
 }

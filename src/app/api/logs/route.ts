@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { handle, json } from "@/lib/http";
+import { handle, json, readJson } from "@/lib/http";
 import { completeTarget, uncompleteTarget } from "@/lib/plan/service";
 
 const body = z.object({
@@ -10,7 +10,7 @@ const body = z.object({
 
 export async function POST(req: Request) {
   return handle(async () => {
-    const { dayId, exerciseId } = body.parse(await req.json());
+    const { dayId, exerciseId } = body.parse(await readJson(req));
     const log = await completeTarget(dayId, exerciseId ?? null);
     return json({ ok: true, completedAt: log.completedAt.toISOString() }, { status: 201 });
   });
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   return handle(async () => {
-    const { dayId, exerciseId } = body.parse(await req.json());
+    const { dayId, exerciseId } = body.parse(await readJson(req));
     await uncompleteTarget(dayId, exerciseId ?? null);
     return json({ ok: true });
   });

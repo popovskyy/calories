@@ -11,6 +11,11 @@ import { useScanEquipment } from "@/hooks/queries";
 const MAX_PHOTOS = 4;
 /** Ліміт base64 на одне фото (дзеркалить сервер): ≈1.5 МБ бінарних даних. */
 const MAX_B64 = 1_900_000;
+/**
+ * Загальний бюджет усіх фото в одному запиті. Vercel відхиляє тіло >4.5 МБ (відповідь не JSON → «Помилка 413»),
+ * а сервер ріже на 4.4 МБ: тримаємо запас на JSON-обгортку.
+ */
+const MAX_TOTAL_B64 = 4_000_000;
 
 interface Photo {
   id: string;
@@ -18,11 +23,16 @@ interface Photo {
   data: string;
 }
 
-async function prepare(file: File): Promise<Photo> {
+/** Стискає ступенево, поки фото не влізе і в ліміт одного фото, і в залишок загального бюджету. */
+async function prepare(file: File, budgetLeft: number): Promise<Photo> {
+  const limit = Math.min(MAX_B64, budgetLeft);
   let out = await compressImageToJpeg(file, 1280, 0.82);
-  if (out.base64.length > MAX_B64) out = await compressImageToJpeg(file, 1024, 0.7);
-  if (out.base64.length > MAX_B64) throw new Error("Фото завелике навіть після стиснення");
-  return { id: crypto.randomUUID(), preview: out.preview, data: out.base64 };
+  for (const [side, q] of [[1024, 0.7], [800, 0.6], [640, 0.55]] as const) {
+    if (out.base64.length <= limit) break;
+    out = await compressImageToJpeg(file, side, q);
+  }
+  if (out.base64.length > limit) throw new Error("Забагато даних для одного запиту — додайте менше фото або зробіть простіші знімки");
+  return { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, preview: out.preview, data: out.base64 };
 }
 
 /** Завантаження 1–4 фото → прев'ю → Gemini Vision → оновлений арсенал. */
@@ -43,7 +53,14 @@ export function ScannerCard() {
     setPreparing(true);
     setResult(null);
     try {
-      const prepared = await Promise.all(files.map(prepare));
+      // Послідовно: кожне наступне фото знає, скільки бюджету лишилось після попередніх
+      let used = photos.reduce((sum, p) => sum + p.data.length, 0);
+      const prepared: Photo[] = [];
+      for (const file of files) {
+        const photo = await prepare(file, MAX_TOTAL_B64 - used);
+        used += photo.data.length;
+        prepared.push(photo);
+      }
       setPhotos((prev) => [...prev, ...prepared].slice(0, MAX_PHOTOS));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Не вдалося обробити фото");

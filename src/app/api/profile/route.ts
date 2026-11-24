@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { handle, json } from "@/lib/http";
+import { handle, json, readJson } from "@/lib/http";
 import { getProfile } from "@/lib/plan/service";
 import { toProfileDTO } from "@/lib/plan/serialize";
 
@@ -20,7 +20,7 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   return handle(async () => {
-    const data = body.parse(await req.json());
+    const data = body.parse(await readJson(req));
     const saved = await prisma.userProfile.upsert({
       where: { id: "me" },
       update: data,

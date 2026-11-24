@@ -128,7 +128,8 @@ export function useGeneratePlan(weekStart: string) {
     mutationFn: async (note?: string) =>
       (await api.post<{ plan: PlanDTO }>("/api/plan/generate", { weekStart, note: note || undefined })).plan,
     onSuccess: (plan) => {
-      qc.setQueryData(qk.plan(weekStart), plan);
+      // Ключ — тиждень з відповіді сервера: поки йшла генерація, користувач міг перегорнути тиждень стрілками
+      qc.setQueryData(qk.plan(plan.weekStart), plan);
       toast.success("Новий тиждень готовий");
     },
     onError: (e) => {
@@ -145,7 +146,7 @@ export function useAdaptDay(weekStart: string) {
     mutationFn: async (v: { dayId: string; mode: AdaptMode; note?: string }) =>
       (await api.post<{ plan: PlanDTO }>("/api/plan/adapt", { ...v, note: v.note || undefined })).plan,
     onSuccess: (plan) => {
-      qc.setQueryData(qk.plan(weekStart), plan);
+      qc.setQueryData(qk.plan(plan.weekStart), plan);
       toast.success("Тренування адаптовано");
     },
     onError: (e) => {

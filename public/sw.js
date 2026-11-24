@@ -17,6 +17,14 @@ button{background:linear-gradient(149deg,#41c6ff,#1a64fc);color:#fff;border:0;bo
 <body><div><h1>Немає зв’язку</h1><p>Тренування й прогрес потребують інтернету.</p>
 <button onclick="location.reload()">Спробувати ще</button></div></body></html>`;
 
+/** Хешовані чанки кожного деплою інакше лишались би в кеші назавжди й з'їдали квоту iOS. Найстаріші — першими. */
+const MAX_STATIC_ENTRIES = 120;
+async function trimCache(cache) {
+  const keys = await cache.keys(); // порядок вставки
+  const extra = keys.length - MAX_STATIC_ENTRIES;
+  for (let i = 0; i < extra; i++) await cache.delete(keys[i]);
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -60,7 +68,9 @@ self.addEventListener("fetch", (event) => {
         const hit = await cache.match(request);
         if (hit) return hit;
         const res = await fetch(request);
-        if (res.ok) cache.put(request, res.clone());
+        if (res.ok) {
+          event.waitUntil(cache.put(request, res.clone()).then(() => trimCache(cache)));
+        }
         return res;
       }),
     );

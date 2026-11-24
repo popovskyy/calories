@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { HttpError, handle, json } from "@/lib/http";
+import { HttpError, handle, json, readJson } from "@/lib/http";
 import { scanEquipment } from "@/lib/plan/service";
 
 // Gemini Vision + «ремонтний» повтор можуть тривати довше за дефолт.
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   return handle(async () => {
     const declared = Number(req.headers.get("content-length") ?? 0);
     if (declared > MAX_BODY_BYTES) throw new HttpError(413, "Фото завеликі — зменште їх кількість");
-    const { images } = body.parse(await req.json());
+    const { images } = body.parse(await readJson(req));
     return json(await scanEquipment(images));
   });
 }

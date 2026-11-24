@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isISODate, isMonday } from "@/lib/dates";
-import { HttpError, handle, json } from "@/lib/http";
+import { HttpError, handle, json, readJson } from "@/lib/http";
 import { generateWeek } from "@/lib/plan/service";
 
 // План на 5 днів (~40 вправ): 30–80 с на виклик, а «ремонтний» повтор — ще один виклик. Дефолт Vercel — 300 с,
@@ -14,7 +14,7 @@ const body = z.object({
 
 export async function POST(req: Request) {
   return handle(async () => {
-    const { weekStart, note } = body.parse(await req.json());
+    const { weekStart, note } = body.parse(await readJson(req));
     if (!isISODate(weekStart) || !isMonday(weekStart)) {
       throw new HttpError(400, "weekStart має бути понеділком у форматі YYYY-MM-DD");
     }

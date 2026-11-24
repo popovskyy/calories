@@ -35,7 +35,10 @@ export function PlanScreen() {
 }
 
 function PlanContent({ today }: { today: string }) {
-  const [weekStart, setWeekStart] = useState(() => defaultWeekStart(today));
+  // Тиждень виводиться із «сьогодні» + зсув, який вибрав користувач (‹ ›). Раніше стартовий тиждень запам'ятовувався
+  // раз і назавжди: після вихідних у фоні iOS-PWA лишалась на минулому тижні, хоча `today` уже оновився.
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekStart = addDays(defaultWeekStart(today), weekOffset * 7);
   const [picked, setPicked] = useState<{ week: string; day: number } | null>(null);
   const [adaptOpen, setAdaptOpen] = useState(false);
   const [genOpen, setGenOpen] = useState(false);
@@ -90,7 +93,7 @@ function PlanContent({ today }: { today: string }) {
   }, [celebrateDayId, dayFinished]);
 
   const shiftWeek = (delta: number) => {
-    setWeekStart((w) => addDays(w, delta * 7));
+    setWeekOffset((o) => o + delta);
     setPicked(null);
   };
 

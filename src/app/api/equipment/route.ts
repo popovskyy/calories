@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { equipmentKey } from "@/lib/equipment-key";
 import { equipmentFields, normalizeWeights } from "@/lib/equipment-input";
-import { HttpError, handle, json } from "@/lib/http";
+import { HttpError, handle, json, readJson } from "@/lib/http";
 import { listEquipment } from "@/lib/plan/service";
 import { toEquipmentDTO } from "@/lib/plan/serialize";
 
@@ -12,7 +12,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   return handle(async () => {
-    const input = normalizeWeights(equipmentFields.parse(await req.json()));
+    const input = normalizeWeights(equipmentFields.parse(await readJson(req)));
     const key = equipmentKey(input.name);
     if (!key) throw new HttpError(400, "Вкажіть назву предмета");
     try {
