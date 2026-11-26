@@ -113,3 +113,18 @@ export interface VideoResponseDTO {
   candidates: VideoCandidateDTO[];
   searchUrl: string;
 }
+
+/** Кнопка «Світло» (LED-стрічка вдома). Застосунок не бачить ПК — стан приходить через дошку Elme, див. lib/lights.ts. */
+export type LightsDTO = {
+  /** false — LIGHTS_RELAY_URL / LIGHTS_TOKEN не задані: кнопку не показуємо */
+  configured: boolean;
+  /** Реальний стан стрічки за звітом ПК; null — ПК ще не звітував */
+  on: boolean | null;
+  /** Що замовило останнє натискання */
+  want: boolean | null;
+  /** Натиснули, а ПК ще не виконав */
+  pending: boolean;
+  /** Чекаємо надто довго — схоже, ПК вимкнений */
+  stale: boolean;
+  error: string | null;
+};

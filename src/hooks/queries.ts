@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type {
   AdaptMode,
   EquipmentDTO,
+  LightsDTO,
   PlanDTO,
   ProfileDTO,
   ScanResultDTO,
@@ -15,10 +16,42 @@ import type {
 export const qk = {
   profile: ["profile"] as const,
   equipment: ["equipment"] as const,
+  lights: ["lights"] as const,
   plan: (weekStart: string) => ["plan", weekStart] as const,
 };
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : "Щось пішло не так");
+
+/* ---------------- Світло (LED-стрічка вдома, через дошку Elme) ---------------- */
+
+export function useLights() {
+  return useQuery({
+    queryKey: qk.lights,
+    queryFn: async () => (await api.get<{ lights: LightsDTO }>("/api/lights")).lights,
+    staleTime: 15_000,
+    // Натиснули — питаємо звіт ПК кожні 3 с; ПК мовчить довго — рідше, але чекаємо, поки повернеться
+    refetchInterval: (q) => (q.state.data?.pending ? (q.state.data.stale ? 15_000 : 3_000) : false),
+  });
+}
+
+export function useSetLights() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (on: boolean) => (await api.post<{ lights: LightsDTO }>("/api/lights", { on })).lights,
+    onMutate: async (on) => {
+      await qc.cancelQueries({ queryKey: qk.lights });
+      const prev = qc.getQueryData<LightsDTO>(qk.lights);
+      // оптимістично: кнопка одразу починає «пульсувати»
+      qc.setQueryData<LightsDTO>(qk.lights, (old) => (old ? { ...old, want: on, pending: true, stale: false, error: null } : old));
+      return { prev };
+    },
+    onSuccess: (lights) => qc.setQueryData(qk.lights, lights),
+    onError: (e, _on, ctx) => {
+      if (ctx?.prev) qc.setQueryData(qk.lights, ctx.prev);
+      toast.error(errMsg(e));
+    },
+  });
+}
 
 /* ---------------- Профіль ---------------- */
 

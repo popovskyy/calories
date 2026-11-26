@@ -23,6 +23,8 @@ TRAINER_USERNAME=…  TRAINER_PASSWORD=…    # єдиний вхід у зас�
 GEMINI_API_KEY=…
 GEMINI_MODEL=gemini-3.7-flash             # необов'язково
 YOUTUBE_API_KEY=…                         # необов'язково: з ним кнопка «Як робити — відео» відкриває конкретне відео в застосунку
+LIGHTS_RELAY_URL=https://elme-board.vercel.app   # необов'язково: кнопка «Світло» (LED-стрічка вдома) в шапці «Тренування»
+LIGHTS_TOKEN=…                                   # вузький ключ дошки Elme лише для світла (НЕ її BOARD_TOKEN); без обох кнопки нема
 ```
 > Ніколи не запускайте `prisma migrate reset`, `prisma migrate dev` чи `db push --force-reset`:
 > база спільна з іншими проєктами. Лише `prisma migrate deploy`.
@@ -33,6 +35,12 @@ npm install            # postinstall → prisma generate
 npm run db:migrate     # prisma migrate deploy (схема "trainer")
 npm run dev
 ```
+
+## Світло (LED-стрічка вдома)
+Кнопка-лампочка в шапці екрана «Тренування». Застосунок на Vercel не бачить домашній ПК, тому натискання йде через дошку Elme:
+`/api/lights` кладе туди «бажання», раннер на ПК (він і так опитує дошку) за ~10 с вмикає/вимикає стрічку HyperHDR і звітує
+реальний стан — кнопка пульсує, поки ПК не відповів, і стає бурштиновою, якщо мовчить понад 45 с. Агенти/моделі не задіяні.
+Ключ `LIGHTS_TOKEN` має бути однаковим тут і в проєкті дошки; дошка пускає його лише на `GET/POST /api/lights`. Код: `src/lib/lights.ts`.
 
 ## Скрипти
 | | |

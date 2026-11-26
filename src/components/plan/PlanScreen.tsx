@@ -22,6 +22,7 @@ import { HoldToCompleteButton } from "@/components/HoldToCompleteButton";
 import { AdaptSheet } from "@/components/plan/AdaptSheet";
 import { DayCard } from "@/components/plan/DayCard";
 import { DaySelector } from "@/components/plan/DaySelector";
+import { LightButton } from "@/components/LightButton";
 import { ExerciseCard } from "@/components/plan/ExerciseCard";
 import { GenerateSheet } from "@/components/plan/GenerateSheet";
 import { GeneratingOverlay } from "@/components/plan/GeneratingOverlay";
@@ -122,14 +123,17 @@ function PlanContent({ today }: { today: string }) {
             {p ? `${p.age} р. · ${p.heightCm} см · ${p.weightKg} кг` : <span className="inline-block h-3 w-32 rounded skeleton" />}
           </p>
         </div>
-        <button
-          onClick={() => setAdaptOpen(true)}
-          disabled={!day || dayFinished || adapt.isPending}
-          className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-surface-2 px-3.5 py-2 text-sm font-semibold text-gray-100 shadow-sm transition hover:border-volt/40 active:scale-95 disabled:opacity-40"
-        >
-          <Zap className="h-4 w-4 text-volt" strokeWidth={2.2} />
-          Адаптувати
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <LightButton />
+          <button
+            onClick={() => setAdaptOpen(true)}
+            disabled={!day || dayFinished || adapt.isPending}
+            className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-surface-2 px-3.5 py-2 text-sm font-semibold text-gray-100 shadow-sm transition hover:border-volt/40 active:scale-95 disabled:opacity-40"
+          >
+            <Zap className="h-4 w-4 text-volt" strokeWidth={2.2} />
+            Адаптувати
+          </button>
+        </div>
       </div>
 
       {/* Навігація по тижнях + новий тиждень */}
